@@ -69,7 +69,7 @@ export function Hero({ signupCount }: HeroProps) {
   };
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] supports-[height:100dvh]:min-h-[calc(100dvh-6rem)] flex flex-col justify-between items-center text-center px-4">
+    <div className="min-h-[calc(100vh-8rem)] supports-[height:100dvh]:min-h-[calc(100dvh-8rem)] flex flex-col justify-between items-center text-center px-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
