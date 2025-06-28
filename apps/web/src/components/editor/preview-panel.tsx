@@ -7,6 +7,7 @@ import {
 } from "@/stores/timeline-store";
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
 import { usePlaybackStore } from "@/stores/playback-store";
+import { useEffectsStore } from "@/stores/effects-store";
 import { VideoPlayer } from "@/components/ui/video-player";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Plus } from "lucide-react";
@@ -22,6 +23,7 @@ export function PreviewPanel() {
   const { tracks } = useTimelineStore();
   const { mediaItems } = useMediaStore();
   const { currentTime, muted, toggleMute, volume } = usePlaybackStore();
+  const { getClipEffects } = useEffectsStore();
   const [canvasSize, setCanvasSize] = useState({ width: 1920, height: 1080 });
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,7 +120,14 @@ export function PreviewPanel() {
 
   // Render a clip
   const renderClip = (clipData: ActiveClip, index: number) => {
-    const { clip, mediaItem } = clipData;
+    const { clip, track, mediaItem } = clipData;
+
+    const effects = getClipEffects(track.id, clip.id);
+    
+    const filterStyle = {
+      filter: `blur(${effects.blur}px)`,
+      opacity: effects.opacity / 100,
+    };
 
     // Test clips
     if (!mediaItem || clip.mediaId === "test") {
@@ -126,6 +135,7 @@ export function PreviewPanel() {
         <div
           key={clip.id}
           className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center"
+          style={filterStyle}
         >
           <div className="text-center">
             <div className="text-2xl mb-2">🎬</div>
@@ -138,7 +148,7 @@ export function PreviewPanel() {
     // Video clips
     if (mediaItem.type === "video") {
       return (
-        <div key={clip.id} className="absolute inset-0">
+        <div key={clip.id} className="absolute inset-0" style={filterStyle}>
           <VideoPlayer
             src={mediaItem.url}
             poster={mediaItem.thumbnailUrl}
@@ -154,7 +164,7 @@ export function PreviewPanel() {
     // Image clips
     if (mediaItem.type === "image") {
       return (
-        <div key={clip.id} className="absolute inset-0">
+        <div key={clip.id} className="absolute inset-0" style={filterStyle}>
           <img
             src={mediaItem.url}
             alt={mediaItem.name}
@@ -171,6 +181,7 @@ export function PreviewPanel() {
         <div
           key={clip.id}
           className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center"
+          style={filterStyle}
         >
           <div className="text-center">
             <div className="text-2xl mb-2">🎵</div>
