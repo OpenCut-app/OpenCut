@@ -38,6 +38,7 @@
     --sidebar-border: 0 0% 89.8%;
     --sidebar-ring: 0 0% 3.9%;
   }
+
   .dark {
     --background: 0 0% 8%;
     --foreground: 0 0% 98%;
@@ -78,7 +79,17 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--background) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+    background-clip: content-box !important;
   }
 }

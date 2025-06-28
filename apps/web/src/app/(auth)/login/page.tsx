@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { signIn } from "@opencut/auth/client";
 import { Button } from "@/components/ui/button";
+import { getSafeRedirectUrl } from "@/lib/redirect-utils";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Suspense, useState } from "react";
+import { Suspense, use, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -19,7 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { GoogleIcon } from "@/components/icons";
 
-function LoginForm() {
+function LoginForm({ redirectUrl }: { redirectUrl: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +43,7 @@ function LoginForm() {
       return;
     }
 
-    router.push("/editor");
+    router.push(redirectUrl);
   };
 
   const handleGoogleLogin = async () => {
@@ -52,7 +53,7 @@ function LoginForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/editor",
+        callbackURL: redirectUrl,
       });
     } catch (error) {
       setError("Failed to sign in with Google. Please try again.");
@@ -131,7 +132,15 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+type Props = {
+  searchParams: Promise<{
+    redirect?: string;
+  }>;
+};
+
+export default function LoginPage({ searchParams }: Props) {
+  const { redirect } = use(searchParams);
+  const redirectUrl = getSafeRedirectUrl(redirect);
   const router = useRouter();
 
   return (
@@ -158,7 +167,7 @@ export default function LoginPage() {
               </div>
             }
           >
-            <LoginForm />
+            <LoginForm redirectUrl={redirectUrl} />
           </Suspense>
           <div className="mt-6 text-center text-sm">
             Don't have an account?{" "}

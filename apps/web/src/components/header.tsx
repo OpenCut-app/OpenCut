@@ -41,12 +41,23 @@ export function Header() {
         </Button>
       </Link>
       {process.env.NODE_ENV === "development" ? (
-        <Link href="/editor">
-          <Button size="sm" className="text-sm ml-4">
-            Editor
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        <>
+          {session ? (
+            <Link href="/editor">
+              <Button size="sm" className="text-sm ml-4">
+                Editor
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <Button size="sm" className="text-sm ml-4">
+                Login
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          )}
+        </>
       ) : (
         <Link href="https://github.com/OpenCut-app/OpenCut" target="_blank">
           <Button size="sm" className="text-sm ml-4">
