@@ -176,10 +176,15 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
   setSelectedClips: (clips) => set({ selectedClips: clips }),
 
   addTrack: (type) => {
-    get().pushHistory();
+    const state = get(); // Get current state to access existing tracks
+    state.pushHistory();
+
+    const existingTracksOfType = state.tracks.filter(track => track.type === type);
+    const trackNumber = existingTracksOfType.length + 1;
+
     const newTrack: TimelineTrack = {
       id: crypto.randomUUID(),
-      name: `${type.charAt(0).toUpperCase() + type.slice(1)} Track`,
+      name: `${type.charAt(0).toUpperCase() + type.slice(1)} Track ${trackNumber}`,
       type,
       clips: [],
       muted: false,
@@ -435,60 +440,75 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
   },
 
   // Extract audio from video clip to an audio track
-  separateAudio: (trackId, clipId) => {
-    const { tracks } = get();
-    const track = tracks.find((t) => t.id === trackId);
+  separateAudio: (trackId: string, clipId: string): string | null => {
+    const state = get();
+    state.pushHistory();
+
+    const track = state.tracks.find((t) => t.id === trackId);
     const clip = track?.clips.find((c) => c.id === clipId);
 
-    if (!clip || track?.type !== "video") return null;
-
-    get().pushHistory();
-
-    // Find existing audio track or prepare to create one
-    const existingAudioTrack = tracks.find((t) => t.type === "audio");
-    const audioClipId = crypto.randomUUID();
-
-    if (existingAudioTrack) {
-      // Add audio clip to existing audio track
-      set((state) => ({
-        tracks: state.tracks.map((track) =>
-          track.id === existingAudioTrack.id
-            ? {
-                ...track,
-                clips: [
-                  ...track.clips,
-                  {
-                    ...clip,
-                    id: audioClipId,
-                    name: getClipNameWithSuffix(clip.name, "audio"),
-                  },
-                ],
-              }
-            : track
-        ),
-      }));
-    } else {
-      // Create new audio track with the audio clip in a single atomic update
-      const newAudioTrack: TimelineTrack = {
-        id: crypto.randomUUID(),
-        name: "Audio Track",
-        type: "audio",
-        clips: [
-          {
-            ...clip,
-            id: audioClipId,
-            name: getClipNameWithSuffix(clip.name, "audio"),
-          },
-        ],
-        muted: false,
-      };
-
-      set((state) => ({
-        tracks: [...state.tracks, newAudioTrack],
-      }));
+    if (!clip || track?.type !== "video") {
+      console.error("Clip not found or not from a video track");
+      return null;
     }
 
-    return audioClipId;
+    const audioClip: TimelineClip = {
+      id: crypto.randomUUID(),
+      mediaId: clip.mediaId,
+      name: `${clip.name} (Audio)`,
+      duration: clip.duration,
+      startTime: clip.startTime,
+      trimStart: 0,
+      trimEnd: 0,
+    };
+
+    const findAvailableTrackAndSlot = (newClip: TimelineClip): string => {
+      for (const t of state.tracks) {
+        if (t.type === "audio") {
+          let overlap = false;
+          for (const existingClip of t.clips) {
+            if (
+              newClip.startTime < existingClip.startTime + existingClip.duration &&
+              newClip.startTime + newClip.duration > existingClip.startTime
+            ) {
+              overlap = true;
+              break;
+            }
+          }
+          if (!overlap) {
+            return t.id; // Found an available track
+          }
+        }
+      }
+
+      // No suitable track found, create a new one
+      const existingAudioTracks = state.tracks.filter(t => t.type === "audio");
+      const trackNumber = existingAudioTracks.length + 1;
+      const newTrack: TimelineTrack = {
+        id: crypto.randomUUID(),
+        name: `Audio Track ${trackNumber}`,
+        type: "audio",
+        clips: [],
+        muted: false,
+      };
+      // We need to update the state to add the new track *before* we return its ID
+      set((state) => ({
+        tracks: [...state.tracks, newTrack],
+      }));
+      return newTrack.id;
+    };
+
+    const targetTrackId = findAvailableTrackAndSlot(audioClip);
+
+    set((state) => ({
+      tracks: state.tracks.map((t) =>
+        t.id === targetTrackId
+          ? { ...t, clips: [...t.clips, audioClip] }
+          : t
+      ),
+    }));
+
+    return audioClip.id;
   },
 
   getTotalDuration: () => {
