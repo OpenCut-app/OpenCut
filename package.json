@@ -2,6 +2,9 @@
   "name": "opencut",
   "packageManager": "bun@1.2.17",
   "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "turbo": "^2.5.4"
   },
   "workspaces": [
@@ -13,10 +16,16 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "lint": "turbo run lint",
-    "format": "turbo run format"
+    "format": "turbo run format",
+    "prepare": "husky"
   },
   "dependencies": {
     "next": "^15.3.4",
     "wavesurfer.js": "^7.9.8"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "biome check --write"
+    ]
   }
 }
