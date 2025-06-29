@@ -1088,6 +1088,7 @@ export function Timeline() {
                           zoomLevel={zoomLevel}
                           setContextMenu={setContextMenu}
                           contextMenu={contextMenu}
+                          setIsDragOver={setIsDragOver}
                         />
                       </div>
                     ))}
@@ -1277,11 +1278,13 @@ function TimelineTrackContent({
   zoomLevel,
   setContextMenu,
   contextMenu,
+  setIsDragOver,
 }: {
   track: TimelineTrack;
   zoomLevel: number;
   setContextMenu: (menu: ContextMenuState | null) => void;
   contextMenu: ContextMenuState | null;
+  setIsDragOver: (isDragOver: boolean) => void;
 }) {
   const { mediaItems } = useMediaStore();
   const {
@@ -1641,6 +1644,7 @@ function TimelineTrackContent({
     setWouldOverlap(false);
     const currentDropPosition = dropPosition;
     setDropPosition(null);
+    setIsDragOver(false);
 
     const hasTimelineClip = e.dataTransfer.types.includes(
       "application/x-timeline-clip"
@@ -1755,6 +1759,7 @@ function TimelineTrackContent({
 
         if (!isCompatible) {
           toast.error(`Cannot add ${type} to ${track.type} track`);
+          setIsDropping(false);
           return;
         }
 
