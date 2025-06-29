@@ -555,22 +555,23 @@ export function Timeline() {
       toast.error("No clips selected");
       return;
     }
-    
+
     let splitCount = 0;
     selectedClips.forEach(({ trackId, clipId }) => {
       const track = tracks.find((t) => t.id === trackId);
       const clip = track?.clips.find((c) => c.id === clipId);
       if (clip && track) {
         const effectiveStart = clip.startTime;
-        const effectiveEnd = clip.startTime + (clip.duration - clip.trimStart - clip.trimEnd);
-        
+        const effectiveEnd =
+          clip.startTime + (clip.duration - clip.trimStart - clip.trimEnd);
+
         if (currentTime > effectiveStart && currentTime < effectiveEnd) {
           splitAndKeepLeft(trackId, clipId, currentTime);
           splitCount++;
         }
       }
     });
-    
+
     if (splitCount > 0) {
       toast.success(`Split and kept left portion of ${splitCount} clip(s)`);
     } else {
@@ -583,22 +584,23 @@ export function Timeline() {
       toast.error("No clips selected");
       return;
     }
-    
+
     let splitCount = 0;
     selectedClips.forEach(({ trackId, clipId }) => {
       const track = tracks.find((t) => t.id === trackId);
       const clip = track?.clips.find((c) => c.id === clipId);
       if (clip && track) {
         const effectiveStart = clip.startTime;
-        const effectiveEnd = clip.startTime + (clip.duration - clip.trimStart - clip.trimEnd);
-        
+        const effectiveEnd =
+          clip.startTime + (clip.duration - clip.trimStart - clip.trimEnd);
+
         if (currentTime > effectiveStart && currentTime < effectiveEnd) {
           splitAndKeepRight(trackId, clipId, currentTime);
           splitCount++;
         }
       }
     });
-    
+
     if (splitCount > 0) {
       toast.success(`Split and kept right portion of ${splitCount} clip(s)`);
     } else {
@@ -611,19 +613,24 @@ export function Timeline() {
       toast.error("No clips selected");
       return;
     }
-    
+
     let separatedCount = 0;
     selectedClips.forEach(({ trackId, clipId }) => {
       const track = tracks.find((t) => t.id === trackId);
       const clip = track?.clips.find((c) => c.id === clipId);
       const mediaItem = mediaItems.find((item) => item.id === clip?.mediaId);
-      
-      if (clip && track && mediaItem?.type === "video" && track.type === "video") {
+
+      if (
+        clip &&
+        track &&
+        mediaItem?.type === "video" &&
+        track.type === "video"
+      ) {
         const audioClipId = separateAudio(trackId, clipId);
         if (audioClipId) separatedCount++;
       }
     });
-    
+
     if (separatedCount > 0) {
       toast.success(`Separated audio from ${separatedCount} video clip(s)`);
     } else {
@@ -664,8 +671,12 @@ export function Timeline() {
 
   // --- Scroll synchronization effect ---
   useEffect(() => {
-    const rulerViewport = rulerScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-    const tracksViewport = tracksScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+    const rulerViewport = rulerScrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement;
+    const tracksViewport = tracksScrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement;
     if (!rulerViewport || !tracksViewport) return;
     const handleRulerScroll = () => {
       const now = Date.now();
@@ -683,18 +694,22 @@ export function Timeline() {
       rulerViewport.scrollLeft = tracksViewport.scrollLeft;
       isUpdatingRef.current = false;
     };
-    rulerViewport.addEventListener('scroll', handleRulerScroll);
-    tracksViewport.addEventListener('scroll', handleTracksScroll);
+    rulerViewport.addEventListener("scroll", handleRulerScroll);
+    tracksViewport.addEventListener("scroll", handleTracksScroll);
     return () => {
-      rulerViewport.removeEventListener('scroll', handleRulerScroll);
-      tracksViewport.removeEventListener('scroll', handleTracksScroll);
+      rulerViewport.removeEventListener("scroll", handleRulerScroll);
+      tracksViewport.removeEventListener("scroll", handleTracksScroll);
     };
   }, []);
 
   // --- Playhead auto-scroll effect ---
   useEffect(() => {
-    const rulerViewport = rulerScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-    const tracksViewport = tracksScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+    const rulerViewport = rulerScrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement;
+    const tracksViewport = tracksScrollRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement;
     if (!rulerViewport || !tracksViewport) return;
     const playheadPx = playheadPosition * 50 * zoomLevel;
     const viewportWidth = rulerViewport.clientWidth;
@@ -712,6 +727,60 @@ export function Timeline() {
       rulerViewport.scrollLeft = tracksViewport.scrollLeft = desiredScroll;
     }
   }, [playheadPosition, duration, zoomLevel]);
+
+  const getContextMenuPosition = (x: number, y: number) => {
+    const menuWidth = 160;
+    const menuHeight = 200;
+    const margin = 4;
+
+    // ADJUSTABLE VALUE: Change this to move menu up/down when it appears above cursor
+    const verticalOffset = 80; // Reduce this to bring menu closer to cursor when above
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Start with Windows-style default position
+    let adjustedX = x + 2;
+    let adjustedY = y + 2;
+
+    // Horizontal positioning
+    if (adjustedX + menuWidth > viewportWidth - margin) {
+      adjustedX = x - menuWidth - 2;
+      if (adjustedX < margin) {
+        adjustedX = viewportWidth - menuWidth - margin;
+      }
+    }
+
+    if (adjustedX < margin) {
+      adjustedX = margin;
+    }
+
+    // Vertical positioning with adjustable offset
+    if (adjustedY + menuHeight > viewportHeight - margin) {
+      // Instead of y - menuHeight - 2, use adjustable offset
+      adjustedY = y - menuHeight + verticalOffset;
+
+      if (adjustedY < margin) {
+        adjustedY = viewportHeight - menuHeight - margin;
+      }
+    }
+
+    if (adjustedY < margin) {
+      adjustedY = margin;
+    }
+
+    // Final safety clamp
+    adjustedX = Math.max(
+      margin,
+      Math.min(adjustedX, viewportWidth - menuWidth - margin)
+    );
+    adjustedY = Math.max(
+      margin,
+      Math.min(adjustedY, viewportHeight - menuHeight - margin)
+    );
+
+    return { x: adjustedX, y: adjustedY };
+  };
 
   return (
     <div
@@ -798,7 +867,11 @@ export function Timeline() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="text" size="icon" onClick={handleSplitAndKeepLeft}>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={handleSplitAndKeepLeft}
+              >
                 <ArrowLeftToLine className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -807,7 +880,11 @@ export function Timeline() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="text" size="icon" onClick={handleSplitAndKeepRight}>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={handleSplitAndKeepRight}
+              >
                 <ArrowRightToLine className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -1124,7 +1201,10 @@ export function Timeline() {
       {contextMenu && (
         <div
           className="fixed z-50 min-w-[160px] bg-popover border border-border rounded-md shadow-md py-1 text-sm"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          style={{
+            left: getContextMenuPosition(contextMenu.x, contextMenu.y).x,
+            top: getContextMenuPosition(contextMenu.x, contextMenu.y).y,
+          }}
           onContextMenu={(e) => e.preventDefault()}
         >
           {contextMenu.type === "track" ? (
