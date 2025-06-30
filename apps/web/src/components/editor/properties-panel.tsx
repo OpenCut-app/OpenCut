@@ -14,14 +14,16 @@ import {
 } from "../ui/select";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { useMediaStore } from "@/stores/media-store";
+import { useEffectsStore } from "@/stores/effects-store";
 import { ImageTimelineTreatment } from "@/components/ui/image-timeline-treatment";
 import { useState } from "react";
 import { SpeedControl } from "./speed-control";
 import type { BackgroundType } from "@/types/editor";
 
 export function PropertiesPanel() {
-  const { tracks } = useTimelineStore();
+  const { tracks, selectedClips } = useTimelineStore();
   const { mediaItems } = useMediaStore();
+  const { updateClipEffect, getClipEffects } = useEffectsStore();
   const [backgroundType, setBackgroundType] = useState<BackgroundType>("blur");
   const [backgroundColor, setBackgroundColor] = useState("#000000");
 
@@ -47,6 +49,20 @@ export function PropertiesPanel() {
   const firstImageItem = firstImageClip
     ? mediaItems.find((item) => item.id === firstImageClip.mediaId)
     : null;
+
+  // Get the currently selected clip for effects
+  const selectedClip = selectedClips.length > 0 ? selectedClips[0] : null;
+  const selectedTrack = selectedClip
+    ? tracks.find((track) => track.id === selectedClip.trackId)
+    : null;
+  const selectedClipData = selectedClip && selectedTrack
+    ? selectedTrack.clips.find((clip) => clip.id === selectedClip.clipId)
+    : null;
+
+  // Get current effects for selected clip
+  const currentEffects = selectedClip
+    ? getClipEffects(selectedClip.trackId, selectedClip.clipId)
+    : { blur: 0, opacity: 100 };
 
   return (
     <ScrollArea className="h-full">
@@ -160,28 +176,50 @@ export function PropertiesPanel() {
         {/* Effects */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Effects</h3>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="opacity">Opacity</Label>
-              <Slider
-                id="opacity"
-                max={100}
-                step={1}
-                defaultValue={[100]}
-                className="mt-2"
-              />
+          {selectedClip ? (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="opacity">Opacity: {currentEffects.opacity}%</Label>
+                <Slider
+                  id="opacity"
+                  max={100}
+                  step={1}
+                  value={[currentEffects.opacity]}
+                  onValueChange={(value) => {
+                    updateClipEffect(
+                      selectedClip.trackId,
+                      selectedClip.clipId,
+                      "opacity",
+                      value[0]
+                    );
+                  }}
+                  className="mt-2"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="blur">Blur: {currentEffects.blur}px</Label>
+                <Slider
+                  id="blur"
+                  max={20}
+                  step={0.5}
+                  value={[currentEffects.blur]}
+                  onValueChange={(value) => {
+                    updateClipEffect(
+                      selectedClip.trackId,
+                      selectedClip.clipId,
+                      "blur",
+                      value[0]
+                    );
+                  }}
+                  className="mt-2"
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="blur">Blur</Label>
-              <Slider
-                id="blur"
-                max={20}
-                step={0.5}
-                defaultValue={[0]}
-                className="mt-2"
-              />
+          ) : (
+            <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded">
+              Select a clip to adjust effects
             </div>
-          </div>
+          )}
         </div>
 
         <Separator />

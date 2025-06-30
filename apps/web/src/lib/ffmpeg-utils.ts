@@ -229,3 +229,80 @@ export const extractAudio = async (
   
   return blob;
 };
+
+export const applyBlurEffect = async (
+  videoFile: File,
+  blurAmount: number,
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  
+  const inputName = 'input.mp4';
+  const outputName = 'blurred_output.mp4';
+  
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(progress * 100);
+    });
+  }
+  
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  const sigma = Math.max(0.1, blurAmount / 3);
+  
+  await ffmpeg.exec([
+    '-i', inputName,
+    '-vf', `gblur=sigma=${sigma}`,
+    '-c:a', 'copy',
+    outputName
+  ]);
+  
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: 'video/mp4' });
+  
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return blob;
+};
+
+export const applyOpacityEffect = async (
+  videoFile: File,
+  opacityPercent: number,
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  
+  const inputName = 'input.mp4';
+  const outputName = 'opacity_output.mp4';
+  
+  // Set up progress callback
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(progress * 100);
+    });
+  }
+  
+  // Write input file
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  // Convert opacity from 0-100 to 0.0-1.0
+  const alpha = Math.max(0.0, Math.min(1.0, opacityPercent / 100));
+  
+  await ffmpeg.exec([
+    '-i', inputName,
+    '-vf', `format=yuva420p,colorchannelmixer=aa=${alpha}`, // Apply alpha channel
+    '-c:a', 'copy', // Keep audio unchanged
+    outputName
+  ]);
+  
+  // Read output file
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: 'video/mp4' });
+  
+  // Cleanup
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return blob;
+};

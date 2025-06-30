@@ -8,7 +8,7 @@ import {
   ResizableHandle,
 } from "../../components/ui/resizable";
 import { MediaPanel } from "../../components/editor/media-panel";
-// import { PropertiesPanel } from "../../components/editor/properties-panel";
+import { PropertiesPanel } from "../../components/editor/properties-panel";
 import { Timeline } from "../../components/editor/timeline";
 import { PreviewPanel } from "../../components/editor/preview-panel";
 import { EditorHeader } from "@/components/editor-header";
@@ -82,7 +82,7 @@ export default function Editor() {
                 <ResizableHandle withHandle />
 
                 {/* Properties Panel - Hidden for now but ready */}
-                {/* <ResizablePanel
+                <ResizablePanel
                   defaultSize={propertiesPanel}
                   minSize={15}
                   maxSize={40}
@@ -90,7 +90,7 @@ export default function Editor() {
                   className="min-w-0"
                 >
                   <PropertiesPanel />
-                </ResizablePanel> */}
+                </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
 
