@@ -2,6 +2,7 @@
   "name": "opencut",
   "packageManager": "bun@1.2.17",
   "devDependencies": {
+    "@biomejs/biome": "2.0.6",
     "turbo": "^2.5.4"
   },
   "workspaces": [
