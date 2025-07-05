@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contributing to OpenCut</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --light-gray: #e2e8f0;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: var(--light);
+        }
+        
+        /* Header Styles */
+        header {
+            background-color: white;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            background-color: var(--primary);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        nav a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: var(--primary);
+        }
+        
+        .github-link {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .github-link:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .page-header p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        h2 {
+            font-size: 1.75rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        
+        h3 {
+            font-size: 1.25rem;
+            color: var(--dark);
+            margin: 1.5rem 0 1rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        ul, ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        code {
+            background-color: var(--light-gray);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        pre {
+            background-color: var(--dark);
+            color: white;
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: monospace;
+            line-height: 1.5;
+        }
+        
+        .highlight {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 1.25rem;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            margin: 1.5rem 0;
+        }
+        
+        .env-vars {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            margin: 1.5rem 0;
+            font-family: monospace;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .contribution-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .contribution-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary);
+        }
+        
+        .contribution-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0;
+        }
+        
+        .contribution-card i {
+            background-color: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Footer Styles */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 3rem 0 2rem;
+        }
+        
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        
+        .footer-col h3 {
+            color: white;
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .social-links a {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .social-links a:hover {
+            background-color: var(--primary);
+        }
+        
+        .copyright {
+            text-align: center;
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            nav ul {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            
+            .content-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-cut"></i>
+                </div>
+                <span>OpenCut</span>
+            </a>
+            
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Community</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+            
+            <a href="#" class="github-link">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="page-header">
+            <h1>Contributing to OpenCut</h1>
+            <p>Thank you for your interest in contributing to OpenCut! This document provides guidelines and instructions for contributing.</p>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-rocket"></i> Getting Started</h2>
+            <p>To get started with OpenCut development:</p>
+            <ol>
+                <li>Fork the repository</li>
+                <li>Clone your fork locally</li>
+                <li>Navigate to the web app directory: <code>cd apps/web</code></li>
+                <li>Install dependencies: <code>bun install</code></li>
+                <li>Start the development server: <code>bun run dev</code></li>
+            </ol>
+            
+            <div class="highlight">
+                <p><strong>Pro Tip:</strong> Make sure you have Bun installed globally before starting. If not, install it with <code>npm install -g bun</code></p>
+            </div>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-laptop-code"></i> Development Setup</h2>
+            
+            <h3>Prerequisites</h3>
+            <ul>
+                <li>Node.js 18+</li>
+                <li>Bun (latest version)</li>
+                <li>Docker (for local database)</li>
+            </ul>
+            
+            <h3>Local Development</h3>
+            <ol>
+                <li>Start the database and Redis services:
+                    <pre># From project root
+docker-compose up -d</pre>
+                </li>
+                <li>Navigate to the web app directory:
+                    <pre>cd apps/web</pre>
+                </li>
+                <li>Copy <code>.env.example</code> to <code>.env.local</code>:
+                    <pre># Unix/Linux/Mac
+cp .env.example .env.local
+
+# Windows Command Prompt
+copy .env.example .env.local
+
+# Windows PowerShell
+Copy-Item .env.example .env.local</pre>
+                </li>
+                <li>Configure required environment variables in <code>.env.local</code>:
+                    <div class="env-vars">
+                        # Database (matches docker-compose.yaml)
+                        DATABASE_URL="postgresql://opencut:opencutthegoat@localhost:5432/opencut"
+                        
+                        # Generate a secure secret for Better Auth
+                        BETTER_AUTH_SECRET="your-generated-secret-here"
+                        BETTER_AUTH_URL="http://localhost:3000"
+                        
+                        # Redis (matches docker-compose.yaml)
+                        UPSTASH_REDIS_REST_URL="http://localhost:8079"
+                        UPSTASH_REDIS_REST_TOKEN="example_token"
+                        
+                        # Development
+                        NODE_ENV="development"
+                    </div>
+                    
+                    <p><strong>Generate BETTER_AUTH_SECRET:</strong></p>
+                    <pre># Unix/Linux/Mac
+openssl rand -base64 32
+
+# Windows PowerShell (simple method)
+[System.Web.Security.Membership]::GeneratePassword(32, 0)
+
+# Cross-platform (using Node.js)
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Or use an online generator: https://generate-secret.vercel.app/32</pre>
+                    
+                    <p><strong>Optional Variables (for Google OAuth):</strong></p>
+                    <div class="env-vars">
+                        # Only needed if you want to test Google login
+                        GOOGLE_CLIENT_ID="your-google-client-id"
+                        GOOGLE_CLIENT_SECRET="your-google-client-secret"
+                    </div>
+                </li>
+                <li>Run database migrations: <code>bun run db:migrate</code></li>
+                <li>Start the development server: <code>bun run dev</code></li>
+            </ol>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-hands-helping"></i> How to Contribute</h2>
+            
+            <div class="contribution-types">
+                <div class="contribution-card">
+                    <h3><i class="fas fa-bug"></i> Reporting Bugs</h3>
+                    <ul>
+                        <li>Use the bug report template</li>
+                        <li>Include steps to reproduce</li>
+                        <li>Provide screenshots if applicable</li>
+                    </ul>
+                </div>
+                
+                <div class="contribution-card">
+                    <h3><i class="fas fa-lightbulb"></i> Suggesting Features</h3>
+                    <ul>
+                        <li>Use the feature request template</li>
+                        <li>Explain the use case</li>
+                        <li>Consider implementation details</li>
+                    </ul>
+                </div>
+                
+                <div class="contribution-card">
+                    <h3><i class="fas fa-code"></i> Code Contributions</h3>
+                    <ol>
+                        <li>Create a new branch: <code>git checkout -b feature/your-feature-name</code></li>
+                        <li>Make your changes</li>
+                        <li>Navigate to the web app directory: <code>cd apps/web</code></li>
+                        <li>Run the linter: <code>bun run lint</code></li>
+                        <li>Format your code: <code>bunx biome format --write .</code></li>
+                        <li>Commit your changes with a descriptive message</li>
+                        <li>Push to your fork and create a pull request</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-paint-brush"></i> Code Style</h2>
+            <ul>
+                <li>We use Biome for code formatting and linting</li>
+                <li>Run <code>bunx biome format --write .</code> from the <code>apps/web</code> directory to format code</li>
+                <li>Run <code>bun run lint</code> from the <code>apps/web</code> directory to check for linting issues</li>
+                <li>Follow the existing code patterns</li>
+            </ul>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-code-branch"></i> Pull Request Process</h2>
+            <ol>
+                <li>Fill out the pull request template completely</li>
+                <li>Link any related issues</li>
+                <li>Ensure CI passes</li>
+                <li>Request review from maintainers</li>
+                <li>Address any feedback</li>
+            </ol>
+        </div>
+        
+        <div class="content-card">
+            <h2><i class="fas fa-users"></i> Community</h2>
+            <ul>
+                <li>Be respectful and inclusive</li>
+                <li>Follow our Code of Conduct</li>
+                <li>Help others in discussions and issues</li>
+            </ul>
+            
+            <div class="highlight" style="margin-top: 2rem;">
+                <h3>Thank you for contributing!</h3>
+                <p>Your contributions help make OpenCut better for everyone. We appreciate your time and effort in improving this project.</p>
+            </div>
+            
+            <a href="#" class="btn">
+                <i class="fab fa-github"></i> Start Contributing on GitHub
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>OpenCut</h3>
+                <p>An open-source video editing platform built for creators.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-discord"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-col">
+                <h3>Product</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Features</a></li>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Roadmap</a></li>
+                    <li><a href="#">Releases</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-col">
+                <h3>Community</h3>
+                <ul class="footer-links">
+                    <li><a href="#">GitHub</a></li>
+                    <li><a href="#">Forums</a></li>
+                    <li><a href="#">Discord</a></li>
+                    <li><a href="#">Events</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-col">
+                <h3>Resources</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Tutorials</a></li>
+                    <li><a href="#">API</a></li>
+                    <li><a href="#">Support</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            <p>&copy; 2023 OpenCut. All rights reserved. | Code licensed under MIT</p>
+        </div>
+    </footer>
+</body>
+</html>
