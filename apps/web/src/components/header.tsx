@@ -8,10 +8,13 @@ import { useSession } from "@opencut/auth/client";
 import { getStars } from "@/lib/fetchGhStars";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useProjectStore } from "@/stores/project-store";
 
 export function Header() {
   const { data: session } = useSession();
   const [star, setStar] = useState<string>("");
+
+  const { activeProject } = useProjectStore();
 
   useEffect(() => {
     const fetchStars = async () => {
@@ -41,7 +44,9 @@ export function Header() {
         </Button>
       </Link>
       {process.env.NODE_ENV === "development" ? (
-        <Link href="/editor/1">
+        <Link
+          href={`${activeProject?.id ? `/editor/${activeProject.id}` : "/projects"}`}
+        >
           <Button size="sm" className="text-sm ml-4">
             Editor
             <ArrowRight className="h-4 w-4" />

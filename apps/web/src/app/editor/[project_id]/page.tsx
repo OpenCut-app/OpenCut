@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useParams } from "next/navigation";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -17,6 +18,9 @@ import { EditorProvider } from "@/components/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 
 export default function Editor() {
+  const params = useParams();
+  const projectId = params.project_id as string;
+
   const {
     toolsPanel,
     previewPanel,
@@ -28,15 +32,19 @@ export default function Editor() {
     setTimeline,
   } = usePanelStore();
 
-  const { activeProject, createNewProject } = useProjectStore();
+  const { activeProject, loadProject, createNewProject } = useProjectStore();
 
   usePlaybackControls();
 
   useEffect(() => {
-    if (!activeProject) {
+    if (projectId) {
+      // Load the specific project from the URL
+      loadProject(projectId);
+    } else if (!activeProject) {
+      // Only create a new project if no projectId and no activeProject
       createNewProject("Untitled Project");
     }
-  }, [activeProject, createNewProject]);
+  }, [projectId, activeProject, loadProject, createNewProject]);
 
   return (
     <EditorProvider>
