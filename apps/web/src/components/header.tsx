@@ -8,10 +8,14 @@ import { useSession } from "@opencut/auth/client";
 import { getStars } from "@/lib/fetchGhStars";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useProjectStore } from "@/stores/project-store";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [star, setStar] = useState<string>("");
+  const { createNewProject } = useProjectStore();
 
   useEffect(() => {
     const fetchStars = async () => {
@@ -25,6 +29,13 @@ export function Header() {
 
     fetchStars();
   }, []);
+
+  const gotToEditor = async () => {
+    const newProjectId = await createNewProject();
+    if (newProjectId) {
+      router.push(`/editor/${newProjectId}`);
+    }
+  };
 
   const leftContent = (
     <Link href="/" className="flex items-center gap-3">
@@ -41,12 +52,10 @@ export function Header() {
         </Button>
       </Link>
       {process.env.NODE_ENV === "development" ? (
-        <Link href="/editor/1">
-          <Button size="sm" className="text-sm ml-4">
-            Editor
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        <Button size="sm" onClick={gotToEditor} className="text-sm ml-4">
+          Editor
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       ) : (
         <Link href="https://github.com/OpenCut-app/OpenCut" target="_blank">
           <Button size="sm" className="text-sm ml-4">

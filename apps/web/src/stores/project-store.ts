@@ -10,7 +10,7 @@ interface ProjectStore {
   isInitialized: boolean;
 
   // Actions
-  createNewProject: (name: string) => Promise<string>;
+  createNewProject: (name?: string) => Promise<string>;
   loadProject: (id: string) => Promise<void>;
   saveCurrentProject: () => Promise<void>;
   loadAllProjects: () => Promise<void>;
@@ -26,7 +26,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   isLoading: true,
   isInitialized: false,
 
-  createNewProject: async (name: string) => {
+  createNewProject: async (name = "Untitled Project") => {
     const newProject: TProject = {
       id: crypto.randomUUID(),
       name,
