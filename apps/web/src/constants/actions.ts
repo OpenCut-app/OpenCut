@@ -121,12 +121,11 @@ export function bindAction<A extends Action>(
   action: A,
   handler: ActionFunc<A>
 ) {
-  if (boundActions[action]) {
-    boundActions[action]?.push(handler);
-  } else {
-    // 'any' assertion because TypeScript doesn't seem to be able to figure out the links.
-    boundActions[action] = [handler] as any;
+  if (!boundActions[action]) {
+    boundActions[action] = [];
   }
+
+  boundActions[action].push(handler);
 
   updateActiveActions();
 }
