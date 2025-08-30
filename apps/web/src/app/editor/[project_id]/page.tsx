@@ -38,6 +38,7 @@ export default function Editor() {
     activeProject,
     loadProject,
     createNewProject,
+    savedProjects,
     isInvalidProjectId,
     markProjectIdAsInvalid,
   } = useProjectStore();
@@ -109,7 +110,27 @@ export default function Editor() {
           markProjectIdAsInvalid(projectId);
 
           try {
-            const newProjectId = await createNewProject("Untitled Project");
+            const projectExists = savedProjects.some(
+              (p) => p.name === "Untitled Project"
+            );
+            if (!projectExists) {
+              const newProjectId = await createNewProject("Untitled Project");
+              router.replace(`/editor/${newProjectId}`);
+              return;
+            }
+
+            let newProjectNumber = 2;
+            while (
+              savedProjects.some(
+                (p) => p.name === `Untitled Project ${newProjectNumber}`
+              )
+            ) {
+              newProjectNumber++;
+            }
+
+            const newProjectId = await createNewProject(
+              `Untitled Project ${newProjectNumber}`
+            );
 
             // Check again if component was unmounted
             if (isCancelled) {
@@ -146,6 +167,7 @@ export default function Editor() {
     loadProject,
     createNewProject,
     router,
+    savedProjects,
     isInvalidProjectId,
     markProjectIdAsInvalid,
   ]);

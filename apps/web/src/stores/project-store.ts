@@ -339,25 +339,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const { savedProjects } = get();
 
       // Extract the base name (remove any existing numbering)
-      const numberMatch = project.name.match(/^\((\d+)\)\s+(.+)$/);
-      const baseName = numberMatch ? numberMatch[2] : project.name;
-      const existingNumbers: number[] = [];
+      const baseName = project.name.replace(/ \(\d+\)$/, "");
+      let newName = `${baseName} (1)`;
+      let counter = 1;
 
-      // Check for pattern "(number) baseName" in existing projects
-      savedProjects.forEach((p) => {
-        const match = p.name.match(/^\((\d+)\)\s+(.+)$/);
-        if (match && match[2] === baseName) {
-          existingNumbers.push(parseInt(match[1], 10));
-        }
-      });
+      const existingNames = new Set(savedProjects.map((p) => p.name));
 
-      const nextNumber =
-        existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+      while (existingNames.has(newName)) {
+        counter++;
+        newName = `${baseName} (${counter})`;
+      }
 
       const newProject: TProject = {
         ...project, // Copy all properties from the original project
         id: generateUUID(),
-        name: `(${nextNumber}) ${baseName}`,
+        name: newName,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

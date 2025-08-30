@@ -90,8 +90,20 @@ export default function ProjectsPage() {
   );
 
   const handleCreateProject = async () => {
-    const projectId = await createNewProject("New Project");
-    console.log("projectId", projectId);
+    const projectExists = savedProjects.some((p) => p.name === "New Project");
+    if (!projectExists) {
+      const projectId = await createNewProject("New Project");
+      console.log("projectId", projectId);
+      router.push(`/editor/${projectId}`);
+      return;
+    }
+
+    let newProjectNumber = 2;
+    while (savedProjects.some((p) => p.name === `Project ${newProjectNumber}`)) {
+      newProjectNumber++;
+    }
+
+    const projectId = await createNewProject(`Project ${newProjectNumber}`);
     router.push(`/editor/${projectId}`);
   };
 
