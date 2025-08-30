@@ -38,8 +38,8 @@ const roadmapItems: {
     description:
       "The heart of any video editor. Timeline zoom in/out, making clips longer/shorter, dragging elements around, selection, playhead scrubbing. **This part has to be fucking perfect** because it's what users interact with 99% of the time.",
     status: {
-      text: "In Progress",
-      type: "pending",
+      text: "Completed",
+      type: "complete",
     },
   },
   {
@@ -47,8 +47,8 @@ const roadmapItems: {
     description:
       "The foundation that enables everything else. Real-time preview, video rendering, export functionality. Once this works, we can add effects, filters, transitions - basically everything that makes a video editor powerful.",
     status: {
-      text: "In Progress",
-      type: "pending",
+      text: "Completed",
+      type: "complete",
     },
   },
   {
@@ -56,8 +56,8 @@ const roadmapItems: {
     description:
       "After media, text is the next most important thing. Font selection with custom font imports, text stroke, colors. All the text essential text properties.",
     status: {
-      text: "Not Started",
-      type: "default",
+      text: "In Progress",
+      type: "pending",
     },
   },
   {
@@ -141,7 +141,7 @@ export default function RoadmapPage() {
                 Roadmap
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-                What's coming next for OpenCut (last updated: July 14, 2025)
+                What's coming next for OpenCut (last updated: August 30, 2025)
               </p>
             </div>
             <div className="space-y-6">
