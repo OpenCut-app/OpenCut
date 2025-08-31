@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "../ui/button";
-import { ChevronDown, ArrowLeft, SquarePen, Trash, Sun } from "lucide-react";
+import { ChevronDown, ArrowLeft, SquarePen, Trash } from "lucide-react";
 import { HeaderBase } from "../header-base";
 import { useProjectStore } from "@/stores/project-store";
 import { KeyboardShortcutsHelp } from "../keyboard-shortcuts-help";
@@ -18,16 +18,15 @@ import { RenameProjectDialog } from "../rename-project-dialog";
 import { DeleteProjectDialog } from "../delete-project-dialog";
 import { useRouter } from "next/navigation";
 import { FaDiscord } from "react-icons/fa6";
-import { useTheme } from "next-themes";
 import { PanelPresetSelector } from "./panel-preset-selector";
 import { ExportButton } from "./export-button";
+import { ThemeToggle } from "../theme-toggle";
 
 export function EditorHeader() {
   const { activeProject, renameProject, deleteProject } = useProjectStore();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
 
   const handleNameSave = async (newName: string) => {
     console.log("handleNameSave", newName);
@@ -117,15 +116,7 @@ export function EditorHeader() {
       <PanelPresetSelector />
       <KeyboardShortcutsHelp />
       <ExportButton />
-      <Button
-        size="icon"
-        variant="text"
-        className="h-7"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      >
-        <Sun className="!size-[1.1rem]" />
-        <span className="sr-only">{theme === "dark" ? "Light" : "Dark"}</span>
-      </Button>
+      <ThemeToggle />
     </nav>
   );
 

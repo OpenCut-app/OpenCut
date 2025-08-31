@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import { HeaderBase } from "./header-base";
 import Image from "next/image";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
   const leftContent = (
@@ -21,7 +22,7 @@ export function Header() {
   );
 
   const rightContent = (
-    <nav className="flex items-center gap-1">
+    <nav className="flex items-center gap-2">
       <div className="flex items-center gap-4">
         <Link href="/blog">
           <Button variant="text" className="text-sm p-0">
@@ -35,11 +36,12 @@ export function Header() {
         </Link>
       </div>
       <Link href="/projects">
-        <Button size="sm" className="text-sm ml-4">
+        <Button size="sm" className="text-sm ml-2">
           Projects
           <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>
+      <ThemeToggle className="mr-2" />
     </nav>
   );
 

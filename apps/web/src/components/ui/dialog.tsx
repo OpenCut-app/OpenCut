@@ -46,10 +46,6 @@ const DialogContent = React.forwardRef<
         e.stopPropagation();
         e.preventDefault();
       }}
-      onOpenAutoFocus={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      }}
       {...props}
     >
       {children}
