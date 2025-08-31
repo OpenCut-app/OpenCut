@@ -1,4 +1,4 @@
-import { Upload, Plus, Image } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MediaDragOverlayProps {
@@ -27,7 +27,10 @@ export function MediaDragOverlay({
 
   return (
     <div
-      className="flex flex-col items-center justify-center gap-4 h-full text-center rounded-lg bg-foreground/5 hover:bg-foreground/10 transition-all duration-200 p-8"
+      className={[
+        "flex flex-col items-center justify-center gap-4 h-full text-center rounded-lg bg-foreground/5 hover:bg-foreground/10 transition-all duration-200 p-8",
+        !isProcessing && onClick ? "cursor-pointer" : "cursor-default"
+      ].join(" ")}
       onClick={handleClick}
     >
       <div className="flex items-center justify-center">
