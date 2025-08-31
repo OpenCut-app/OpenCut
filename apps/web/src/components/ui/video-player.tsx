@@ -2,6 +2,11 @@
 
 import { useRef, useEffect } from "react";
 import { usePlaybackStore } from "@/stores/playback-store";
+import { useEffectsStore } from "@/stores/effects-store";
+import {
+  applyEffectsToVideo,
+  removeEffectsFromVideo,
+} from "@/lib/effects-utils";
 
 interface VideoPlayerProps {
   src: string;
@@ -12,6 +17,7 @@ interface VideoPlayerProps {
   trimEnd: number;
   clipDuration: number;
   trackMuted?: boolean;
+  elementId?: string; // For applying effects
 }
 
 export function VideoPlayer({
@@ -23,9 +29,11 @@ export function VideoPlayer({
   trimEnd,
   clipDuration,
   trackMuted = false,
+  elementId,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { isPlaying, currentTime, volume, speed, muted } = usePlaybackStore();
+  const { getEffectsForElement } = useEffectsStore();
 
   // Calculate if we're within this clip's timeline range
   const clipEndTime = clipStartTime + (clipDuration - trimStart - trimEnd);
@@ -114,6 +122,28 @@ export function VideoPlayer({
     video.muted = muted || trackMuted;
     video.playbackRate = speed;
   }, [volume, speed, muted, trackMuted]);
+
+  // Apply effects to video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !elementId) return;
+
+    const effects = getEffectsForElement(elementId);
+    const activeEffects = effects.filter((effect) => effect.enabled);
+
+    if (activeEffects.length === 0) {
+      removeEffectsFromVideo(video);
+      return;
+    }
+
+    // Combine all active effects
+    const combinedParameters = activeEffects.reduce((acc, effect) => {
+      Object.assign(acc, effect.parameters);
+      return acc;
+    }, {} as any);
+
+    applyEffectsToVideo(video, combinedParameters);
+  }, [elementId, getEffectsForElement]);
 
   return (
     <video

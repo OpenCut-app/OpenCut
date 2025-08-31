@@ -207,6 +207,18 @@ interface TimelineStore {
       >
     >
   ) => void;
+  updateElement: (
+    trackId: string,
+    elementId: string,
+    updates: Partial<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      opacity: number;
+    }>
+  ) => void;
   checkElementOverlap: (
     trackId: string,
     startTime: number,
@@ -889,6 +901,23 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         )
       );
     },
+    updateElement: (trackId, elementId, updates) => {
+      get().pushHistory();
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId
+                    ? { ...element, ...updates }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
+    },
 
     splitElement: (trackId, elementId, splitTime) => {
       const { _tracks } = get();
@@ -1439,6 +1468,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trimStart: 0,
         trimEnd: 0,
         muted: false,
+        // Set initial dimensions and position
+        width: media.width || 200,
+        height: media.height || 150,
+        x: 0, // Center position
+        y: 0, // Center position
+        rotation: 0,
+        opacity: 1,
       });
       return true;
     },
@@ -1465,6 +1501,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trimStart: 0,
         trimEnd: 0,
         muted: false,
+        // Set initial dimensions and position
+        width: media.width || 200,
+        height: media.height || 150,
+        x: 0, // Center position
+        y: 0, // Center position
+        rotation: 0,
+        opacity: 1,
       });
       return true;
     },

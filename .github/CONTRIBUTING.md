@@ -101,7 +101,7 @@ If you're unsure whether your idea falls into the preview category, feel free to
    DATABASE_URL="postgresql://opencut:opencutthegoat@localhost:5432/opencut"
 
    # Generate a secure secret for Better Auth
-   BETTER_AUTH_SECRET="your-generated-secret-here"
+   BETTER_AUTH_SECRET="Zc2qkQNNkpla1C+/FxVDy08T/isXKlECCkQMEOMOJWWDUqPxV+K3OI+daXg="
    NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:3000"
 
    # Redis (matches docker-compose.yaml)

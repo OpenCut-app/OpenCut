@@ -6,6 +6,7 @@ import { useMediaPanelStore, Tab } from "./store";
 import { TextView } from "./views/text";
 import { SoundsView } from "./views/sounds";
 import { StickersView } from "./views/stickers";
+import { EffectsView } from "./views/effects";
 import { Separator } from "@/components/ui/separator";
 import { SettingsView } from "./views/settings";
 import { Captions } from "./views/captions";
@@ -18,11 +19,7 @@ export function MediaPanel() {
     sounds: <SoundsView />,
     text: <TextView />,
     stickers: <StickersView />,
-    effects: (
-      <div className="p-4 text-muted-foreground">
-        Effects view coming soon...
-      </div>
-    ),
+    effects: <EffectsView />,
     transitions: (
       <div className="p-4 text-muted-foreground">
         Transitions view coming soon...

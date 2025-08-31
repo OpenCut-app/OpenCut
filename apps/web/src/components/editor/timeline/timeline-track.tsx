@@ -1051,6 +1051,13 @@ export function TimelineTrackContent({
             startTime: mediaSnappedTime,
             trimStart: 0,
             trimEnd: 0,
+            // Set initial dimensions and position
+            width: mediaItem.width || 200,
+            height: mediaItem.height || 150,
+            x: 0, // Center position
+            y: 0, // Center position
+            rotation: 0,
+            opacity: 1,
           });
         }
       } else if (hasFiles) {
