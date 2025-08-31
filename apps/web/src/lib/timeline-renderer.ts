@@ -1,6 +1,8 @@
 import { Input, ALL_FORMATS, BlobSource, VideoSampleSink } from "mediabunny";
 import type { TimelineTrack } from "@/types/timeline";
 import type { MediaFile } from "@/types/media";
+import { parametersToCSSFilters } from "./effects-utils";
+import type { EffectParameters } from "@/types/effects";
 
 export interface RenderContext {
   ctx: CanvasRenderingContext2D;
@@ -11,6 +13,10 @@ export interface RenderContext {
   mediaFiles: MediaFile[];
   backgroundColor?: string;
   projectCanvasSize?: { width: number; height: number };
+  getEffectsForElement?: (elementId: string) => Array<{
+    enabled: boolean;
+    parameters: EffectParameters;
+  }>;
 }
 
 export async function renderTimelineFrame({
@@ -22,6 +28,7 @@ export async function renderTimelineFrame({
   mediaFiles,
   backgroundColor,
   projectCanvasSize,
+  getEffectsForElement,
 }: RenderContext): Promise<void> {
   // Background
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -89,7 +96,34 @@ export async function renderTimelineFrame({
         const drawH = mediaH * containScale;
         const drawX = (canvasWidth - drawW) / 2;
         const drawY = (canvasHeight - drawH) / 2;
+        
+        // Apply effects if available
+        try {
+          if (getEffectsForElement) {
+            const effects = getEffectsForElement(element.id);
+            const activeEffects = effects.filter(effect => effect.enabled);
+            
+            if (activeEffects.length > 0) {
+              // Combine all active effects
+              const combinedParameters = activeEffects.reduce((acc, effect) => {
+                Object.assign(acc, effect.parameters);
+                return acc;
+              }, {} as EffectParameters);
+              
+              // Apply CSS filters to canvas context
+              const filterString = parametersToCSSFilters(combinedParameters);
+              ctx.filter = filterString;
+            }
+          }
+        } catch (error) {
+          console.error("Error applying effects:", error);
+          // Continue without effects if there's an error
+        }
+        
         sample.draw(ctx, drawX, drawY, drawW, drawH);
+        
+        // Reset filter after drawing
+        ctx.filter = "none";
       }
       if (mediaItem.type === "image") {
         const img = new Image();

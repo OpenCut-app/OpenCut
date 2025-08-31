@@ -14,6 +14,7 @@ import { renderTimelineFrame } from "./timeline-renderer";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { useMediaStore } from "@/stores/media-store";
 import { useProjectStore } from "@/stores/project-store";
+import { useEffectsStore } from "@/stores/effects-store";
 import { DEFAULT_FPS } from "@/stores/project-store";
 import { ExportOptions, ExportResult } from "@/types/export";
 import { TimelineTrack } from "@/types/timeline";
@@ -48,8 +49,9 @@ async function createTimelineAudioBuffer(
   sampleRate: number = 44100
 ): Promise<AudioBuffer | null> {
   // Get Web Audio context
-  const audioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)();
+  const audioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )();
 
   // Collect all audio elements from timeline
   const audioElements: AudioElement[] = [];
@@ -61,7 +63,8 @@ async function createTimelineAudioBuffer(
     for (const element of track.elements) {
       if (element.type !== "media") continue;
 
-      const mediaItem = element.type === "media" ? mediaMap.get(element.mediaId) : null;
+      const mediaItem =
+        element.type === "media" ? mediaMap.get(element.mediaId) : null;
       if (!mediaItem || mediaItem.type !== "audio") continue;
 
       const visibleDuration =
@@ -155,6 +158,7 @@ export async function exportProject(
     const timelineStore = useTimelineStore.getState();
     const mediaStore = useMediaStore.getState();
     const projectStore = useProjectStore.getState();
+    const effectsStore = useEffectsStore.getState();
 
     const { tracks, getTotalDuration } = timelineStore;
     const { mediaFiles } = mediaStore;
@@ -256,6 +260,7 @@ export async function exportProject(
             ? "transparent"
             : activeProject.backgroundColor || "#000000",
         projectCanvasSize: canvasSize,
+        getEffectsForElement: effectsStore.getEffectsForElement,
       });
 
       const frameDuration = 1 / exportFps;

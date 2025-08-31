@@ -19,6 +19,12 @@ export interface MediaElement extends BaseTimelineElement {
   type: "media";
   mediaId: string;
   muted?: boolean;
+  x?: number; // Position relative to canvas center
+  y?: number; // Position relative to canvas center
+  width?: number; // Display width
+  height?: number; // Display height
+  rotation?: number; // in degrees
+  opacity?: number; // 0-1
 }
 
 // Text element with embedded text data

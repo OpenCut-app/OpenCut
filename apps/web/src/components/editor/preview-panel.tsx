@@ -6,6 +6,7 @@ import { useMediaStore } from "@/stores/media-store";
 import { MediaFile } from "@/types/media";
 import { usePlaybackStore } from "@/stores/playback-store";
 import { useEditorStore } from "@/stores/editor-store";
+import { useEffectsStore } from "@/stores/effects-store";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Expand, SkipBack, SkipForward } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -37,11 +38,12 @@ interface ActiveElement {
 }
 
 export function PreviewPanel() {
-  const { tracks, getTotalDuration, updateTextElement } = useTimelineStore();
+  const { tracks, getTotalDuration, updateTextElement, updateElement } = useTimelineStore();
   const { mediaFiles } = useMediaStore();
   const { currentTime, toggle, setCurrentTime } = usePlaybackStore();
   const { isPlaying, volume, muted } = usePlaybackStore();
   const { activeProject } = useProjectStore();
+  const { getEffectsForElement } = useEffectsStore();
   const previewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastFrameTimeRef = useRef(0);
@@ -74,6 +76,50 @@ export function PreviewPanel() {
     currentY: 0,
     elementWidth: 0,
     elementHeight: 0,
+  });
+
+  const [resizeState, setResizeState] = useState<{
+    isResizing: boolean;
+    elementId: string | null;
+    trackId: string | null;
+    startX: number;
+    startY: number;
+    initialWidth: number;
+    initialHeight: number;
+    currentWidth: number;
+    currentHeight: number;
+    corner: string;
+  }>({
+    isResizing: false,
+    elementId: null,
+    trackId: null,
+    startX: 0,
+    startY: 0,
+    initialWidth: 0,
+    initialHeight: 0,
+    currentWidth: 0,
+    currentHeight: 0,
+    corner: "",
+  });
+
+  const [rotationState, setRotationState] = useState<{
+    isRotating: boolean;
+    elementId: string | null;
+    trackId: string | null;
+    startX: number;
+    startY: number;
+    initialRotation: number;
+    centerX: number;
+    centerY: number;
+  }>({
+    isRotating: false,
+    elementId: null,
+    trackId: null,
+    startX: 0,
+    startY: 0,
+    initialRotation: 0,
+    centerX: 0,
+    centerY: 0,
   });
 
   useEffect(() => {
@@ -163,48 +209,132 @@ export function PreviewPanel() {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!dragState.isDragging) return;
+      if (dragState.isDragging) {
+        const deltaX = e.clientX - dragState.startX;
+        const deltaY = e.clientY - dragState.startY;
 
-      const deltaX = e.clientX - dragState.startX;
-      const deltaY = e.clientY - dragState.startY;
+        const scaleRatio = previewDimensions.width / canvasSize.width;
+        const newX = dragState.initialElementX + deltaX / scaleRatio;
+        const newY = dragState.initialElementY + deltaY / scaleRatio;
 
-      const scaleRatio = previewDimensions.width / canvasSize.width;
-      const newX = dragState.initialElementX + deltaX / scaleRatio;
-      const newY = dragState.initialElementY + deltaY / scaleRatio;
+        const halfWidth = dragState.elementWidth / scaleRatio / 2;
+        const halfHeight = dragState.elementHeight / scaleRatio / 2;
 
-      const halfWidth = dragState.elementWidth / scaleRatio / 2;
-      const halfHeight = dragState.elementHeight / scaleRatio / 2;
+        const constrainedX = Math.max(
+          -canvasSize.width / 2 + halfWidth,
+          Math.min(canvasSize.width / 2 - halfWidth, newX)
+        );
+        const constrainedY = Math.max(
+          -canvasSize.height / 2 + halfHeight,
+          Math.min(canvasSize.height / 2 - halfHeight, newY)
+        );
 
-      const constrainedX = Math.max(
-        -canvasSize.width / 2 + halfWidth,
-        Math.min(canvasSize.width / 2 - halfWidth, newX)
-      );
-      const constrainedY = Math.max(
-        -canvasSize.height / 2 + halfHeight,
-        Math.min(canvasSize.height / 2 - halfHeight, newY)
-      );
+        setDragState((prev) => ({
+          ...prev,
+          currentX: constrainedX,
+          currentY: constrainedY,
+        }));
+      }
 
-      setDragState((prev) => ({
-        ...prev,
-        currentX: constrainedX,
-        currentY: constrainedY,
-      }));
+      if (resizeState.isResizing) {
+        const deltaX = e.clientX - resizeState.startX;
+        const deltaY = e.clientY - resizeState.startY;
+        
+        const scaleRatio = previewDimensions.width / canvasSize.width;
+        const scaleFactor = 1 / scaleRatio;
+        
+        let newWidth = resizeState.initialWidth * scaleFactor;
+        let newHeight = resizeState.initialHeight * scaleFactor;
+        
+        // Apply resize based on corner
+        switch (resizeState.corner) {
+          case "se":
+            newWidth = Math.max(50, resizeState.initialWidth + deltaX * scaleFactor);
+            newHeight = Math.max(50, resizeState.initialHeight + deltaY * scaleFactor);
+            break;
+          case "sw":
+            newWidth = Math.max(50, resizeState.initialWidth - deltaX * scaleFactor);
+            newHeight = Math.max(50, resizeState.initialHeight + deltaY * scaleFactor);
+            break;
+          case "ne":
+            newWidth = Math.max(50, resizeState.initialWidth + deltaX * scaleFactor);
+            newHeight = Math.max(50, resizeState.initialHeight - deltaY * scaleFactor);
+            break;
+          case "nw":
+            newWidth = Math.max(50, resizeState.initialWidth - deltaX * scaleFactor);
+            newHeight = Math.max(50, resizeState.initialHeight - deltaY * scaleFactor);
+            break;
+        }
+        
+        // Store the new dimensions in resize state for visual feedback
+        setResizeState((prev) => ({
+          ...prev,
+          currentWidth: newWidth,
+          currentHeight: newHeight,
+        }));
+      }
+
+      if (rotationState.isRotating) {
+        const deltaX = e.clientX - rotationState.centerX;
+        const deltaY = e.clientY - rotationState.centerY;
+        const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+        const newRotation = angle + 90; // Adjust for proper rotation
+        
+        const track = tracks.find(t => t.id === rotationState.trackId);
+        const element = track?.elements.find(e => e.id === rotationState.elementId);
+        
+        if (element && element.type === "text") {
+          updateTextElement(rotationState.trackId!, rotationState.elementId!, {
+            rotation: newRotation,
+          });
+        }
+      }
     };
 
     const handleMouseUp = () => {
       if (dragState.isDragging && dragState.trackId && dragState.elementId) {
-        updateTextElement(dragState.trackId, dragState.elementId, {
-          x: dragState.currentX,
-          y: dragState.currentY,
-        });
+        // Find the element to determine its type
+        const track = tracks.find(t => t.id === dragState.trackId);
+        const element = track?.elements.find(e => e.id === dragState.elementId);
+        
+        if (element) {
+          if (element.type === "text") {
+            updateTextElement(dragState.trackId, dragState.elementId, {
+              x: dragState.currentX,
+              y: dragState.currentY,
+            });
+          } else {
+            // For media elements, use the generic updateElement function
+            updateElement(dragState.trackId, dragState.elementId, {
+              x: dragState.currentX,
+              y: dragState.currentY,
+            });
+          }
+        }
       }
+      
+      // Apply resize changes when mouse is released
+      if (resizeState.isResizing && resizeState.trackId && resizeState.elementId) {
+        const track = tracks.find(t => t.id === resizeState.trackId);
+        const element = track?.elements.find(e => e.id === resizeState.elementId);
+        
+        if (element && element.type === "text") {
+          updateTextElement(resizeState.trackId!, resizeState.elementId!, {
+            fontSize: Math.max(8, resizeState.currentWidth / 10), // Scale font size with width
+          });
+        }
+      }
+      
       setDragState((prev) => ({ ...prev, isDragging: false }));
+      setResizeState((prev) => ({ ...prev, isResizing: false }));
+      setRotationState((prev) => ({ ...prev, isRotating: false }));
     };
 
-    if (dragState.isDragging) {
+    if (dragState.isDragging || resizeState.isResizing || rotationState.isRotating) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "grabbing";
+      document.body.style.cursor = dragState.isDragging ? "grabbing" : 
+                                  resizeState.isResizing ? "nw-resize" : "grab";
       document.body.style.userSelect = "none";
     }
 
@@ -214,30 +344,84 @@ export function PreviewPanel() {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [dragState, previewDimensions, canvasSize, updateTextElement]);
+  }, [dragState, resizeState, rotationState, previewDimensions, canvasSize, updateTextElement, updateElement, tracks]);
 
   const handleTextMouseDown = (
     e: React.MouseEvent<HTMLDivElement>,
     element: any,
-    trackId: string
+    track: TimelineTrack
   ) => {
     e.preventDefault();
     e.stopPropagation();
 
     const rect = e.currentTarget.getBoundingClientRect();
+    const elementX = element.x || 0;
+    const elementY = element.y || 0;
 
     setDragState({
       isDragging: true,
       elementId: element.id,
-      trackId,
+      trackId: track.id,
       startX: e.clientX,
       startY: e.clientY,
-      initialElementX: element.x,
-      initialElementY: element.y,
-      currentX: element.x,
-      currentY: element.y,
+      initialElementX: elementX,
+      initialElementY: elementY,
+      currentX: elementX,
+      currentY: elementY,
       elementWidth: rect.width,
       elementHeight: rect.height,
+    });
+  };
+
+  const handleResizeStart = (
+    e: React.MouseEvent<HTMLDivElement>,
+    element: any,
+    track: TimelineTrack,
+    corner: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+    if (!rect) return;
+
+    setResizeState({
+      isResizing: true,
+      elementId: element.id,
+      trackId: track.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialWidth: rect.width,
+      initialHeight: rect.height,
+      currentWidth: rect.width,
+      currentHeight: rect.height,
+      corner,
+    });
+  };
+
+  const handleRotationStart = (
+    e: React.MouseEvent<HTMLDivElement>,
+    element: any,
+    track: TimelineTrack
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+    if (!rect) return;
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    setRotationState({
+      isRotating: true,
+      elementId: element.id,
+      trackId: track.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialRotation: element.rotation || 0,
+      centerX,
+      centerY,
     });
   };
 
@@ -539,6 +723,7 @@ export function PreviewPanel() {
             ? "transparent"
             : activeProject?.backgroundColor || "#000000",
         projectCanvasSize: canvasSize,
+        getEffectsForElement: getEffectsForElement || undefined,
       });
 
       // Blit offscreen to visible canvas
@@ -564,6 +749,7 @@ export function PreviewPanel() {
     canvasSize.height,
     activeProject?.backgroundType,
     activeProject?.backgroundColor,
+    getEffectsForElement,
   ]);
 
   // Get media elements for blur background (video/image only)
@@ -582,8 +768,102 @@ export function PreviewPanel() {
   // Render blur background layer (handled by canvas now)
   const renderBlurBackground = () => null;
 
-  // Render an element (canvas handles visuals now). Audio playback to be implemented via Web Audio.
-  const renderElement = (_elementData: ActiveElement) => null;
+  // Render draggable elements on top of canvas
+  const renderElement = (elementData: ActiveElement) => {
+    const { element, track, mediaItem } = elementData;
+    
+    // Only render text elements as draggable overlays
+    // Media elements are handled by the canvas renderer
+    if (element.type !== "text") return null;
+    
+    const scaleX = previewDimensions.width / canvasSize.width;
+    const scaleY = previewDimensions.height / canvasSize.height;
+    
+    // Use drag state position if dragging, otherwise use element position
+    const displayX = dragState.isDragging && dragState.elementId === element.id
+      ? dragState.currentX
+      : (element as any).x || 0;
+    
+    const displayY = dragState.isDragging && dragState.elementId === element.id
+      ? dragState.currentY
+      : (element as any).y || 0;
+    
+    // Convert from canvas coordinates to screen coordinates
+    const screenX = (previewDimensions.width / 2) + (displayX * scaleX);
+    const screenY = (previewDimensions.height / 2) + (displayY * scaleY);
+    
+    // Common properties
+    const rotation = (element as any).rotation || 0;
+    const opacity = (element as any).opacity || 1;
+    
+    if (element.type === "text") {
+      const isBeingResized = resizeState.isResizing && resizeState.elementId === element.id;
+      const baseFontSize = (element as any).fontSize || 16;
+      const fontSize = isBeingResized 
+        ? Math.max(8, resizeState.currentWidth / 10) * scaleX 
+        : baseFontSize * scaleX;
+      const fontFamily = (element as any).fontFamily || "Arial";
+      const color = (element as any).color || "#ffffff";
+      const backgroundColor = (element as any).backgroundColor || "transparent";
+      const textAlign = (element as any).textAlign || "center";
+      const fontWeight = (element as any).fontWeight || "normal";
+      const fontStyle = (element as any).fontStyle || "normal";
+      const textDecoration = (element as any).textDecoration || "none";
+      const content = (element as any).content || "Text";
+    
+          return (
+        <div
+          key={element.id}
+          className="absolute cursor-move select-none group"
+          style={{
+            left: screenX,
+            top: screenY,
+            transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+            opacity,
+            pointerEvents: dragState.isDragging ? "none" : "auto",
+          }}
+          onMouseDown={(e) => handleTextMouseDown(e, element, track)}
+        >
+          <div
+            className="px-2 py-1 rounded relative"
+            style={{
+              fontSize: `${fontSize}px`,
+              fontFamily,
+              color,
+              backgroundColor,
+              textAlign: textAlign as any,
+              fontWeight,
+              fontStyle,
+              textDecoration,
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              cursor: "grab",
+            }}
+          >
+            {content}
+            
+            {/* Resize handles for text */}
+            <div className="absolute -top-1 -left-1 w-3 h-3 bg-primary rounded-full cursor-nw-resize opacity-0 group-hover:opacity-100 transition-opacity" 
+                 onMouseDown={(e) => handleResizeStart(e, element, track, "nw")} />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full cursor-ne-resize opacity-0 group-hover:opacity-100 transition-opacity" 
+                 onMouseDown={(e) => handleResizeStart(e, element, track, "ne")} />
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-primary rounded-full cursor-sw-resize opacity-0 group-hover:opacity-100 transition-opacity" 
+                 onMouseDown={(e) => handleResizeStart(e, element, track, "sw")} />
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" 
+                 onMouseDown={(e) => handleResizeStart(e, element, track, "se")} />
+            
+            {/* Rotation handle for text */}
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-primary rounded-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" 
+                 onMouseDown={(e) => handleRotationStart(e, element, track)}>
+              <div className="w-4 h-4 text-white text-xs">⟲</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <>

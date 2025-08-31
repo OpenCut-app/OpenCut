@@ -120,7 +120,7 @@ function SoundEffectsView() {
     setScrollPosition(scrollTop);
     handleScroll(event);
   };
-  
+
   const displayedSounds = useMemo(() => {
     const sounds = searchQuery ? searchResults : topSoundEffects;
     return sounds;

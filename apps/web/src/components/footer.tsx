@@ -36,10 +36,10 @@ export function Footer() {
           {/* Brand Section */}
           <div className="md:col-span-1 max-w-sm">
             <div className="flex justify-start items-center gap-2 mb-4">
-              <Image 
-                src="/logo.svg" 
-                alt="OpenCut" 
-                width={24} 
+              <Image
+                src="/logo.svg"
+                alt="OpenCut"
+                width={24}
                 height={24}
                 className="invert dark:invert-0"
               />

@@ -2,19 +2,26 @@
 
 import { useMediaStore } from "@/stores/media-store";
 import { useTimelineStore } from "@/stores/timeline-store";
+import { useEffectsStore } from "@/stores/effects-store";
 import { ScrollArea } from "../../ui/scroll-area";
 import { AudioProperties } from "./audio-properties";
 import { MediaProperties } from "./media-properties";
 import { TextProperties } from "./text-properties";
+import { EffectsProperties } from "./effects-properties";
 import { SquareSlashIcon } from "lucide-react";
 
 export function PropertiesPanel() {
   const { selectedElements, tracks } = useTimelineStore();
   const { mediaFiles } = useMediaStore();
+  const { selectedEffect } = useEffectsStore();
 
   return (
     <>
-      {selectedElements.length > 0 ? (
+      {selectedEffect ? (
+        <ScrollArea className="h-full bg-panel rounded-sm">
+          <EffectsProperties />
+        </ScrollArea>
+      ) : selectedElements.length > 0 ? (
         <ScrollArea className="h-full bg-panel rounded-sm">
           {selectedElements.map(({ trackId, elementId }) => {
             const track = tracks.find((t) => t.id === trackId);
