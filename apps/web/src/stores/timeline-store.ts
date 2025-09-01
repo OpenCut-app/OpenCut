@@ -1230,9 +1230,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     getProjectThumbnail: async (projectId) => {
       try {
         const tracks = await storageService.loadTimeline(projectId);
-        const mediaItems = await storageService.loadAllMediaFiles(projectId);
 
-        if (!tracks || !mediaItems.length) return null;
+        if (!tracks) return null;
 
         const firstMediaElement = tracks
           .flatMap((track) => track.elements)
@@ -1241,17 +1240,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
         if (!firstMediaElement) return null;
 
-        const mediaFile = mediaItems.find(
-          (item) => item.id === firstMediaElement.mediaId
+        const mediaFile = await storageService.loadMediaFile(
+          projectId,
+          firstMediaElement.mediaId
         );
         if (!mediaFile) return null;
 
-        if (mediaFile.type === "video" && mediaFile.file) {
-          const { generateVideoThumbnail } = await import(
-            "@/stores/media-store"
-          );
-          const { thumbnailUrl } = await generateVideoThumbnail(mediaFile.file);
-          return thumbnailUrl;
+        if (mediaFile.type === "video" && mediaFile.thumbnailUrl) {
+          return mediaFile.thumbnailUrl;
         }
         if (mediaFile.type === "image" && mediaFile.url) {
           return mediaFile.url;

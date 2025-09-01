@@ -2,21 +2,51 @@
 
 import { useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { MediaPanel } from "@/components/editor/media-panel";
-import { PropertiesPanel } from "@/components/editor/properties-panel";
-import { Timeline } from "@/components/editor/timeline";
-import { PreviewPanel } from "@/components/editor/preview-panel";
+// import { MediaPanel } from "@/components/editor/media-panel";
+// import { PropertiesPanel } from "@/components/editor/properties-panel";
+// import { Timeline } from "@/components/editor/timeline";
+// import { PreviewPanel } from "@/components/editor/preview-panel";
 import { EditorHeader } from "@/components/editor/editor-header";
 import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/providers/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/editor/onboarding";
+
+const Timeline = dynamic(
+  () =>
+    import("@/components/editor/timeline").then((m) => ({
+      default: m.Timeline,
+    })),
+  { ssr: false, loading: () => <div className="w-full h-full bg-panel" /> }
+);
+const PreviewPanel = dynamic(
+  () =>
+    import("@/components/editor/preview-panel").then((m) => ({
+      default: m.PreviewPanel,
+    })),
+  { ssr: false, loading: () => <div className="w-full h-full bg-panel" /> }
+);
+const MediaPanel = dynamic(
+  () =>
+    import("@/components/editor/media-panel").then((m) => ({
+      default: m.MediaPanel,
+    })),
+  { ssr: false, loading: () => <div className="w-full h-full bg-panel" /> }
+);
+const PropertiesPanel = dynamic(
+  () =>
+    import("@/components/editor/properties-panel").then((m) => ({
+      default: m.PropertiesPanel,
+    })),
+  { ssr: false, loading: () => <div className="w-full h-full bg-panel" /> }
+);
 
 export default function Editor() {
   const {

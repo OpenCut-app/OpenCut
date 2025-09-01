@@ -226,32 +226,38 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     try {
       const mediaItems = await storageService.loadAllMediaFiles(projectId);
 
-      // Regenerate thumbnails for video items
-      const updatedMediaItems = await Promise.all(
-        mediaItems.map(async (item) => {
-          if (item.type === "video" && item.file) {
-            try {
-              const { thumbnailUrl, width, height } =
-                await generateVideoThumbnail(item.file);
-              return {
-                ...item,
-                thumbnailUrl,
-                width: width || item.width,
-                height: height || item.height,
-              };
-            } catch (error) {
-              console.error(
-                `Failed to regenerate thumbnail for video ${item.id}:`,
-                error
-              );
-              return item;
-            }
-          }
-          return item;
-        })
+      // Fast path: immediately set items (use persisted thumbnails if available)
+      set({ mediaFiles: mediaItems });
+
+      // Background: generate thumbnails only for videos missing one, then persist
+      const missing = mediaItems.filter(
+        (item) => item.type === "video" && !item.thumbnailUrl && item.file
       );
 
-      set({ mediaFiles: updatedMediaItems });
+      const tasks = missing.map((item) =>
+        (async () => {
+          try {
+            const { thumbnailUrl } = await generateVideoThumbnail(item.file);
+            const res = await fetch(thumbnailUrl);
+            const blob = await res.blob();
+
+            await storageService.saveMediaThumbnail(projectId, item.id, blob);
+
+            set((state) => ({
+              mediaFiles: state.mediaFiles.map((m) =>
+                m.id === item.id ? { ...m, thumbnailUrl } : m
+              ),
+            }));
+          } catch (error) {
+            console.error(
+              `Failed to generate thumbnail for video ${item.id}:`,
+              error
+            );
+          }
+        })()
+      );
+
+      void Promise.allSettled(tasks);
     } catch (error) {
       console.error("Failed to load media items:", error);
     } finally {

@@ -47,8 +47,11 @@ class StorageService {
     );
 
     const mediaFilesAdapter = new OPFSAdapter(`media-files-${projectId}`);
+    const mediaThumbnailsAdapter = new OPFSAdapter(
+      `media-thumbnails-${projectId}`
+    );
 
-    return { mediaMetadataAdapter, mediaFilesAdapter };
+    return { mediaMetadataAdapter, mediaFilesAdapter, mediaThumbnailsAdapter };
   }
 
   // Helper to get project-specific timeline adapter
@@ -126,8 +129,11 @@ class StorageService {
 
   // Media operations
   async saveMediaFile(projectId: string, mediaItem: MediaFile): Promise<void> {
-    const { mediaMetadataAdapter, mediaFilesAdapter } =
-      this.getProjectMediaAdapters(projectId);
+    const {
+      mediaMetadataAdapter,
+      mediaFilesAdapter,
+      mediaThumbnailsAdapter,
+    } = this.getProjectMediaAdapters(projectId);
 
     // Save file to project-specific OPFS
     await mediaFilesAdapter.set(mediaItem.id, mediaItem.file);
@@ -143,17 +149,34 @@ class StorageService {
       height: mediaItem.height,
       duration: mediaItem.duration,
       ephemeral: mediaItem.ephemeral,
+      hasThumbnail: Boolean(mediaItem.thumbnailUrl),
     };
 
     await mediaMetadataAdapter.set(mediaItem.id, metadata);
+
+    if (mediaItem.thumbnailUrl) {
+      try {
+        const res = await fetch(mediaItem.thumbnailUrl);
+        const blob = await res.blob();
+        const thumbFile = new File([blob], `${mediaItem.id}.jpg`, {
+          type: blob.type || "image/jpeg",
+        });
+        await mediaThumbnailsAdapter.set(mediaItem.id, thumbFile);
+      } catch (e) {
+        console.error("Failed to persist media thumbnail:", e);
+      }
+    }
   }
 
   async loadMediaFile(
     projectId: string,
     id: string
   ): Promise<MediaFile | null> {
-    const { mediaMetadataAdapter, mediaFilesAdapter } =
-      this.getProjectMediaAdapters(projectId);
+    const {
+      mediaMetadataAdapter,
+      mediaFilesAdapter,
+      mediaThumbnailsAdapter,
+    } = this.getProjectMediaAdapters(projectId);
 
     const [file, metadata] = await Promise.all([
       mediaFilesAdapter.get(id),
@@ -179,6 +202,18 @@ class StorageService {
       url = URL.createObjectURL(file);
     }
 
+    let storedThumbnailUrl: string | undefined;
+    if (metadata.hasThumbnail) {
+      try {
+        const thumbFile = await mediaThumbnailsAdapter.get(id);
+        if (thumbFile) {
+          storedThumbnailUrl = URL.createObjectURL(thumbFile);
+        }
+      } catch (e) {
+        console.warn("Failed to load stored thumbnail:", e);
+      }
+    }
+
     return {
       id: metadata.id,
       name: metadata.name,
@@ -189,6 +224,7 @@ class StorageService {
       height: metadata.height,
       duration: metadata.duration,
       ephemeral: metadata.ephemeral,
+      ...(storedThumbnailUrl ? { thumbnailUrl: storedThumbnailUrl } : {}),
     };
   }
 
@@ -209,23 +245,50 @@ class StorageService {
   }
 
   async deleteMediaFile(projectId: string, id: string): Promise<void> {
-    const { mediaMetadataAdapter, mediaFilesAdapter } =
-      this.getProjectMediaAdapters(projectId);
+    const {
+      mediaMetadataAdapter,
+      mediaFilesAdapter,
+      mediaThumbnailsAdapter,
+    } = this.getProjectMediaAdapters(projectId);
 
     await Promise.all([
       mediaFilesAdapter.remove(id),
       mediaMetadataAdapter.remove(id),
+      mediaThumbnailsAdapter.remove(id),
     ]);
   }
 
   async deleteProjectMedia(projectId: string): Promise<void> {
-    const { mediaMetadataAdapter, mediaFilesAdapter } =
-      this.getProjectMediaAdapters(projectId);
+    const {
+      mediaMetadataAdapter,
+      mediaFilesAdapter,
+      mediaThumbnailsAdapter,
+    } = this.getProjectMediaAdapters(projectId);
 
     await Promise.all([
       mediaMetadataAdapter.clear(),
       mediaFilesAdapter.clear(),
+      mediaThumbnailsAdapter.clear(),
     ]);
+  }
+
+  async saveMediaThumbnail(
+    projectId: string,
+    id: string,
+    blob: Blob
+  ): Promise<void> {
+    const { mediaMetadataAdapter, mediaThumbnailsAdapter } =
+      this.getProjectMediaAdapters(projectId);
+
+    const file = new File([blob], `${id}.jpg`, {
+      type: blob.type || "image/jpeg",
+    });
+    await mediaThumbnailsAdapter.set(id, file);
+
+    const existing = await mediaMetadataAdapter.get(id);
+    if (existing) {
+      await mediaMetadataAdapter.set(id, { ...existing, hasThumbnail: true });
+    }
   }
 
   // Timeline operations - now project-specific

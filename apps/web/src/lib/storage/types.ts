@@ -20,6 +20,7 @@ export interface MediaFileData {
   duration?: number;
   ephemeral?: boolean;
   sourceStickerIconName?: string;
+  hasThumbnail?: boolean;
   // File will be stored separately in OPFS
 }
 
