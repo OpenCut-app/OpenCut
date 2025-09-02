@@ -348,19 +348,30 @@ export function PreviewPanel() {
 
 			if (audible.length === 0) return;
 
-			// Decode buffers as needed
+			// Decode buffers as needed (gracefully skip media with no decodable audio)
 			const decodePromises: Array<Promise<void>> = [];
+			// Cache of permanently failed decodes to avoid repeated work
+			const failedDecodeIdsRef = (audioBuffersRef as unknown as { failed?: Set<string> });
+			if (!failedDecodeIdsRef.failed) failedDecodeIdsRef.failed = new Set();
 			for (const id of uniqueIds) {
-				if (!audioBuffersRef.current.has(id)) {
-					const mediaItem = idToMedia.get(id);
-					if (!mediaItem) continue;
-					const p = (async () => {
+				if (audioBuffersRef.current.has(id) || failedDecodeIdsRef.failed.has(id)) continue;
+				const mediaItem = idToMedia.get(id);
+				if (!mediaItem) continue;
+				const p = (async () => {
+					try {
 						const arr = await mediaItem.file.arrayBuffer();
+						// slice(0) ensures a detached copy for Safari compatibility
 						const buf = await audioCtx.decodeAudioData(arr.slice(0));
 						audioBuffersRef.current.set(id, buf);
-					})();
-					decodePromises.push(p);
-				}
+					} catch (error) {
+						failedDecodeIdsRef.failed!.add(id);
+						// Silently skip: videos without audio tracks or unsupported codecs
+						// Use debug to avoid noise in normal logs
+						// eslint-disable-next-line no-console
+						console.debug(`Skipping media item ${id} - no decodable audio`, error);
+					}
+				})();
+				decodePromises.push(p);
 			}
 			await Promise.all(decodePromises);
 
@@ -368,7 +379,7 @@ export function PreviewPanel() {
 			for (const entry of audible) {
 				if (entry.muted || entry.trackMuted) continue;
 				const buffer = audioBuffersRef.current.get(entry.id);
-				if (!buffer) continue; // if media had no decodable audio it will be absent
+				if (!buffer) continue; // if video had no decodable audio it will be absent
 				const visibleDuration = entry.duration - entry.trimStart - entry.trimEnd;
 				const localTime = Math.max(0, playbackNow - entry.elementStart + entry.trimStart);
 				const playDuration = Math.max(0, visibleDuration - localTime);
