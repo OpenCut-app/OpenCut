@@ -17,6 +17,22 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 3. Follow the rules below strictly
 4. Validate accessibility requirements
 
+## Package Management
+- Use Bun as the canonical package manager and runtime for local development and CI.
+- Use the following Bun commands:
+  - `bun install` to install dependencies and generate `bun.lockb`
+  - `bun add <pkg>` to add a dependency
+  - `bun remove <pkg>` to remove a dependency
+  - `bun upgrade` to update dependencies
+  - `bun run <script>` or `bunx <bin>` to run scripts and local binaries
+  - `bun test` for running tests where supported
+- Commit `bun.lockb` and `package.json` to source control. Do not commit `node_modules`.
+- Do not mix package managers in the repository. Remove or ignore `package-lock.json` and `yarn.lock` to avoid conflicts.
+- Prefer ESM (`import`/`export`) and avoid CommonJS (`require`) and other Node-isms that Bun does not support.
+- Use Bun's built-in TypeScript handling for fast iteration, but run a dedicated type-check step (e.g. `tsc --noEmit`) in CI to enforce strict type safety.
+- Validate critical tooling changes on both Node and Bun when adding native Node APIs or platform-specific packages. Avoid packages that are known to be incompatible with Bun unless a compatibility shim is documented and tested.
+- Never hand-edit `bun.lockb`; regenerate it via `bun install` when dependency changes are required.
+
 ## Rules
 
 ### Accessibility (a11y)
