@@ -17,6 +17,9 @@ Thank you for your interest in contributing to OpenCut! This document provides g
 
 1. Fork the repository
 2. Clone your fork locally
+   ```bash
+   git clone https://github.com/<your-username>/opencut.git
+   ```
 3. Navigate to the web app directory: `cd apps/web`
 4. Copy `.env.example` to `.env.local`:
 
@@ -31,7 +34,10 @@ Thank you for your interest in contributing to OpenCut! This document provides g
    Copy-Item .env.example .env.local
    ```
 
-5. Install dependencies: `bun install`
+5. Install dependencies: We use Bun as our package manager.
+From the project root: `bun install`
+If you prefer, you can also use npm or pnpm, but Bun is the recommended option.
+
 6. Start the development server: `bun run dev`
 
 > **Note:** If you see an error like `Unsupported URL Type "workspace:*"` when running `npm install`, you have two options:
@@ -48,6 +54,9 @@ Thank you for your interest in contributing to OpenCut! This document provides g
 - Performance optimizations
 - Bug fixes in existing functionality
 - UI/UX improvements
+- Improve accessibility (keyboard navigation, screen reader support)
+- Write or enhance unit and integration tests
+- Improve error messages and logging
 - Documentation and testing
 
 **⚠️ Areas to Avoid:**
@@ -152,7 +161,9 @@ If you're unsure whether your idea falls into the preview category, feel free to
 4. Run the linter: `bun run lint`
 5. Format your code: `bunx biome format --write .`
 6. Commit your changes with a descriptive message
-7. Push to your fork and create a pull request
+7. Rebase your branch against main before opening a PR
+8. Push to your fork and create a pull request
+9. Look for GitHub issues tagged with good first issue if you’re new
 
 ## Code Style
 
@@ -160,19 +171,27 @@ If you're unsure whether your idea falls into the preview category, feel free to
 - Run `bunx biome format --write .` from the `apps/web` directory to format code
 - Run `bun run lint` from the `apps/web` directory to check for linting issues
 - Follow the existing code patterns
+- Use consistent naming conventions for variables, components, and files
+- Write self-documenting code but add comments where clarity is needed
+- Tests should follow the same conventions (framework: Jest/Vitest, check repo for current usage)
+- Aim for sufficient test coverage where relevant
 
 ## Pull Request Process
 
 1. Fill out the pull request template completely
 2. Link any related issues
 3. Ensure CI passes
-4. Request review from maintainers
-5. Address any feedback
+4. Run tests locally before pushing
+5. Update documentation if features or setup change
+6. Request review from maintainers
+7. Address any feedback
 
 ## Community
 
 - Be respectful and inclusive
 - Follow our Code of Conduct
 - Help others in discussions and issues
+- Maintainers may take a few days to respond — please be patient
+- Feel free to review other contributors’ PRs and leave constructive feedback
 
 Thank you for contributing!
