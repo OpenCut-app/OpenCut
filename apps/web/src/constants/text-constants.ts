@@ -1,10 +1,7 @@
 import { TextElement } from "@/types/timeline";
 import { TIMELINE_CONSTANTS } from "./timeline-constants";
 
-export const DEFAULT_TEXT_ELEMENT: Omit<
-  TextElement,
-  "id"
-> = {
+export const DEFAULT_TEXT_ELEMENT: Omit<TextElement, "id"> = {
   type: "text",
   name: "Text",
   content: "Default Text",
