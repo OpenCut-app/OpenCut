@@ -1,14 +1,22 @@
-<table width="100%">
-  <tr>
-    <td align="left" width="120">
-      <img src="apps/web/public/logo.png" alt="OpenCut Logo" width="100" />
-    </td>
-    <td align="right">
-      <h1>OpenCut</span></h1>
-      <h3 style="margin-top: -10px;">A free, open-source video editor for web, desktop, and mobile.</h3>
-    </td>
-  </tr>
-</table>
+<div align="center" style="margin-bottom: 2rem;">
+
+  <img src="apps/web/public/logo.png" alt="OpenCut Logo" width="120" />
+
+  <h1 style="font-size: 2.8em; font-weight: 800; margin: 0.5rem 0;">
+    OpenCut
+  </h1>
+
+  <p style="
+    font-size: 1.3em;
+    font-weight: 500;
+    color: #444;
+    margin: 0.5rem 0 0;
+    line-height: 1.4;
+  ">
+    <b>A free, open-source video editor</b> for <b>web</b>, <b>desktop</b>, and <b>mobile</b>
+  </p>
+
+</div>
 
 ## Why?
 
