@@ -6,7 +6,12 @@
     "husky": "^9.1.7",
     "turbo": "^2.5.4",
     "typescript": "5.8.3",
-    "ultracite": "5.0.48"
+    "ultracite": "5.0.48",
+    "vitest": "^2.1.3",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/testing-library__jest-dom": "^6.0.0"
   },
   "workspaces": [
     "apps/*",
@@ -17,7 +22,9 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "lint": "npx ultracite@latest lint",
-    "format": "npx ultracite@latest format"
+    "format": "npx ultracite@latest format",
+    "test": "turbo run test",
+    "test:ci": "turbo run test -- --run --reporter=dot"
   },
   "dependencies": {
     "mediabunny": "^1.9.3",
