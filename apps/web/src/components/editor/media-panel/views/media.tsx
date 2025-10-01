@@ -6,7 +6,7 @@ import { useMediaStore } from "@/stores/media-store";
 import { MediaFile } from "@/types/media";
 import {
   ArrowDown01,
-  CloudUpload,
+  Upload,
   Grid2X2,
   Image,
   List,
@@ -277,22 +277,27 @@ export function MediaView() {
         <div className="p-3 pb-2 bg-panel">
           {/* Search and filter controls */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleFileSelect}
-              disabled={isProcessing}
-              className="!bg-background px-4 flex-1 justify-center items-center h-9 opacity-100 hover:opacity-75 transition-opacity"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CloudUpload className="h-4 w-4" />
-              )}
-              <span>Upload</span>
-            </Button>
             <div className="flex items-center gap-0">
               <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="text"
+                      size="icon"
+                      onClick={handleFileSelect}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <Loader2 className="!size-4 animate-spin" />
+                      ) : (
+                        <Upload className="!size-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Upload media</p>
+                  </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
