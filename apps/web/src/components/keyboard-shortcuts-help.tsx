@@ -282,6 +282,7 @@ function AddShortcut({
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       title={
         isRecording ? "Press any key combination..." : "Click to add shortcut"
