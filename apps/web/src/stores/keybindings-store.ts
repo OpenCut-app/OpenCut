@@ -43,6 +43,7 @@ interface KeybindingsState {
   isCustomized: boolean;
   keybindingsEnabled: boolean;
   isRecording: boolean;
+  isAdding: boolean;
 
   // Actions
   updateKeybinding: (key: ShortcutKey, action: ActionWithOptionalArgs) => void;
@@ -53,6 +54,7 @@ interface KeybindingsState {
   enableKeybindings: () => void;
   disableKeybindings: () => void;
   setIsRecording: (isRecording: boolean) => void;
+  setIsAdding: (isAdding: boolean) => void;
 
   // Validation
   validateKeybinding: (
@@ -72,6 +74,7 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       isCustomized: false,
       keybindingsEnabled: true,
       isRecording: false,
+      isAdding: false,
 
       updateKeybinding: (key: ShortcutKey, action: ActionWithOptionalArgs) => {
         set((state) => {
@@ -149,6 +152,10 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       },
       setIsRecording: (isRecording: boolean) => {
         set({ isRecording });
+      },
+
+      setIsAdding: (isAdding: boolean) => {
+        set({ isAdding });
       },
 
       getKeybindingsForAction: (action: ActionWithOptionalArgs) => {

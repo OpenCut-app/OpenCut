@@ -1,6 +1,6 @@
 "use client";
 
-import { Keyboard } from "lucide-react";
+import { Keyboard, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -31,8 +31,10 @@ export function KeyboardShortcutsHelp() {
     validateKeybinding,
     getKeybindingsForAction,
     setIsRecording,
+    setIsAdding,
     resetToDefaults,
     isRecording,
+    isAdding,
   } = useKeybindingsStore();
 
   // Get shortcuts from centralized hook
@@ -63,13 +65,17 @@ export function KeyboardShortcutsHelp() {
         }
 
         // Remove old keybindings for this action
-        const oldKeys = getKeybindingsForAction(recordingShortcut.action);
-        oldKeys.forEach((key) => removeKeybinding(key));
+        // Turn this off if we are adding new shortcut to existing shortcuts
+        if (!isAdding) {
+          const oldKeys = getKeybindingsForAction(recordingShortcut.action);
+          oldKeys.forEach((key) => removeKeybinding(key));
+        }
 
         // Add new keybinding
         updateKeybinding(keyString, recordingShortcut.action);
 
         setIsRecording(false);
+        setIsAdding(false);
         setRecordingShortcut(null);
       }
     };
@@ -77,6 +83,7 @@ export function KeyboardShortcutsHelp() {
     const handleClickOutside = () => {
       setRecordingShortcut(null);
       setIsRecording(false);
+      setIsAdding(false);
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -100,6 +107,11 @@ export function KeyboardShortcutsHelp() {
   const handleStartRecording = (shortcut: KeyboardShortcut) => {
     setRecordingShortcut(shortcut);
     setIsRecording(true);
+  };
+
+  // New logic for adding shortcut
+  const handleAdding = () => {
+    setIsAdding(true);
   };
 
   return (
@@ -140,6 +152,7 @@ export function KeyboardShortcutsHelp() {
                           shortcut.action === recordingShortcut?.action
                         }
                         onStartRecording={handleStartRecording}
+                        onAdding={handleAdding}
                       />
                     ))}
                 </div>
@@ -161,10 +174,12 @@ function ShortcutItem({
   shortcut,
   isRecording,
   onStartRecording,
+  onAdding,
 }: {
   shortcut: KeyboardShortcut;
   isRecording: boolean;
   onStartRecording: (shortcut: KeyboardShortcut) => void;
+  onAdding: () => void;
 }) {
   // Filter out lowercase duplicates for display - if both "j" and "J" exist, only show "J"
   const displayKeys = shortcut.keys.filter((key: string) => {
@@ -207,6 +222,11 @@ function ShortcutItem({
             )}
           </div>
         ))}
+        <AddShortcut
+          isRecording={isRecording}
+          onStartRecording={() => onStartRecording(shortcut)}
+          onAdding={() => onAdding()}
+        />
       </div>
     </div>
   );
@@ -241,5 +261,33 @@ function EditableShortcutKey({
     >
       {children}
     </Button>
+  );
+}
+
+function AddShortcut({
+  isRecording,
+  onStartRecording,
+  onAdding,
+}: {
+  isRecording: boolean;
+  onStartRecording: () => void;
+  onAdding: () => void;
+}) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onStartRecording();
+    onAdding();
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      title={
+        isRecording ? "Press any key combination..." : "Click to add shortcut"
+      }
+    >
+      <Plus className="px-1 min-w-6 hover:stroke-[#cecececc]" />
+    </button>
   );
 }

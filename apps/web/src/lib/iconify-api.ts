@@ -1,4 +1,3 @@
-
 export const ICONIFY_HOSTS = [
   "https://api.iconify.design",
   "https://api.simplesvg.com",
