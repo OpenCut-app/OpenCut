@@ -216,7 +216,7 @@ export const extractTimelineAudio = async (
 
     const mixFilter =
       audioElements.length === 1
-        ? `[audio_0]aresample=44100,aformat=sample_fmts=s16:channel_layouts=stereo[out]`
+        ? "[audio_0]aresample=44100,aformat=sample_fmts=s16:channel_layouts=stereo[out]"
         : `${filterInputs.map((_, i) => `[audio_${i}]`).join("")}amix=inputs=${audioElements.length}:duration=longest:dropout_transition=2,aresample=44100,aformat=sample_fmts=s16:channel_layouts=stereo[out]`;
 
     const complexFilter = [...filterInputs, mixFilter].join(";");
@@ -286,7 +286,7 @@ const generateSilentAudio = async (durationSeconds: number): Promise<Blob> => {
       "-f",
       "lavfi",
       "-i",
-      `anullsrc=channel_layout=stereo:sample_rate=44100`,
+      "anullsrc=channel_layout=stereo:sample_rate=44100",
       "-t",
       durationSeconds.toString(),
       "-c:a",

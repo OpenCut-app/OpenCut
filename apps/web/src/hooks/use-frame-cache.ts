@@ -49,6 +49,8 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
         trimStart: number;
         trimEnd: number;
         mediaId?: string;
+        flipH?: boolean;
+        flipV?: boolean;
         // Text-specific properties
         content?: string;
         fontSize?: number;
@@ -85,6 +87,8 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
                 trimStart: element.trimStart,
                 trimEnd: element.trimEnd,
                 mediaId: mediaElement.mediaId,
+                flipH: mediaElement.flipH ?? false,
+                flipV: mediaElement.flipV ?? false,
               });
             } else if (element.type === "text") {
               const textElement = element as TextElement;
@@ -268,7 +272,7 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       activeProject: TProject | null,
       renderFunction: (time: number) => Promise<ImageData>,
       sceneId?: string,
-      range: number = 3 // seconds
+      range = 3 // seconds
     ) => {
       const framesToPreRender: number[] = [];
 

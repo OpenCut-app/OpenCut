@@ -19,6 +19,8 @@ export interface MediaElement extends BaseTimelineElement {
   type: "media";
   mediaId: string;
   muted?: boolean;
+  flipH?: boolean;
+  flipV?: boolean;
 }
 
 // Text element with embedded text data
