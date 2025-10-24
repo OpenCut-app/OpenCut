@@ -20,8 +20,8 @@ const hexToHsv = (hex: string) => {
   const diff = max - min;
 
   let h = 0;
-  let s = max === 0 ? 0 : diff / max;
-  let v = max;
+  const s = max === 0 ? 0 : diff / max;
+  const v = max;
 
   if (diff !== 0) {
     switch (max) {

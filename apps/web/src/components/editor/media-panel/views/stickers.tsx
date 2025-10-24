@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import type { CSSProperties } from "react";
 import { useStickersStore } from "@/stores/stickers-store";
 import { useMediaStore } from "@/stores/media-store";
 import { useProjectStore } from "@/stores/project-store";
@@ -96,17 +97,19 @@ function StickerGrid({
   addingSticker: string | null;
   capSize?: boolean;
 }) {
+  const gridStyle: CSSProperties & Record<string, string> = {
+    gridTemplateColumns: capSize
+      ? "repeat(auto-fill, minmax(var(--sticker-min, 96px), var(--sticker-max, 160px)))"
+      : "repeat(auto-fit, minmax(var(--sticker-min, 96px), 1fr))",
+    "--sticker-min": "96px",
+  };
+
+  if (capSize) {
+    gridStyle["--sticker-max"] = "160px";
+  }
+
   return (
-    <div
-      className="grid gap-2"
-      style={{
-        gridTemplateColumns: capSize
-          ? "repeat(auto-fill, minmax(var(--sticker-min, 96px), var(--sticker-max, 160px)))"
-          : "repeat(auto-fit, minmax(var(--sticker-min, 96px), 1fr))",
-        ["--sticker-min" as any]: "96px",
-        ...(capSize ? ({ ["--sticker-max"]: "160px" } as any) : {}),
-      }}
-    >
+    <div className="grid gap-2" style={gridStyle}>
       {icons.map((iconName) => (
         <StickerItem
           key={iconName}
@@ -297,9 +300,8 @@ function StickersContentView({ category }: { category: StickerCategory }) {
       setShowCollectionItems(false);
       const timer = setTimeout(() => setShowCollectionItems(true), 350);
       return () => clearTimeout(timer);
-    } else {
-      setShowCollectionItems(false);
     }
+    setShowCollectionItems(false);
   }, [isInCollection]);
 
   return (
@@ -343,6 +345,7 @@ function StickersContentView({ category }: { category: StickerCategory }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
+                          type="button"
                           onClick={clearRecentStickers}
                           className="ml-auto h-5 w-5 p-0 rounded hover:bg-accent flex items-center justify-center"
                         >

@@ -190,12 +190,16 @@ export function TimelineElement({
             }`}
           >
             <div
-              className={`absolute top-[0.25rem] bottom-[0.25rem] left-0 right-0`}
+              className={
+                "absolute top-[0.25rem] bottom-[0.25rem] left-0 right-0"
+              }
               style={{
                 backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
                 backgroundRepeat: "repeat-x",
                 backgroundSize: `${tileWidth}px ${trackHeight}px`,
                 backgroundPosition: "left center",
+                transform: `scale(${(element as MediaElement).flipH ? -1 : 1}, ${(element as MediaElement).flipV ? -1 : 1})`,
+                transformOrigin: "center",
                 pointerEvents: "none",
               }}
               aria-label={`Tiled ${mediaItem.type === "image" ? "background" : "thumbnail"} of ${mediaItem.name}`}

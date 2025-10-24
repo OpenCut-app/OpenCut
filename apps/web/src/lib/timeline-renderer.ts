@@ -1,4 +1,4 @@
-import type { TimelineTrack } from "@/types/timeline";
+import type { TimelineTrack, MediaElement } from "@/types/timeline";
 import type { MediaFile } from "@/types/media";
 import type { BlurIntensity } from "@/types/project";
 import { videoCache } from "./video-cache";
@@ -109,6 +109,10 @@ export async function renderTimelineFrame({
     if (bgCandidate && bgCandidate.mediaItem) {
       const { element, mediaItem } = bgCandidate;
       try {
+        const mediaElement = element as MediaElement;
+        const flipH = !!mediaElement.flipH;
+        const flipV = !!mediaElement.flipV;
+
         if (mediaItem.type === "video") {
           const localTime = time - element.startTime + element.trimStart;
           const frame = await videoCache.getFrameAt(
@@ -125,11 +129,11 @@ export async function renderTimelineFrame({
             );
             const drawW = mediaW * coverScale;
             const drawH = mediaH * coverScale;
-            const drawX = (canvasWidth - drawW) / 2;
-            const drawY = (canvasHeight - drawH) / 2;
             ctx.save();
             ctx.filter = `blur(${blurPx}px)`;
-            ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH);
+            ctx.translate(canvasWidth / 2, canvasHeight / 2);
+            ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+            ctx.drawImage(frame.canvas, -drawW / 2, -drawH / 2, drawW, drawH);
             ctx.restore();
           }
         } else if (mediaItem.type === "image") {
@@ -148,11 +152,11 @@ export async function renderTimelineFrame({
           );
           const drawW = mediaW * coverScale;
           const drawH = mediaH * coverScale;
-          const drawX = (canvasWidth - drawW) / 2;
-          const drawY = (canvasHeight - drawH) / 2;
           ctx.save();
           ctx.filter = `blur(${blurPx}px)`;
-          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.translate(canvasWidth / 2, canvasHeight / 2);
+          ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+          ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
           ctx.restore();
         }
       } catch {
@@ -182,10 +186,14 @@ export async function renderTimelineFrame({
           );
           const drawW = mediaW * containScale;
           const drawH = mediaH * containScale;
-          const drawX = (canvasWidth - drawW) / 2;
-          const drawY = (canvasHeight - drawH) / 2;
-
-          ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH);
+          const mediaElement = element as MediaElement;
+          const flipH = !!mediaElement.flipH;
+          const flipV = !!mediaElement.flipV;
+          ctx.save();
+          ctx.translate(canvasWidth / 2, canvasHeight / 2);
+          ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+          ctx.drawImage(frame.canvas, -drawW / 2, -drawH / 2, drawW, drawH);
+          ctx.restore();
         } catch (error) {
           console.warn(
             `Failed to render video frame for ${mediaItem.name}:`,
@@ -214,9 +222,14 @@ export async function renderTimelineFrame({
         );
         const drawW = mediaW * containScale;
         const drawH = mediaH * containScale;
-        const drawX = (canvasWidth - drawW) / 2;
-        const drawY = (canvasHeight - drawH) / 2;
-        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        const mediaElement = element as MediaElement;
+        const flipH = !!mediaElement.flipH;
+        const flipV = !!mediaElement.flipV;
+        ctx.save();
+        ctx.translate(canvasWidth / 2, canvasHeight / 2);
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
       }
     }
     if (element.type === "text") {

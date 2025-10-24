@@ -141,7 +141,7 @@ export function MediaView() {
   };
 
   const filteredMediaItems = useMemo(() => {
-    let filtered = mediaFiles.filter((item) => {
+    const filtered = mediaFiles.filter((item) => {
       if (item.ephemeral) return false;
       return true;
     });

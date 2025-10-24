@@ -236,6 +236,13 @@ interface TimelineStore {
       >
     >
   ) => void;
+  // Update media element properties (e.g. flip/mirror)
+  updateMediaElement: (
+    trackId: string,
+    elementId: string,
+    updates: Partial<Pick<MediaElement, "flipH" | "flipV" | "name">>
+  ) => void;
+  toggleSelectedMediaElements: (axis: "flipH" | "flipV") => void;
   checkElementOverlap: (
     trackId: string,
     startTime: number,
@@ -553,6 +560,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         ...(elementData.type === "media"
           ? { muted: elementData.muted ?? false }
           : {}),
+        ...(elementData.type === "media" ? { flipH: false, flipV: false } : {}),
       } as TimelineElement;
 
       if (isFirstElement && newElement.type === "media") {
@@ -887,6 +895,78 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             : track
         )
       );
+    },
+
+    updateMediaElement: (trackId, elementId, updates) => {
+      get().pushHistory();
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId && element.type === "media"
+                    ? { ...element, ...updates }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
+    },
+
+    toggleSelectedMediaElements: (axis) => {
+      const { selectedElements, _tracks } = get();
+      if (selectedElements.length === 0) {
+        return;
+      }
+
+      const selectionsByTrack = selectedElements.reduce((map, selection) => {
+        if (!map.has(selection.trackId)) {
+          map.set(selection.trackId, new Set<string>());
+        }
+        map.get(selection.trackId)!.add(selection.elementId);
+        return map;
+      }, new Map<string, Set<string>>());
+
+      let didChange = false;
+
+      const updatedTracks = _tracks.map((track) => {
+        const ids = selectionsByTrack.get(track.id);
+        if (!ids || ids.size === 0) {
+          return track;
+        }
+
+        let trackChanged = false;
+        const updatedElements = track.elements.map((element) => {
+          if (ids.has(element.id) && element.type === "media") {
+            trackChanged = true;
+            const currentValue = element[axis] ?? false;
+            return {
+              ...element,
+              [axis]: !currentValue,
+            };
+          }
+          return element;
+        });
+
+        if (!trackChanged) {
+          return track;
+        }
+
+        didChange = true;
+        return {
+          ...track,
+          elements: updatedElements,
+        };
+      });
+
+      if (!didChange) {
+        return;
+      }
+
+      get().pushHistory();
+      updateTracksAndSave(updatedTracks);
     },
 
     // Split element and keep only the left portion
