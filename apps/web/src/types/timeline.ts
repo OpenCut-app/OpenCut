@@ -14,11 +14,17 @@ interface BaseTimelineElement {
   hidden?: boolean;
 }
 
+export interface MediaTransform {
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
+}
+
 // Media element that references MediaStore
 export interface MediaElement extends BaseTimelineElement {
   type: "media";
   mediaId: string;
   muted?: boolean;
+  transform?: MediaTransform;
 }
 
 // Text element with embedded text data
