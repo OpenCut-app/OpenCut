@@ -876,6 +876,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       );
     },
 
+    // Toggles the requested flip axis on a media element, persisting the transform.
     toggleMediaFlip: (trackId, elementId, axis) => {
       const { _tracks } = get();
       const targetTrack = _tracks.find((track) => track.id === trackId);

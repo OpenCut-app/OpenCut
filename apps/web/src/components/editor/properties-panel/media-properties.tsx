@@ -13,6 +13,7 @@ interface MediaPropertiesProps {
   trackId: string;
 }
 
+// Renders flip controls for a media element so users can mirror footage.
 export function MediaProperties({ element, trackId }: MediaPropertiesProps) {
   const toggleMediaFlip = useTimelineStore((state) => state.toggleMediaFlip);
   const flipHorizontal = !!element.transform?.flipHorizontal;

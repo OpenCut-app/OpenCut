@@ -172,6 +172,7 @@ export function TimelineElement({
       );
     }
 
+    // Mirror the thumbnail when the media element is flipped on either axis.
     const flipHorizontal =
       element.type === "media" && element.transform?.flipHorizontal;
     const flipVertical =

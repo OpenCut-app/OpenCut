@@ -14,6 +14,7 @@ interface BaseTimelineElement {
   hidden?: boolean;
 }
 
+// Describes optional flip flags to mirror media during rendering.
 export interface MediaTransform {
   flipHorizontal?: boolean;
   flipVertical?: boolean;

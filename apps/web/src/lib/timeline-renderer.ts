@@ -23,6 +23,7 @@ export interface RenderContext {
 
 const imageElementCache = new Map<string, HTMLImageElement>();
 
+// Applies flip transforms around the draw rectangle before rendering content.
 function drawWithFlip(
   ctx: CanvasRenderingContext2D,
   transform: MediaTransform | undefined,

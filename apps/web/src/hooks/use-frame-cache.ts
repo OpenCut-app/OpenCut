@@ -89,6 +89,7 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
                 trimStart: element.trimStart,
                 trimEnd: element.trimEnd,
                 mediaId: mediaElement.mediaId,
+                // Record flip flags so cached frames refresh when mirrors change.
                 transform: {
                   flipHorizontal: !!mediaElement.transform?.flipHorizontal,
                   flipVertical: !!mediaElement.transform?.flipVertical,
