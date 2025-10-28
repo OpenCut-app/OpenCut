@@ -162,7 +162,7 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
 
   saveSoundEffect: async (soundEffect: SoundEffect) => {
     try {
-      await storageService.saveSoundEffect(soundEffect);
+      await storageService.saveSoundEffect({ soundEffect });
 
       // Refresh saved sounds
       const savedSoundsData = await storageService.loadSavedSounds();
@@ -178,7 +178,7 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
 
   removeSavedSound: async (soundId: number) => {
     try {
-      await storageService.removeSavedSound(soundId);
+      await storageService.removeSavedSound({ soundId });
 
       // Update local state immediately
       set((state) => ({

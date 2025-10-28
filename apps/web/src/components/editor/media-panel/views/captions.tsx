@@ -188,7 +188,7 @@ export function Captions() {
   };
 
   return (
-    <BaseView ref={containerRef} className="flex flex-col justify-between">
+    <BaseView ref={containerRef} className="flex flex-col justify-between h-full">
       <PropertyGroup title="Language">
         <LanguageSelect
           selectedCountry={selectedCountry}

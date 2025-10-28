@@ -111,7 +111,7 @@ export function KeyboardShortcutsHelp() {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
-        <DialogHeader className="flex-shrink-0 p-6 pb-4">
+        <DialogHeader className="flex-shrink-0 p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="w-5 h-5" />
             Keyboard Shortcuts
@@ -123,7 +123,7 @@ export function KeyboardShortcutsHelp() {
         </DialogHeader>
 
         <div className="overflow-y-auto flex-grow scrollbar-thin">
-          <div className="space-y-6 p-6">
+          <div className="space-y-6 p-6 pt-2">
             {categories.map((category) => (
               <div key={category} className="flex flex-col gap-1">
                 <h3 className="text-xs text-muted-foreground uppercase tracking-wide font-medium">

@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface PanelBaseViewProps {
   children?: React.ReactNode;
@@ -10,6 +11,7 @@ interface PanelBaseViewProps {
   tabs?: {
     value: string;
     label: string;
+    icon?: React.ReactNode;
     content: React.ReactNode;
   }[];
   className?: string;
@@ -25,7 +27,7 @@ function ViewContent({
 }) {
   return (
     <ScrollArea className="flex-1">
-      <div className={`p-5 h-full ${className}`}>{children}</div>
+      <div className={cn("p-5", className)}>{children}</div>
     </ScrollArea>
   );
 }
@@ -40,7 +42,7 @@ export function PanelBaseView({
   ref,
 }: PanelBaseViewProps) {
   return (
-    <div className={`h-full flex flex-col ${className}`} ref={ref}>
+    <div className={cn("h-full flex flex-col", className)} ref={ref}>
       {!tabs || tabs.length === 0 ? (
         <ViewContent className={className}>{children}</ViewContent>
       ) : (
@@ -55,6 +57,11 @@ export function PanelBaseView({
               <TabsList>
                 {tabs.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.icon ? (
+                      <span className="inline-flex items-center mr-1">
+                        {tab.icon}
+                      </span>
+                    ) : null}
                     {tab.label}
                   </TabsTrigger>
                 ))}
@@ -68,7 +75,7 @@ export function PanelBaseView({
               value={tab.value}
               className="mt-0 flex-1 flex flex-col min-h-0"
             >
-              <ViewContent>{tab.content}</ViewContent>
+              <ViewContent className={className}>{tab.content}</ViewContent>
             </TabsContent>
           ))}
         </Tabs>

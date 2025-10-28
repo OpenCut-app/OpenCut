@@ -9,6 +9,12 @@ import {
   type CollectionInfo,
   type IconSearchResult,
 } from "@/lib/iconify-api";
+import { useProjectStore } from "@/stores/project-store";
+import { useMediaStore } from "@/stores/media-store";
+import { useTimelineStore } from "@/stores/timeline-store";
+import { usePlaybackStore } from "@/stores/playback-store";
+import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+import type { MediaFile } from "@/types/media";
 
 export type StickerCategory = "all" | "general" | "brands" | "emoji";
 
@@ -26,6 +32,7 @@ interface StickersStore {
   isLoadingCollection: boolean;
   isSearching: boolean;
   isDownloading: boolean;
+  addingSticker: string | null;
 
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (category: StickerCategory) => void;
@@ -36,6 +43,7 @@ interface StickersStore {
   loadCollection: (prefix: string) => Promise<void>;
   searchStickers: (query: string) => Promise<void>;
   downloadSticker: (iconName: string) => Promise<File | null>;
+  addStickerToTimeline: (iconName: string) => Promise<void>;
 
   addToRecentStickers: (iconName: string) => void;
   clearRecentStickers: () => void;
@@ -58,6 +66,7 @@ export const useStickersStore = create<StickersStore>((set, get) => ({
   isLoadingCollection: false,
   isSearching: false,
   isDownloading: false,
+  addingSticker: null,
 
   setSearchQuery: (query) => set({ searchQuery: query }),
 
@@ -159,6 +168,50 @@ export const useStickersStore = create<StickersStore>((set, get) => ({
       return null;
     } finally {
       set({ isDownloading: false });
+    }
+  },
+
+  addStickerToTimeline: async (iconName: string) => {
+    set({ addingSticker: iconName });
+    try {
+      const { activeProject } = useProjectStore.getState();
+      if (!activeProject) {
+        throw new Error("No active project");
+      }
+
+      const file = await get().downloadSticker(iconName);
+      if (!file) {
+        throw new Error("Failed to download sticker");
+      }
+
+      const mediaItem: Omit<MediaFile, "id"> = {
+        name: iconName.replace(":", "-"),
+        type: "image",
+        file,
+        url: URL.createObjectURL(file),
+        width: 200,
+        height: 200,
+        duration: TIMELINE_CONSTANTS.DEFAULT_IMAGE_DURATION,
+        ephemeral: false,
+      };
+
+      const { addMediaFile } = useMediaStore.getState();
+      await addMediaFile(activeProject.id, mediaItem);
+
+      const added = useMediaStore
+        .getState()
+        .mediaFiles.find(
+          (m) => m.url === mediaItem.url && m.name === mediaItem.name
+        );
+      if (!added) {
+        throw new Error("Sticker not in media store");
+      }
+
+      const { currentTime } = usePlaybackStore.getState();
+      const { addElementAtTime } = useTimelineStore.getState();
+      addElementAtTime(added, currentTime);
+    } finally {
+      set({ addingSticker: null });
     }
   },
 

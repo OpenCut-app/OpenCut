@@ -13,8 +13,8 @@ export function useEditorActions() {
     selectedElements,
     clearSelectedElements,
     setSelectedElements,
-    removeElementFromTrack,
-    splitElement,
+    deleteSelected,
+    splitSelected,
     addElementToTrack,
     snappingEnabled,
     toggleSnapping,
@@ -135,7 +135,7 @@ export function useEditorActions() {
           (element.duration - element.trimStart - element.trimEnd);
 
         if (currentTime > effectiveStart && currentTime < effectiveEnd) {
-          splitElement(trackId, elementId, currentTime);
+          splitSelected(currentTime, trackId, elementId);
         } else {
           toast.error("Playhead must be within selected element");
         }
@@ -150,12 +150,7 @@ export function useEditorActions() {
       if (selectedElements.length === 0) {
         return;
       }
-      selectedElements.forEach(
-        ({ trackId, elementId }: { trackId: string; elementId: string }) => {
-          removeElementFromTrack(trackId, elementId);
-        }
-      );
-      clearSelectedElements();
+      deleteSelected();
     },
     undefined
   );

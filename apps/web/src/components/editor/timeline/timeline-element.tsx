@@ -16,7 +16,7 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { usePlaybackStore } from "@/stores/playback-store";
 import AudioWaveform from "../audio-waveform";
 import { toast } from "sonner";
-import { TimelineElementProps } from "@/types/timeline";
+import { TimelineElementProps, MediaElement } from "@/types/timeline";
 import { useTimelineElementResize } from "@/hooks/use-timeline-element-resize";
 import {
   getTrackElementClasses,
@@ -42,16 +42,17 @@ export function TimelineElement({
 }: TimelineElementProps) {
   const { mediaFiles } = useMediaStore();
   const {
-    removeElementFromTrack,
-    removeElementFromTrackWithRipple,
     dragState,
-    splitElement,
-    addElementToTrack,
-    replaceElementMedia,
-    rippleEditingEnabled,
-    toggleElementHidden,
-    toggleElementMuted,
     copySelected,
+    selectedElements,
+    deleteSelected,
+    splitSelected,
+    toggleSelectedHidden,
+    toggleSelectedMuted,
+    duplicateElement,
+    revealElementInMedia,
+    replaceElementWithFile,
+    getContextMenuState,
   } = useTimelineStore();
   const { currentTime } = usePlaybackStore();
 
@@ -68,7 +69,12 @@ export function TimelineElement({
       zoomLevel,
     });
 
-  const { requestRevealMedia } = useMediaPanelStore.getState();
+  const {
+    isMultipleSelected,
+    isCurrentElementSelected,
+    hasAudioElements,
+    canSplitSelected,
+  } = getContextMenuState(track.id, element.id);
 
   const effectiveDuration =
     element.duration - element.trimStart - element.trimEnd;
@@ -77,44 +83,26 @@ export function TimelineElement({
     effectiveDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel
   );
 
-  // Use real-time position during drag, otherwise use stored position
   const isBeingDragged = dragState.elementId === element.id;
   const elementStartTime =
     isBeingDragged && dragState.isDragging
       ? dragState.currentTime
       : element.startTime;
 
-  // Element should always be positioned at startTime - trimStart only affects content, not position
   const elementLeft = elementStartTime * 50 * zoomLevel;
 
   const handleElementSplitContext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const effectiveStart = element.startTime;
-    const effectiveEnd =
-      element.startTime +
-      (element.duration - element.trimStart - element.trimEnd);
-
-    if (currentTime > effectiveStart && currentTime < effectiveEnd) {
-      const secondElementId = splitElement(track.id, element.id, currentTime);
-      if (!secondElementId) {
-        toast.error("Failed to split element");
-      }
-    } else {
-      toast.error("Playhead must be within element to split");
-    }
+    splitSelected(
+      currentTime,
+      isMultipleSelected && isCurrentElementSelected ? undefined : track.id,
+      isMultipleSelected && isCurrentElementSelected ? undefined : element.id
+    );
   };
 
   const handleElementDuplicateContext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const { id, ...elementWithoutId } = element;
-    addElementToTrack(track.id, {
-      ...elementWithoutId,
-      name: element.name + " (copy)",
-      startTime:
-        element.startTime +
-        (element.duration - element.trimStart - element.trimEnd) +
-        0.1,
-    });
+    duplicateElement(track.id, element.id);
   };
 
   const handleElementCopyContext = (e: React.MouseEvent) => {
@@ -124,49 +112,38 @@ export function TimelineElement({
 
   const handleElementDeleteContext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (rippleEditingEnabled) {
-      removeElementFromTrackWithRipple(track.id, element.id);
-    } else {
-      removeElementFromTrack(track.id, element.id);
-    }
+    deleteSelected(
+      isMultipleSelected && isCurrentElementSelected ? undefined : track.id,
+      isMultipleSelected && isCurrentElementSelected ? undefined : element.id
+    );
   };
 
   const handleToggleElementContext = (e: React.MouseEvent) => {
     e.stopPropagation();
+
     if (hasAudio && element.type === "media") {
-      toggleElementMuted(track.id, element.id);
-      return;
+      toggleSelectedMuted(
+        isMultipleSelected && isCurrentElementSelected ? undefined : track.id,
+        isMultipleSelected && isCurrentElementSelected ? undefined : element.id
+      );
+    } else {
+      toggleSelectedHidden(
+        isMultipleSelected && isCurrentElementSelected ? undefined : track.id,
+        isMultipleSelected && isCurrentElementSelected ? undefined : element.id
+      );
     }
-    toggleElementHidden(track.id, element.id);
   };
 
   const handleReplaceClip = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (element.type !== "media") {
-      toast.error("Replace is only available for media clips");
-      return;
-    }
 
-    // Create a file input to select replacement media
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "video/*,audio/*,image/*";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const result = await replaceElementMedia(track.id, element.id, file);
-        if (result.success) {
-          toast.success("Clip replaced successfully");
-        } else {
-          toast.error(result.error || "Failed to replace clip");
-        }
-      } catch (error) {
-        console.error("Unexpected error replacing clip:", error);
-        toast.error(
-          `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`
-        );
+      if (file) {
+        await replaceElementWithFile(track.id, element.id, file);
       }
     };
     input.click();
@@ -174,12 +151,7 @@ export function TimelineElement({
 
   const handleRevealInMedia = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (element.type !== "media") {
-      toast.error("Reveal is only available for media clips");
-      return;
-    }
-
-    requestRevealMedia(element.mediaId);
+    revealElementInMedia(element.id);
   };
 
   const renderElementContent = () => {
@@ -191,7 +163,6 @@ export function TimelineElement({
       );
     }
 
-    // Render media element ->
     const mediaItem = mediaFiles.find((file) => file.id === element.mediaId);
     if (!mediaItem) {
       return (
@@ -201,20 +172,15 @@ export function TimelineElement({
       );
     }
 
-    const TILE_ASPECT_RATIO = 16 / 9;
-
     if (
       mediaItem.type === "image" ||
       (mediaItem.type === "video" && mediaItem.thumbnailUrl)
     ) {
-      // Calculate tile size based on 16:9 aspect ratio
       const trackHeight = getTrackHeight(track.type);
-      const tileHeight = trackHeight;
-      const tileWidth = tileHeight * TILE_ASPECT_RATIO;
+      const tileWidth = trackHeight * (16 / 9);
 
       const imageUrl =
         mediaItem.type === "image" ? mediaItem.url : mediaItem.thumbnailUrl;
-      const isImage = mediaItem.type === "image";
 
       return (
         <div className="w-full h-full flex items-center justify-center">
@@ -228,18 +194,17 @@ export function TimelineElement({
               style={{
                 backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
                 backgroundRepeat: "repeat-x",
-                backgroundSize: `${tileWidth}px ${tileHeight}px`,
+                backgroundSize: `${tileWidth}px ${trackHeight}px`,
                 backgroundPosition: "left center",
                 pointerEvents: "none",
               }}
-              aria-label={`Tiled ${isImage ? "background" : "thumbnail"} of ${mediaItem.name}`}
+              aria-label={`Tiled ${mediaItem.type === "image" ? "background" : "thumbnail"} of ${mediaItem.name}`}
             />
           </div>
         </div>
       );
     }
 
-    // Render audio element ->
     if (mediaItem.type === "audio") {
       return (
         <div className="w-full h-full flex items-center gap-2">
@@ -267,7 +232,7 @@ export function TimelineElement({
     }
   };
 
-  const isMuted = element.type === "media" ? element.muted === true : false;
+  const isMuted = element.type === "media" && element.muted;
 
   return (
     <ContextMenu>
@@ -332,16 +297,33 @@ export function TimelineElement({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="z-200">
-        <ContextMenuItem onClick={handleElementSplitContext}>
-          <Scissors className="h-4 w-4 mr-2" />
-          Split at playhead
-        </ContextMenuItem>
+        {(!isMultipleSelected ||
+          (isMultipleSelected &&
+            isCurrentElementSelected &&
+            canSplitSelected)) && (
+          <ContextMenuItem onClick={handleElementSplitContext}>
+            <Scissors className="h-4 w-4 mr-2" />
+            {isMultipleSelected && isCurrentElementSelected
+              ? `Split ${selectedElements.length} elements at playhead`
+              : "Split at playhead"}
+          </ContextMenuItem>
+        )}
+
         <ContextMenuItem onClick={handleElementCopyContext}>
           <Copy className="h-4 w-4 mr-2" />
-          Copy element
+          {isMultipleSelected && isCurrentElementSelected
+            ? `Copy ${selectedElements.length} elements`
+            : "Copy element"}
         </ContextMenuItem>
+
         <ContextMenuItem onClick={handleToggleElementContext}>
-          {hasAudio ? (
+          {isMultipleSelected && isCurrentElementSelected ? (
+            hasAudioElements ? (
+              <VolumeX className="h-4 w-4 mr-2" />
+            ) : (
+              <EyeOff className="h-4 w-4 mr-2" />
+            )
+          ) : hasAudio ? (
             isMuted ? (
               <Volume2 className="h-4 w-4 mr-2" />
             ) : (
@@ -353,21 +335,29 @@ export function TimelineElement({
             <EyeOff className="h-4 w-4 mr-2" />
           )}
           <span>
-            {hasAudio
-              ? isMuted
-                ? "Unmute"
-                : "Mute"
-              : element.hidden
-                ? "Show"
-                : "Hide"}{" "}
-            {element.type === "text" ? "text" : "clip"}
+            {isMultipleSelected && isCurrentElementSelected
+              ? hasAudioElements
+                ? `Toggle mute ${selectedElements.length} elements`
+                : `Toggle visibility ${selectedElements.length} elements`
+              : hasAudio
+                ? isMuted
+                  ? "Unmute"
+                  : "Mute"
+                : element.hidden
+                  ? "Show"
+                  : "Hide"}{" "}
+            {!isMultipleSelected && (element.type === "text" ? "text" : "clip")}
           </span>
         </ContextMenuItem>
-        <ContextMenuItem onClick={handleElementDuplicateContext}>
-          <Copy className="h-4 w-4 mr-2" />
-          Duplicate {element.type === "text" ? "text" : "clip"}
-        </ContextMenuItem>
-        {element.type === "media" && (
+
+        {!isMultipleSelected && (
+          <ContextMenuItem onClick={handleElementDuplicateContext}>
+            <Copy className="h-4 w-4 mr-2" />
+            Duplicate {element.type === "text" ? "text" : "clip"}
+          </ContextMenuItem>
+        )}
+
+        {!isMultipleSelected && element.type === "media" && (
           <>
             <ContextMenuItem onClick={handleRevealInMedia}>
               <Search className="h-4 w-4 mr-2" />
@@ -379,13 +369,17 @@ export function TimelineElement({
             </ContextMenuItem>
           </>
         )}
+
         <ContextMenuSeparator />
+
         <ContextMenuItem
           onClick={handleElementDeleteContext}
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete {element.type === "text" ? "text" : "clip"}
+          {isMultipleSelected && isCurrentElementSelected
+            ? `Delete ${selectedElements.length} elements`
+            : `Delete ${element.type === "text" ? "text" : "clip"}`}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

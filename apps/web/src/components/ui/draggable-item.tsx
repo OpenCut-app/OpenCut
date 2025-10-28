@@ -218,7 +218,7 @@ function PlusButton({
     <Button
       size="icon"
       className={cn(
-        "absolute bottom-2 right-2 size-4 bg-background hover:bg-panel text-foreground",
+        "absolute bottom-2 right-2 size-5 bg-background hover:bg-panel text-foreground",
         className
       )}
       onClick={(e) => {
@@ -228,7 +228,7 @@ function PlusButton({
       }}
       title={tooltipText}
     >
-      <Plus className="size-3!" />
+      <Plus className="size-4!" />
     </Button>
   );
 

@@ -1147,7 +1147,7 @@ export function TimelineTrackContent({
 
               const handleElementSplit = () => {
                 const { currentTime } = usePlaybackStore();
-                const { splitElement } = useTimelineStore();
+                const { splitSelected } = useTimelineStore();
                 const splitTime = currentTime;
                 const effectiveStart = element.startTime;
                 const effectiveEnd =
@@ -1155,14 +1155,7 @@ export function TimelineTrackContent({
                   (element.duration - element.trimStart - element.trimEnd);
 
                 if (splitTime > effectiveStart && splitTime < effectiveEnd) {
-                  const secondElementId = splitElement(
-                    track.id,
-                    element.id,
-                    splitTime
-                  );
-                  if (!secondElementId) {
-                    toast.error("Failed to split element");
-                  }
+                  splitSelected(splitTime, track.id, element.id);
                 } else {
                   toast.error("Playhead must be within element to split");
                 }
@@ -1182,8 +1175,8 @@ export function TimelineTrackContent({
               };
 
               const handleElementDelete = () => {
-                const { removeElementFromTrack } = useTimelineStore.getState();
-                removeElementFromTrack(track.id, element.id);
+                const { deleteSelected } = useTimelineStore.getState();
+                deleteSelected(track.id, element.id);
               };
 
               return (

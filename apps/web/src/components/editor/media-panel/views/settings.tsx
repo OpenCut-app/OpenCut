@@ -16,15 +16,18 @@ import {
 } from "../../properties-panel/property-item";
 import { FPS_PRESETS } from "@/constants/timeline-constants";
 import { useProjectStore } from "@/stores/project-store";
+import type { BlurIntensity } from "@/types/project";
 import { useEditorStore } from "@/stores/editor-store";
 import { useAspectRatio } from "@/hooks/use-aspect-ratio";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { colors } from "@/data/colors/solid";
 import { patternCraftGradients } from "@/data/colors/pattern-craft";
-import { PipetteIcon } from "lucide-react";
+import { PipetteIcon, PlusIcon } from "lucide-react";
 import { useMemo, memo, useCallback } from "react";
 import { syntaxUIGradients } from "@/data/colors/syntax-ui";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export function SettingsView() {
   return <ProjectSettingsTabs />;
@@ -38,14 +41,40 @@ function ProjectSettingsTabs() {
         {
           value: "project-info",
           label: "Project info",
-          content: <ProjectInfoView />,
+          content: (
+            <div className="p-5">
+              <ProjectInfoView />
+            </div>
+          ),
         },
         {
           value: "background",
           label: "Background",
-          content: <BackgroundView />,
+          content: (
+            <div className="flex flex-col justify-between h-full">
+              <div className="flex-1 p-5">
+                <BackgroundView />
+              </div>
+              <div className="flex flex-col sticky -bottom-0 bg-panel/85 backdrop-blur-lg">
+                <Separator />
+                <Button className="w-fit h-auto p-5 py-4 !bg-transparent shadow-none text-muted-foreground hover:text-foreground/85 text-xs">
+                  Custom background
+                  <PlusIcon />
+                </Button>
+              </div>
+
+              {/* Another UI, looks so beautiful i don't wanna remove it */}
+              {/* <div className="flex flex-col justify-center items-center pb-5 sticky bottom-0">
+                <Button className="w-fit h-auto gap-1.5 px-3.5 py-1.5 bg-foreground hover:bg-foreground/85 text-background rounded-full">
+                  <span className="text-sm">Custom</span>
+                  <PlusIcon className="" />
+                </Button>
+              </div> */}
+            </div>
+          ),
         },
       ]}
+      className="flex flex-col justify-between h-full p-0"
     />
   );
 }
@@ -177,9 +206,9 @@ const BackgroundPreviews = memo(
   }) => {
     return useMemo(
       () =>
-        backgrounds.map((bg) => (
+        backgrounds.map((bg, index) => (
           <div
-            key={bg}
+            key={`${index}-${bg}`}
             className={cn(
               "w-full aspect-square rounded-sm cursor-pointer border border-foreground/15 hover:border-primary",
               isColorBackground &&
@@ -215,7 +244,7 @@ BackgroundPreviews.displayName = "BackgroundPreviews";
 function BackgroundView() {
   const { activeProject, updateBackgroundType } = useProjectStore();
 
-  const blurLevels = useMemo(
+  const blurLevels = useMemo<Array<{ label: string; value: BlurIntensity }>>(
     () => [
       { label: "Light", value: 4 },
       { label: "Medium", value: 8 },
@@ -225,7 +254,7 @@ function BackgroundView() {
   );
 
   const handleBlurSelect = useCallback(
-    async (blurIntensity: number) => {
+    async (blurIntensity: BlurIntensity) => {
       await updateBackgroundType("blur", { blurIntensity });
     },
     [updateBackgroundType]
@@ -257,7 +286,7 @@ function BackgroundView() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 h-full">
       <PropertyGroup title="Blur" defaultExpanded={false}>
         <div className="grid grid-cols-4 gap-2 w-full">{blurPreviews}</div>
       </PropertyGroup>
@@ -277,7 +306,7 @@ function BackgroundView() {
         </div>
       </PropertyGroup>
 
-      <PropertyGroup title="Pattern Craft" defaultExpanded={false}>
+      <PropertyGroup title="Pattern craft" defaultExpanded={false}>
         <div className="grid grid-cols-4 gap-2 w-full">
           <BackgroundPreviews
             backgrounds={patternCraftGradients}

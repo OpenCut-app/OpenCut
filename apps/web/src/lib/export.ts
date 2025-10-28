@@ -14,7 +14,7 @@ import { renderTimelineFrame } from "./timeline-renderer";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { useMediaStore } from "@/stores/media-store";
 import { useProjectStore } from "@/stores/project-store";
-import { DEFAULT_FPS } from "@/stores/project-store";
+import { DEFAULT_FPS, DEFAULT_CANVAS_SIZE } from "@/stores/project-store";
 import { ExportOptions, ExportResult } from "@/types/export";
 import { TimelineTrack } from "@/types/timeline";
 import { MediaFile } from "@/types/media";
@@ -61,11 +61,12 @@ async function createTimelineAudioBuffer(
     for (const element of track.elements) {
       if (element.type !== "media") continue;
 
-      const mediaItem = element.type === "media" ? mediaMap.get(element.mediaId) : null;
+      const mediaElement = element;
+      const mediaItem = mediaMap.get(mediaElement.mediaId);
       if (!mediaItem || mediaItem.type !== "audio") continue;
 
       const visibleDuration =
-        element.duration - element.trimStart - element.trimEnd;
+        mediaElement.duration - mediaElement.trimStart - mediaElement.trimEnd;
       if (visibleDuration <= 0) continue;
 
       try {
@@ -77,11 +78,11 @@ async function createTimelineAudioBuffer(
 
         audioElements.push({
           buffer: audioBuffer,
-          startTime: element.startTime,
-          duration: element.duration,
-          trimStart: element.trimStart,
-          trimEnd: element.trimEnd,
-          muted: element.muted || track.muted || false,
+          startTime: mediaElement.startTime,
+          duration: mediaElement.duration,
+          trimStart: mediaElement.trimStart,
+          trimEnd: mediaElement.trimEnd,
+          muted: mediaElement.muted || track.muted || false,
         });
       } catch (error) {
         console.warn(`Failed to decode audio file ${mediaItem.name}:`, error);
@@ -170,7 +171,7 @@ export async function exportProject(
     }
 
     const exportFps = fps || activeProject.fps || DEFAULT_FPS;
-    const canvasSize = activeProject.canvasSize;
+    const canvasSize = activeProject.canvasSize || DEFAULT_CANVAS_SIZE;
 
     const outputFormat =
       format === "webm" ? new WebMOutputFormat() : new Mp4OutputFormat();
@@ -251,9 +252,11 @@ export async function exportProject(
         canvasHeight: canvas.height,
         tracks,
         mediaFiles,
+        backgroundType: activeProject.backgroundType,
+        blurIntensity: activeProject.blurIntensity,
         backgroundColor:
           activeProject.backgroundType === "blur"
-            ? "transparent"
+            ? undefined
             : activeProject.backgroundColor || "#000000",
         projectCanvasSize: canvasSize,
       });

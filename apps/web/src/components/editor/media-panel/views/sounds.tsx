@@ -82,6 +82,14 @@ function SoundEffectsView() {
     toggleSavedSound,
     showCommercialOnly,
     toggleCommercialFilter,
+    hasLoaded,
+    setTopSoundEffects,
+    setLoading,
+    setError,
+    setHasLoaded,
+    setCurrentPage,
+    setHasNextPage,
+    setTotalCount,
   } = useSoundsStore();
   const {
     results: searchResults,
@@ -106,6 +114,55 @@ function SoundEffectsView() {
   useEffect(() => {
     loadSavedSounds();
 
+    if (!hasLoaded) {
+      let ignore = false;
+
+      const fetchTopSounds = async () => {
+        try {
+          if (!ignore) {
+            setLoading(true);
+            setError(null);
+          }
+
+          const response = await fetch(
+            "/api/sounds/search?page_size=50&sort=downloads"
+          );
+
+          if (!ignore) {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setTopSoundEffects(data.results);
+            setHasLoaded(true);
+
+            setCurrentPage(1);
+            setHasNextPage(!!data.next);
+            setTotalCount(data.count);
+          }
+        } catch (error) {
+          if (!ignore) {
+            console.error("Failed to fetch top sounds:", error);
+            setError(
+              error instanceof Error ? error.message : "Failed to load sounds"
+            );
+          }
+        } finally {
+          if (!ignore) {
+            setLoading(false);
+          }
+        }
+      };
+
+      const timeoutId = setTimeout(fetchTopSounds, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        ignore = true;
+      };
+    }
+
     if (scrollAreaRef.current && scrollPosition > 0) {
       const timeoutId = setTimeout(() => {
         scrollAreaRef.current?.scrollTo({ top: scrollPosition });
@@ -113,14 +170,23 @@ function SoundEffectsView() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, []);
+  }, [
+    hasLoaded,
+    setTopSoundEffects,
+    setLoading,
+    setError,
+    setHasLoaded,
+    setCurrentPage,
+    setHasNextPage,
+    setTotalCount,
+  ]);
 
   const handleScrollWithPosition = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop } = event.currentTarget;
     setScrollPosition(scrollTop);
     handleScroll(event);
   };
-  
+
   const displayedSounds = useMemo(() => {
     const sounds = searchQuery ? searchResults : topSoundEffects;
     return sounds;

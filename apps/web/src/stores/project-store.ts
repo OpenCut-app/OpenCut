@@ -1,28 +1,45 @@
-import { TProject } from "@/types/project";
+import { TProject, BlurIntensity, Scene } from "@/types/project";
 import { create } from "zustand";
 import { storageService } from "@/lib/storage/storage-service";
 import { toast } from "sonner";
 import { useMediaStore } from "./media-store";
 import { useTimelineStore } from "./timeline-store";
+import { useSceneStore } from "./scene-store";
 import { generateUUID } from "@/lib/utils";
 import { CanvasSize, CanvasMode } from "@/types/editor";
 
 export const DEFAULT_CANVAS_SIZE: CanvasSize = { width: 1920, height: 1080 };
 export const DEFAULT_FPS = 30;
 
-const DEFAULT_PROJECT: TProject = {
-  id: generateUUID(),
-  name: "Untitled",
-  thumbnail: "",
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  backgroundColor: "#000000",
-  backgroundType: "color",
-  blurIntensity: 8,
-  bookmarks: [],
-  fps: DEFAULT_FPS,
-  canvasSize: DEFAULT_CANVAS_SIZE,
-  canvasMode: "preset",
+export function createMainScene(): Scene {
+  return {
+    id: generateUUID(),
+    name: "Main Scene",
+    isMain: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+const createDefaultProject = (name: string): TProject => {
+  const mainScene = createMainScene();
+
+  return {
+    id: generateUUID(),
+    name,
+    thumbnail: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    scenes: [mainScene],
+    currentSceneId: mainScene.id,
+    backgroundColor: "#000000",
+    backgroundType: "color",
+    blurIntensity: 8,
+    bookmarks: [],
+    fps: DEFAULT_FPS,
+    canvasSize: DEFAULT_CANVAS_SIZE,
+    canvasMode: "preset",
+  };
 };
 
 interface ProjectStore {
@@ -44,7 +61,7 @@ interface ProjectStore {
   updateProjectBackground: (backgroundColor: string) => Promise<void>;
   updateBackgroundType: (
     type: "color" | "blur",
-    options?: { backgroundColor?: string; blurIntensity?: number }
+    options?: { backgroundColor?: string; blurIntensity?: BlurIntensity }
   ) => Promise<void>;
   updateProjectFps: (fps: number) => Promise<void>;
   updateCanvasSize: (size: CanvasSize, mode: CanvasMode) => Promise<void>;
@@ -104,7 +121,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -152,7 +169,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -164,23 +181,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   createNewProject: async (name: string) => {
-    const newProject: TProject = {
-      ...DEFAULT_PROJECT,
-      id: generateUUID(),
-      name,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const newProject = createDefaultProject(name);
 
     set({ activeProject: newProject });
 
     const mediaStore = useMediaStore.getState();
     const timelineStore = useTimelineStore.getState();
+    const sceneStore = useSceneStore.getState();
+
     mediaStore.clearAllMedia();
     timelineStore.clearTimeline();
 
+    sceneStore.initializeScenes({
+      scenes: newProject.scenes,
+      currentSceneId: newProject.currentSceneId,
+    });
+
     try {
-      await storageService.saveProject(newProject);
+      await storageService.saveProject({ project: newProject });
       // Reload all projects to update the list
       await get().loadAllProjects();
       return newProject.id;
@@ -195,21 +213,39 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       set({ isLoading: true });
     }
 
-    // Clear media and timeline immediately to prevent flickering when switching projects
+    // Prevent flicker when switching projects - clear all stores
     const mediaStore = useMediaStore.getState();
     const timelineStore = useTimelineStore.getState();
+    const sceneStore = useSceneStore.getState();
+
     mediaStore.clearAllMedia();
     timelineStore.clearTimeline();
+    sceneStore.clearScenes();
 
     try {
-      const project = await storageService.loadProject(id);
+      const project = await storageService.loadProject({ id });
       if (project) {
         set({ activeProject: project });
 
-        // Load project-specific data in parallel
+        let currentScene = null;
+        if (project.scenes && project.scenes.length > 0) {
+          sceneStore.initializeScenes({
+            scenes: project.scenes,
+            currentSceneId: project.currentSceneId,
+          });
+          // Get current scene directly from project data (don't rely on store state)
+          currentScene =
+            project.scenes.find((s) => s.id === project.currentSceneId) ||
+            project.scenes.find((s) => s.isMain) ||
+            project.scenes[0];
+        }
+
         await Promise.all([
           mediaStore.loadProjectMedia(id),
-          timelineStore.loadProjectTimeline(id),
+          timelineStore.loadProjectTimeline({
+            projectId: id,
+            sceneId: currentScene?.id,
+          }),
         ]);
       } else {
         throw new Error(`Project with id ${id} not found`);
@@ -227,11 +263,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (!activeProject) return;
 
     try {
-      // Save project metadata and timeline data in parallel
       const timelineStore = useTimelineStore.getState();
+      const sceneStore = useSceneStore.getState();
+      const currentScene = sceneStore.currentScene;
+
       await Promise.all([
-        storageService.saveProject(activeProject),
-        timelineStore.saveProjectTimeline(activeProject.id),
+        storageService.saveProject({ project: activeProject }),
+        timelineStore.saveProjectTimeline({
+          projectId: activeProject.id,
+          sceneId: currentScene?.id,
+        }),
       ]);
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -256,22 +297,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   deleteProject: async (id: string) => {
     try {
-      // Delete project data in parallel
       await Promise.all([
-        storageService.deleteProjectMedia(id),
-        storageService.deleteProjectTimeline(id),
-        storageService.deleteProject(id),
+        storageService.deleteProjectMedia({ projectId: id }),
+        storageService.deleteProjectTimeline({ projectId: id }),
+        storageService.deleteProject({ id }),
       ]);
       await get().loadAllProjects(); // Refresh the list
 
-      // If we deleted the active project, close it and clear data
+      // If deleted active project, close it and clear data
       const { activeProject } = get();
       if (activeProject?.id === id) {
         set({ activeProject: null });
         const mediaStore = useMediaStore.getState();
         const timelineStore = useTimelineStore.getState();
+        const sceneStore = useSceneStore.getState();
+
         mediaStore.clearAllMedia();
         timelineStore.clearTimeline();
+        sceneStore.clearScenes();
       }
     } catch (error) {
       console.error("Failed to delete project:", error);
@@ -281,11 +324,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   closeProject: () => {
     set({ activeProject: null });
 
-    // Clear data from stores when closing project
     const mediaStore = useMediaStore.getState();
     const timelineStore = useTimelineStore.getState();
+    const sceneStore = useSceneStore.getState();
+
     mediaStore.clearAllMedia();
     timelineStore.clearTimeline();
+    sceneStore.clearScenes();
   },
 
   renameProject: async (id: string, name: string) => {
@@ -307,12 +352,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      // Save to storage
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
 
       await get().loadAllProjects();
 
-      // Update activeProject if it's the same project
+      // Update activeProject if same project
       const { activeProject } = get();
       if (activeProject?.id === id) {
         set({ activeProject: updatedProject });
@@ -328,7 +372,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   duplicateProject: async (projectId: string) => {
     try {
-      const project = await storageService.loadProject(projectId);
+      const project = await storageService.loadProject({ id: projectId });
       if (!project) {
         toast.error("Project not found", {
           description: "Please try again",
@@ -355,14 +399,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
 
       const newProject: TProject = {
-        ...project, // Copy all properties from the original project
+        ...project,
         id: generateUUID(),
         name: `(${nextNumber}) ${baseName}`,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      await storageService.saveProject(newProject);
+      await storageService.saveProject({ project: newProject });
       await get().loadAllProjects();
       return newProject.id;
     } catch (error) {
@@ -386,9 +430,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
-      await get().loadAllProjects(); // Refresh the list
+      await get().loadAllProjects();
     } catch (error) {
       console.error("Failed to update project background:", error);
       toast.error("Failed to update background", {
@@ -399,7 +443,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   updateBackgroundType: async (
     type: "color" | "blur",
-    options?: { backgroundColor?: string; blurIntensity?: number }
+    options?: { backgroundColor?: string; blurIntensity?: BlurIntensity }
   ) => {
     const { activeProject } = get();
     if (!activeProject) return;
@@ -410,14 +454,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       ...(options?.backgroundColor && {
         backgroundColor: options.backgroundColor,
       }),
-      ...(options?.blurIntensity && { blurIntensity: options.blurIntensity }),
+      ...(options?.blurIntensity !== undefined && {
+        blurIntensity: options.blurIntensity,
+      }),
       updatedAt: new Date(),
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
-      await get().loadAllProjects(); // Refresh the list
+      await get().loadAllProjects();
     } catch (error) {
       console.error("Failed to update background type:", error);
       toast.error("Failed to update background", {
@@ -437,9 +483,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
-      await get().loadAllProjects(); // Refresh the list
+      await get().loadAllProjects();
     } catch (error) {
       console.error("Failed to update project FPS:", error);
       toast.error("Failed to update project FPS", {
@@ -460,9 +506,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     };
 
     try {
-      await storageService.saveProject(updatedProject);
+      await storageService.saveProject({ project: updatedProject });
       set({ activeProject: updatedProject });
-      await get().loadAllProjects(); // Refresh the list
+      await get().loadAllProjects();
     } catch (error) {
       console.error("Failed to update canvas size:", error);
       toast.error("Failed to update canvas size", {
@@ -474,12 +520,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   getFilteredAndSortedProjects: (searchQuery: string, sortOption: string) => {
     const { savedProjects } = get();
 
-    // Filter projects by search query
     const filteredProjects = savedProjects.filter((project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Sort filtered projects
     const sortedProjects = [...filteredProjects].sort((a, b) => {
       const [key, order] = sortOption.split("-");
 
@@ -506,7 +550,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     return sortedProjects;
   },
 
-  // Global invalid project ID tracking implementation
+  // Global invalid project ID tracking
   isInvalidProjectId: (id: string) => {
     const invalidIds = get().invalidProjectIds || new Set();
     return invalidIds.has(id);

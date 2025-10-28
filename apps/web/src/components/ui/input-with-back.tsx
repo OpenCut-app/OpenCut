@@ -12,6 +12,7 @@ interface InputWithBackProps {
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
+  disableAnimation?: boolean;
 }
 
 export function InputWithBack({
@@ -20,12 +21,13 @@ export function InputWithBack({
   placeholder = "Search anything",
   value,
   onChange,
+  disableAnimation = false,
 }: InputWithBackProps) {
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
   const [buttonOffset, setButtonOffset] = useState(-60);
 
   const smoothTransition = {
-    duration: 0.35,
+    duration: disableAnimation ? 0 : 0.35,
     ease: [0.25, 0.1, 0.25, 1] as const,
   };
 

@@ -16,9 +16,9 @@ const buttonVariants = cva(
         "primary-gradient":
           "bg-gradient-to-r from-cyan-400 to-blue-500 text-white hover:opacity-85 transition-opacity",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90",
+          "bg-destructive/0 border border-destructive/25 text-destructive shadow-xs hover:bg-destructive hover:text-destructive-foreground",
         outline:
-          "border border-input bg-background shadow-xs hover:opacity-75 transition-opacity hover:text-accent-foreground",
+          "border border-input bg-transparent shadow-xs hover:opacity-75 transition-opacity hover:text-accent-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-foreground/15 border border-input",
         text: "bg-transparent p-0 rounded-none opacity-100 hover:opacity-50 transition-opacity", // Instead of ghost (matches app better)

@@ -13,6 +13,8 @@ import { renderTimelineFrame } from "@/lib/timeline-renderer";
 import { cn } from "@/lib/utils";
 import { formatTimeCode } from "@/lib/time";
 import { EditableTimecode } from "@/components/ui/editable-timecode";
+import { useFrameCache } from "@/hooks/use-frame-cache";
+import { useSceneStore } from "@/stores/scene-store";
 import {
   DEFAULT_CANVAS_SIZE,
   DEFAULT_FPS,
@@ -42,8 +44,11 @@ export function PreviewPanel() {
   const { currentTime, toggle, setCurrentTime } = usePlaybackStore();
   const { isPlaying, volume, muted } = usePlaybackStore();
   const { activeProject } = useProjectStore();
+  const { currentScene } = useSceneStore();
   const previewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { getCachedFrame, cacheFrame, invalidateCache, preRenderNearbyFrames } =
+    useFrameCache();
   const lastFrameTimeRef = useRef(0);
   const renderSeqRef = useRef(0);
   const offscreenCanvasRef = useRef<OffscreenCanvas | HTMLCanvasElement | null>(
@@ -216,6 +221,16 @@ export function PreviewPanel() {
     };
   }, [dragState, previewDimensions, canvasSize, updateTextElement]);
 
+  // Clear the frame cache when background settings change since they affect rendering
+  useEffect(() => {
+    invalidateCache();
+  }, [
+    mediaFiles,
+    activeProject?.backgroundColor,
+    activeProject?.backgroundType,
+    invalidateCache,
+  ]);
+
   const handleTextMouseDown = (
     e: React.MouseEvent<HTMLDivElement>,
     element: any,
@@ -246,6 +261,7 @@ export function PreviewPanel() {
   }, []);
 
   const hasAnyElements = tracks.some((track) => track.elements.length > 0);
+  const shouldRenderPreview = hasAnyElements || activeProject?.backgroundType;
   const getActiveElements = (): ActiveElement[] => {
     const activeElements: ActiveElement[] = [];
 
@@ -449,7 +465,7 @@ export function PreviewPanel() {
     };
   }, [isPlaying, volume, muted, mediaFiles]);
 
-  // Canvas: draw current frame for visible elements using offscreen compositing
+  // Canvas: draw current frame with caching
   useEffect(() => {
     const draw = async () => {
       const canvas = canvasRef.current;
@@ -475,10 +491,94 @@ export function PreviewPanel() {
         lastFrameTimeRef.current = currentTime;
       }
 
-      // Invalidate older async renders when user scrubs rapidly
-      const mySeq = (renderSeqRef.current += 1);
+      const cachedFrame = getCachedFrame(
+        currentTime,
+        tracks,
+        mediaFiles,
+        activeProject,
+        currentScene?.id
+      );
+      if (cachedFrame) {
+        mainCtx.putImageData(cachedFrame, 0, 0);
 
-      // Offscreen buffer to avoid flicker (reuse canvas)
+        // Pre-render nearby frames in background
+        if (!isPlaying) {
+          // Only during scrubbing to avoid interfering with playback
+          preRenderNearbyFrames(
+            currentTime,
+            tracks,
+            mediaFiles,
+            activeProject,
+            async (time: number) => {
+              const tempCanvas = document.createElement("canvas");
+              tempCanvas.width = displayWidth;
+              tempCanvas.height = displayHeight;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (!tempCtx)
+                throw new Error("Failed to create temp canvas context");
+
+              await renderTimelineFrame({
+                ctx: tempCtx,
+                time,
+                canvasWidth: displayWidth,
+                canvasHeight: displayHeight,
+                tracks,
+                mediaFiles,
+                backgroundType: activeProject?.backgroundType,
+                blurIntensity: activeProject?.blurIntensity,
+                backgroundColor:
+                  activeProject?.backgroundType === "blur"
+                    ? undefined
+                    : activeProject?.backgroundColor || "#000000",
+                projectCanvasSize: canvasSize,
+              });
+
+              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
+            },
+            currentScene?.id,
+            3
+          );
+        } else {
+          // Small lookahead while playing
+          preRenderNearbyFrames(
+            currentTime,
+            tracks,
+            mediaFiles,
+            activeProject,
+            async (time: number) => {
+              const tempCanvas = document.createElement("canvas");
+              tempCanvas.width = displayWidth;
+              tempCanvas.height = displayHeight;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (!tempCtx)
+                throw new Error("Failed to create temp canvas context");
+
+              await renderTimelineFrame({
+                ctx: tempCtx,
+                time,
+                canvasWidth: displayWidth,
+                canvasHeight: displayHeight,
+                tracks,
+                mediaFiles,
+                backgroundType: activeProject?.backgroundType,
+                blurIntensity: activeProject?.blurIntensity,
+                backgroundColor:
+                  activeProject?.backgroundType === "blur"
+                    ? undefined
+                    : activeProject?.backgroundColor || "#000000",
+                projectCanvasSize: canvasSize,
+              });
+
+              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
+            },
+            currentScene?.id,
+            1
+          );
+        }
+        return;
+      }
+
+      // Cache miss - render from scratch
       if (!offscreenCanvasRef.current) {
         const hasOffscreen =
           typeof (globalThis as unknown as { OffscreenCanvas?: unknown })
@@ -534,12 +634,29 @@ export function PreviewPanel() {
         canvasHeight: displayHeight,
         tracks,
         mediaFiles,
+        backgroundType: activeProject?.backgroundType,
+        blurIntensity: activeProject?.blurIntensity,
         backgroundColor:
           activeProject?.backgroundType === "blur"
-            ? "transparent"
+            ? undefined
             : activeProject?.backgroundColor || "#000000",
         projectCanvasSize: canvasSize,
       });
+
+      const imageData = (offCtx as CanvasRenderingContext2D).getImageData(
+        0,
+        0,
+        displayWidth,
+        displayHeight
+      );
+      cacheFrame(
+        currentTime,
+        imageData,
+        tracks,
+        mediaFiles,
+        activeProject,
+        currentScene?.id
+      );
 
       // Blit offscreen to visible canvas
       mainCtx.clearRect(0, 0, displayWidth, displayHeight);
@@ -564,6 +681,10 @@ export function PreviewPanel() {
     canvasSize.height,
     activeProject?.backgroundType,
     activeProject?.backgroundColor,
+    getCachedFrame,
+    cacheFrame,
+    preRenderNearbyFrames,
+    isPlaying,
   ]);
 
   // Get media elements for blur background (video/image only)
@@ -593,7 +714,7 @@ export function PreviewPanel() {
           className="flex-1 flex flex-col items-center justify-center min-h-0 min-w-0"
         >
           <div className="flex-1" />
-          {hasAnyElements ? (
+          {shouldRenderPreview ? (
             <div
               ref={previewRef}
               className="relative overflow-hidden border"
@@ -619,9 +740,7 @@ export function PreviewPanel() {
                 aria-label="Video preview canvas"
               />
               {activeElements.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  No elements at current time
-                </div>
+                <></>
               ) : (
                 activeElements.map((elementData) => renderElement(elementData))
               )}

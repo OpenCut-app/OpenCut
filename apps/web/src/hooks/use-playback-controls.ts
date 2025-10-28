@@ -9,7 +9,7 @@ export const usePlaybackControls = () => {
   const {
     selectedElements,
     tracks,
-    splitElement,
+    splitSelected,
     splitAndKeepLeft,
     splitAndKeepRight,
     separateAudio,
@@ -37,8 +37,8 @@ export const usePlaybackControls = () => {
       return;
     }
 
-    splitElement(trackId, elementId, currentTime);
-  }, [selectedElements, tracks, currentTime, splitElement]);
+    splitSelected(currentTime, trackId, elementId);
+  }, [selectedElements, tracks, currentTime, splitSelected]);
 
   const handleSplitAndKeepLeftCallback = useCallback(() => {
     if (selectedElements.length !== 1) {

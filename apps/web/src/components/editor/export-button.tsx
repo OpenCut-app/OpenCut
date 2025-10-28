@@ -16,7 +16,7 @@ import {
   DEFAULT_EXPORT_OPTIONS,
 } from "@/lib/export";
 import { useProjectStore } from "@/stores/project-store";
-import { Download, X } from "lucide-react";
+import { Check, Copy, Download, RotateCcw, X } from "lucide-react";
 import { ExportFormat, ExportQuality, ExportResult } from "@/types/export";
 import { PropertyGroup } from "./properties-panel/property-item";
 
@@ -132,137 +132,186 @@ function ExportPopover({
   };
 
   return (
-    <PopoverContent className="w-80 mr-4 flex flex-col gap-3">
+    <PopoverContent className="w-80 mr-4 flex flex-col gap-3 bg-background">
       <>
-        <div className="flex items-center justify-between">
-          <h3 className=" font-medium">
-            {isExporting ? "Exporting project" : "Export project"}
-          </h3>
-          <Button variant="text" size="icon" onClick={handleClose}>
-            <X className="!size-5 text-foreground/85" />
-          </Button>
-        </div>
+        {exportResult && !exportResult.success ? (
+          <ExportError
+            error={exportResult.error || "Unknown error occurred"}
+            onRetry={handleExport}
+          />
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h3 className=" font-medium">
+                {isExporting ? "Exporting project" : "Export project"}
+              </h3>
+              <Button variant="text" size="icon" onClick={handleClose}>
+                <X className="!size-5 text-foreground/85" />
+              </Button>
+            </div>
 
-        <div className="flex flex-col gap-4">
-          {!isExporting && (
-            <>
-              <div className="flex flex-col gap-3">
-                <PropertyGroup
-                  title="Format"
-                  titleClassName="text-sm"
-                  defaultExpanded={false}
-                >
-                  <RadioGroup
-                    value={format}
-                    onValueChange={(value) => setFormat(value as ExportFormat)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="mp4" id="mp4" />
-                      <Label htmlFor="mp4">
-                        MP4 (H.264) - Better compatibility
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="webm" id="webm" />
-                      <Label htmlFor="webm">
-                        WebM (VP9) - Smaller file size
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </PropertyGroup>
+            <div className="flex flex-col gap-4">
+              {!isExporting && (
+                <>
+                  <div className="flex flex-col gap-3">
+                    <PropertyGroup
+                      title="Format"
+                      titleClassName="text-sm"
+                      defaultExpanded={false}
+                    >
+                      <RadioGroup
+                        value={format}
+                        onValueChange={(value) =>
+                          setFormat(value as ExportFormat)
+                        }
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="mp4" id="mp4" />
+                          <Label htmlFor="mp4">
+                            MP4 (H.264) - Better compatibility
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="webm" id="webm" />
+                          <Label htmlFor="webm">
+                            WebM (VP9) - Smaller file size
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </PropertyGroup>
 
-                <PropertyGroup
-                  title="Quality"
-                  titleClassName="text-sm"
-                  defaultExpanded={false}
-                >
-                  <RadioGroup
-                    value={quality}
-                    onValueChange={(value) =>
-                      setQuality(value as ExportQuality)
-                    }
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="low" id="low" />
-                      <Label htmlFor="low">Low - Smallest file size</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="medium" id="medium" />
-                      <Label htmlFor="medium">Medium - Balanced</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="high" id="high" />
-                      <Label htmlFor="high">High - Recommended</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="very_high" id="very_high" />
-                      <Label htmlFor="very_high">
-                        Very High - Largest file size
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </PropertyGroup>
+                    <PropertyGroup
+                      title="Quality"
+                      titleClassName="text-sm"
+                      defaultExpanded={false}
+                    >
+                      <RadioGroup
+                        value={quality}
+                        onValueChange={(value) =>
+                          setQuality(value as ExportQuality)
+                        }
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="low" id="low" />
+                          <Label htmlFor="low">Low - Smallest file size</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="medium" id="medium" />
+                          <Label htmlFor="medium">Medium - Balanced</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="high" id="high" />
+                          <Label htmlFor="high">High - Recommended</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="very_high" id="very_high" />
+                          <Label htmlFor="very_high">
+                            Very High - Largest file size
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </PropertyGroup>
 
-                <PropertyGroup
-                  title="Audio"
-                  titleClassName="text-sm"
-                  defaultExpanded={false}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="include-audio"
-                      checked={includeAudio}
-                      onCheckedChange={(checked) => setIncludeAudio(!!checked)}
-                    />
-                    <Label htmlFor="include-audio">
-                      Include audio in export
-                    </Label>
+                    <PropertyGroup
+                      title="Audio"
+                      titleClassName="text-sm"
+                      defaultExpanded={false}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="include-audio"
+                          checked={includeAudio}
+                          onCheckedChange={(checked) =>
+                            setIncludeAudio(!!checked)
+                          }
+                        />
+                        <Label htmlFor="include-audio">
+                          Include audio in export
+                        </Label>
+                      </div>
+                    </PropertyGroup>
                   </div>
-                </PropertyGroup>
-              </div>
 
-              <Button onClick={handleExport} className="w-full gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-            </>
-          )}
+                  <Button onClick={handleExport} className="w-full gap-2">
+                    <Download className="w-4 h-4" />
+                    Export
+                  </Button>
+                </>
+              )}
 
-          {isExporting && (
-            <div className="space-y-4">
-              <div className="flex flex-col">
-                <div className="text-center flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {Math.round(progress * 100)}%
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">100%</p>
+              {isExporting && (
+                <div className="space-y-4">
+                  <div className="flex flex-col">
+                    <div className="text-center flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {Math.round(progress * 100)}%
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-2">100%</p>
+                    </div>
+                    <Progress value={progress * 100} className="w-full" />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="rounded-md w-full"
+                    onClick={() => {}}
+                  >
+                    Cancel
+                  </Button>
                 </div>
-                <Progress value={progress * 100} className="w-full" />
-              </div>
-
-              <Button
-                variant="outline"
-                className="rounded-md w-full"
-                onClick={() => {}}
-              >
-                Cancel
-              </Button>
+              )}
             </div>
-          )}
-
-          {exportResult && !exportResult.success && (
-            <div className="text-center space-y-3">
-              <div className="text-red-600 font-medium">Export failed</div>
-              <p className="text-sm text-muted-foreground">
-                {exportResult.error || "Unknown error occurred"}
-              </p>
-              <Button variant="outline" onClick={() => setExportResult(null)}>
-                Try Again
-              </Button>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </>
     </PopoverContent>
+  );
+}
+
+function ExportError({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(error);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm font-medium text-red-400">Export failed</p>
+        <p className="text-xs text-muted-foreground">
+          {error}
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-xs h-8"
+          onClick={handleCopy}
+        >
+          {copied ? <Check className="text-green-500" /> : <Copy />}
+          Copy
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-xs h-8"
+          onClick={onRetry}
+        >
+          <RotateCcw />
+          Retry
+        </Button>
+      </div>
+    </div>
   );
 }

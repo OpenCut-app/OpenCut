@@ -47,8 +47,8 @@ const roadmapItems: {
     description:
       "The foundation that enables everything else. Real-time preview, video rendering, export functionality. Once this works, we can add effects, filters, transitions - basically everything that makes a video editor powerful.",
     status: {
-      text: "In Progress",
-      type: "pending",
+      text: "Completed",
+      type: "complete",
     },
   },
   {

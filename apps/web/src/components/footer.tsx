@@ -2,28 +2,11 @@
 
 import { motion } from "motion/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { RiDiscordFill, RiTwitterXLine } from "react-icons/ri";
 import { FaGithub } from "react-icons/fa6";
-import { getStars } from "@/lib/fetch-github-stars";
 import Image from "next/image";
 
 export function Footer() {
-  const [star, setStar] = useState<string>();
-
-  useEffect(() => {
-    const fetchStars = async () => {
-      try {
-        const data = await getStars();
-        setStar(data);
-      } catch (err) {
-        console.error("Failed to fetch GitHub stars", err);
-      }
-    };
-
-    fetchStars();
-  }, []);
-
   return (
     <motion.footer
       className="bg-background border-t"

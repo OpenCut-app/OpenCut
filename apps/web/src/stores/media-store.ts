@@ -3,6 +3,7 @@ import { storageService } from "@/lib/storage/storage-service";
 import { useTimelineStore } from "./timeline-store";
 import { generateUUID } from "@/lib/utils";
 import { MediaType, MediaFile } from "@/types/media";
+import { videoCache } from "@/lib/video-cache";
 
 interface MediaStore {
   mediaFiles: MediaFile[];
@@ -151,7 +152,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
     // Save to persistent storage in background
     try {
-      await storageService.saveMediaFile(projectId, newItem);
+      await storageService.saveMediaFile({ projectId, mediaItem: newItem });
     } catch (error) {
       console.error("Failed to save media item:", error);
       // Remove from local state if save failed
@@ -164,6 +165,8 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   removeMediaFile: async (projectId: string, id: string) => {
     const state = get();
     const item = state.mediaFiles.find((media) => media.id === id);
+
+    videoCache.clearVideo(id);
 
     // Cleanup object URLs to prevent memory leaks
     if (item?.url) {
@@ -180,13 +183,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
     // 2) Cascade into the timeline: remove any elements using this media ID
     const timeline = useTimelineStore.getState();
-    const {
-      tracks,
-      removeElementFromTrack,
-      removeElementFromTrackWithRipple,
-      rippleEditingEnabled,
-      pushHistory,
-    } = timeline;
+    const { tracks, deleteSelected, setSelectedElements } = timeline;
 
     // Find all elements that reference this media
     const elementsToRemove: Array<{ trackId: string; elementId: string }> = [];
@@ -198,23 +195,15 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       }
     }
 
-    // If there are elements to remove, push history once before batch removal
+    // If there are elements to remove, use unified delete function
     if (elementsToRemove.length > 0) {
-      pushHistory();
-
-      // Remove all elements without pushing additional history entries
-      for (const { trackId, elementId } of elementsToRemove) {
-        if (rippleEditingEnabled) {
-          removeElementFromTrackWithRipple(trackId, elementId, false);
-        } else {
-          removeElementFromTrack(trackId, elementId, false);
-        }
-      }
+      setSelectedElements(elementsToRemove);
+      deleteSelected();
     }
 
     // 3) Remove from persistent storage
     try {
-      await storageService.deleteMediaFile(projectId, id);
+      await storageService.deleteMediaFile({ projectId, id });
     } catch (error) {
       console.error("Failed to delete media item:", error);
     }
@@ -224,7 +213,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      const mediaItems = await storageService.loadAllMediaFiles(projectId);
+      const mediaItems = await storageService.loadAllMediaFiles({ projectId });
 
       // Regenerate thumbnails for video items
       const updatedMediaItems = await Promise.all(
@@ -279,7 +268,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     try {
       const mediaIds = state.mediaFiles.map((item) => item.id);
       await Promise.all(
-        mediaIds.map((id) => storageService.deleteMediaFile(projectId, id))
+        mediaIds.map((id) => storageService.deleteMediaFile({ projectId, id }))
       );
     } catch (error) {
       console.error("Failed to clear media items from storage:", error);
@@ -288,6 +277,8 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
   clearAllMedia: () => {
     const state = get();
+
+    videoCache.clearAll();
 
     // Cleanup all object URLs
     state.mediaFiles.forEach((item) => {
