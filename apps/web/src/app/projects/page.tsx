@@ -494,10 +494,21 @@ function ProjectCard({
               {project.name}
             </h3>
             <button
+              type="button"
+              aria-label="Open project in new tab"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open(`/editor/${project.id}`, "_blank");
+                const newWindow = window.open(`/editor/${project.id}`, "_blank", "noopener,noreferrer");
+                if (newWindow) newWindow.opener = null;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const newWindow = window.open(`/editor/${project.id}`, "_blank", "noopener,noreferrer");
+                  if (newWindow) newWindow.opener = null;
+                }
               }}
               className={`text-foreground hover:text-muted-foreground transition-opacity flex-shrink-0 cursor-pointer ${
                 isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
