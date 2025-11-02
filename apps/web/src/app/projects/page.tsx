@@ -11,6 +11,7 @@ import {
   Trash2,
   Video,
   X,
+  ExternalLink
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -487,10 +488,25 @@ function ProjectCard({
       </div>
 
       <CardContent className="px-0 pt-5 flex flex-col gap-1">
-        <div className="flex items-start justify-between">
-          <h3 className="font-medium text-sm leading-snug group-hover:text-foreground/90 transition-colors line-clamp-2">
-            {project.name}
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center min-w-0 gap-2">
+            <h3 className="font-medium text-sm leading-snug group-hover:text-foreground/90 transition-colors line-clamp-2">
+              {project.name}
+            </h3>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(`/editor/${project.id}`, "_blank");
+              }}
+              className={`text-foreground hover:text-muted-foreground transition-opacity flex-shrink-0 cursor-pointer ${
+                isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+            >
+              <ExternalLink size={14} />
+            </button>
+          </div>
+
           {!isSelectionMode && (
             <DropdownMenu
               open={isDropdownOpen}
