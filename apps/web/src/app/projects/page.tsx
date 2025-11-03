@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { RenameProjectDialog } from "@/components/rename-project-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -215,6 +216,7 @@ export default function ProjectsPage() {
                   Select Projects
                 </Button>
                 <CreateButton onClick={handleCreateProject} />
+                <ThemeToggle />
               </div>
             )}
           </div>
