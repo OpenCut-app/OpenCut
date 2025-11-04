@@ -493,29 +493,32 @@ function ProjectCard({
             <h3 className="font-medium text-sm leading-snug group-hover:text-foreground/90 transition-colors line-clamp-2">
               {project.name}
             </h3>
-            <button
-              type="button"
-              aria-label="Open project in new tab"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const newWindow = window.open(`/editor/${project.id}`, "_blank", "noopener,noreferrer");
-                if (newWindow) newWindow.opener = null;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+            {!isSelectionMode && (
+              <Button
+                variant="text"
+                size="sm" 
+                aria-label="Open project in new tab"
+                onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   const newWindow = window.open(`/editor/${project.id}`, "_blank", "noopener,noreferrer");
                   if (newWindow) newWindow.opener = null;
-                }
-              }}
-              className={`text-foreground hover:text-muted-foreground transition-opacity flex-shrink-0 cursor-pointer ${
-                isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}
-            >
-              <ExternalLink size={14} />
-            </button>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const newWindow = window.open(`/editor/${project.id}`, "_blank", "noopener,noreferrer");
+                    if (newWindow) newWindow.opener = null;
+                  }
+                }}
+                className={`transition-opacity size-3 p-0 shrink-0 ml-0 ${
+                  isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
+                <ExternalLink />
+              </Button>
+            )}
           </div>
 
           {!isSelectionMode && (
