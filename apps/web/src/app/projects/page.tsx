@@ -512,11 +512,11 @@ function ProjectCard({
                     if (newWindow) newWindow.opener = null;
                   }
                 }}
-                className={`transition-opacity size-3 p-0 shrink-0 ml-0 ${
+                className={`transition-opacity size-6 p-0 shrink-0 ml-0 ${
                   isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 }`}
               >
-                <ExternalLink />
+                <ExternalLink size={16} />
               </Button>
             )}
           </div>
