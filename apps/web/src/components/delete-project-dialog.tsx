@@ -7,36 +7,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+
+type DeleteProjectDialogProps = {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  projectName?: string;
+};
 
 export function DeleteProjectDialog({
   isOpen,
   onOpenChange,
   onConfirm,
   projectName,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  projectName?: string;
-}) {
+}: DeleteProjectDialogProps) {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onOpenChange(false);
+  };
+
+  const handleAutoFocus = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
+      <DialogContent onOpenAutoFocus={handleAutoFocus}>
         <DialogHeader>
           <DialogTitle>
             {projectName ? (
               <>
-                {"Delete '"}
+                Delete &apos;
                 <span className="inline-block max-w-[300px] truncate align-bottom">
                   {projectName}
                 </span>
-                {"'?"}
+                &apos;?
               </>
             ) : (
               "Delete Project?"
@@ -50,15 +57,16 @@ export function DeleteProjectDialog({
         <DialogFooter>
           <Button
             variant="text"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onOpenChange(false);
-            }}
+            onClick={handleCancel}
+            type="button"
           >
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            type="button"
+          >
             Delete
           </Button>
         </DialogFooter>
