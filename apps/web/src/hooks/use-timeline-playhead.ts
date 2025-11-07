@@ -1,125 +1,218 @@
 import { snapTimeToFrame } from "@/constants/timeline-constants";
-import { useProjectStore } from "@/stores/project-store";
-import { useRef, useState, useCallback } from "react";
+import { DEFAULT_FPS, useProjectStore } from "@/stores/project-store";
+import { usePlaybackStore } from "@/stores/playback-store";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useEdgeAutoScroll } from "@/hooks/use-edge-auto-scroll";
 
 interface UseTimelinePlayheadProps {
-	currentTime: number;
-	duration: number;
-	zoomLevel: number;
-	seek: (time: number) => void;
-	rulerRef: React.RefObject<HTMLDivElement>;
-	rulerScrollRef: React.RefObject<HTMLDivElement>;
+  currentTime: number;
+  duration: number;
+  zoomLevel: number;
+  seek: (time: number) => void;
+  rulerRef: React.RefObject<HTMLDivElement>;
+  rulerScrollRef: React.RefObject<HTMLDivElement>;
+  tracksScrollRef: React.RefObject<HTMLDivElement>;
+  playheadRef?: React.RefObject<HTMLDivElement>;
 }
 
-/**
- * useTimelinePlayhead
- *
- * Custom hook to manage playhead (scrubbing) logic for a timeline editor.
- * Handles mouse interaction for timeline ruler, calculates time from mouse,
- * and enables smooth scrubbing without unnecessary re-renders.
- */
 export function useTimelinePlayhead({
-	currentTime,
-	duration,
-	zoomLevel,
-	seek,
-	rulerRef,
-	rulerScrollRef,
+  currentTime,
+  duration,
+  zoomLevel,
+  seek,
+  rulerRef,
+  rulerScrollRef,
+  tracksScrollRef,
+  playheadRef,
 }: UseTimelinePlayheadProps) {
-	// Get current project info (especially FPS) from global store
-	const { activeProject } = useProjectStore();
+  // Playhead scrubbing state
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubTime, setScrubTime] = useState<number | null>(null);
 
-	// Ref to track if currently scrubbing
-	const isScrubbingRef = useRef(false);
+  // Ruler drag detection state
+  const [isDraggingRuler, setIsDraggingRuler] = useState(false);
+  const [hasDraggedRuler, setHasDraggedRuler] = useState(false);
+  const lastMouseXRef = useRef<number>(0);
 
-	// Ref to hold the playhead time while scrubbing (does not trigger re-render)
-	const scrubTimeRef = useRef<number | null>(null);
+  const playheadPosition =
+    isScrubbing && scrubTime !== null ? scrubTime : currentTime;
 
-	// State to force re-render when scrubbing ends
-	const [_, forceRerender] = useState(0);
+  // --- Playhead Scrubbing Handlers ---
+  const handlePlayheadMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation(); // Prevent ruler drag from triggering
+      setIsScrubbing(true);
+      handleScrub(e);
+    },
+    [duration, zoomLevel]
+  );
 
-	/**
-	 * Determines the actual playhead position:
-	 * - If scrubbing, use the value in scrubTimeRef
-	 * - Otherwise, use the currentTime (controlled by external state)
-	 */
-	const playheadPosition =
-		isScrubbingRef.current && scrubTimeRef.current !== null
-			? scrubTimeRef.current
-			: currentTime;
+  // Ruler mouse down handler
+  const handleRulerMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      // Only handle left mouse button
+      if (e.button !== 0) return;
 
-	/**
-	 * Calculate timeline time (in seconds) based on mouse X position.
-	 * - Gets bounding rect of the ruler
-	 * - Adjusts for scroll position if ruler is scrollable
-	 * - Converts X pixel offset to seconds using current zoom level
-	 * - Snaps to nearest frame using FPS
-	 */
-	const getTimeFromMouse = useCallback(
-		(e: MouseEvent | React.MouseEvent) => {
-			const ruler = rulerRef.current;
-			const scrollArea = rulerScrollRef.current?.querySelector(
-				"[data-radix-scroll-area-viewport]",
-			) as HTMLElement;
+      // Don't interfere if clicking on the playhead itself
+      if (playheadRef?.current?.contains(e.target as Node)) return;
 
-			if (!ruler || !scrollArea) return 0;
+      e.preventDefault();
+      setIsDraggingRuler(true);
+      setHasDraggedRuler(false);
 
-			const rect = ruler.getBoundingClientRect();
-			const scrollLeft = scrollArea.scrollLeft;
-			const x = e.clientX - rect.left + scrollLeft;
+      // Start scrubbing immediately
+      setIsScrubbing(true);
+      handleScrub(e);
+    },
+    [duration, zoomLevel]
+  );
 
-			// Calculate how many pixels represent one second, depending on zoom
-			const pixelsPerSecond = 50 * zoomLevel;
-			const rawTime = Math.max(0, Math.min(duration, x / pixelsPerSecond));
-			const time = snapTimeToFrame(rawTime, activeProject?.fps || 30);
-			return time;
-		},
-		[rulerRef, rulerScrollRef, duration, zoomLevel, activeProject?.fps],
-	);
+  const handleScrub = useCallback(
+    (e: MouseEvent | React.MouseEvent) => {
+      const ruler = rulerRef.current;
+      if (!ruler) return;
+      const rect = ruler.getBoundingClientRect();
+      const rawX = e.clientX - rect.left;
 
-	/**
-	 * Handle mouse down event on the ruler:
-	 * - Starts scrubbing and updates playhead immediately
-	 * - Registers mousemove/mouseup events to allow scrubbing
-	 * - Updates time as mouse moves and seeks to new time
-	 * - Cleans up listeners and triggers re-render when scrubbing ends
-	 */
-	const handleRulerMouseDown = useCallback(
-		(e: React.MouseEvent) => {
-			if (e.button !== 0) return;
-			e.preventDefault();
-			const time = getTimeFromMouse(e);
+      // Get the timeline content width based on duration and zoom
+      const timelineContentWidth = duration * 50 * zoomLevel; // TIMELINE_CONSTANTS.PIXELS_PER_SECOND = 50
 
-			isScrubbingRef.current = true;
-			scrubTimeRef.current = time;
-			seek(time);
+      // Constrain x to be within the timeline content bounds
+      const x = Math.max(0, Math.min(timelineContentWidth, rawX));
 
-			// Mouse move handler: update playhead and seek to new time
-			const onMouseMove = (e: MouseEvent) => {
-				const t = getTimeFromMouse(e);
-				if (t !== scrubTimeRef.current) {
-					scrubTimeRef.current = t;
-					seek(t);
-				}
-			};
+      const rawTime = Math.max(0, Math.min(duration, x / (50 * zoomLevel)));
+      // Use frame snapping for playhead scrubbing
+      const projectStore = useProjectStore.getState();
+      const projectFps = projectStore.activeProject?.fps || DEFAULT_FPS;
+      const time = snapTimeToFrame(rawTime, projectFps);
 
-			// Mouse up handler: stop scrubbing, cleanup, and force re-render
-			const onMouseUp = () => {
-				isScrubbingRef.current = false;
-				window.removeEventListener("mousemove", onMouseMove);
-				window.removeEventListener("mouseup", onMouseUp);
-				forceRerender((v) => v + 1);
-			};
+      // Debug logging
+      if (rawX < 0 || x !== rawX) {
+        console.log(
+          "PLAYHEAD DEBUG:",
+          JSON.stringify({
+            mouseX: e.clientX,
+            rulerLeft: rect.left,
+            rawX,
+            constrainedX: x,
+            timelineContentWidth,
+            rawTime,
+            finalTime: time,
+            duration,
+            zoomLevel,
+            playheadPx: time * 50 * zoomLevel,
+          })
+        );
+      }
 
-			// Attach listeners to window for drag outside the ruler area
-			window.addEventListener("mousemove", onMouseMove);
-			window.addEventListener("mouseup", onMouseUp);
-		},
-		[getTimeFromMouse, seek],
-	);
+      setScrubTime(time);
+      seek(time); // update video preview in real time
 
-	return {
-		playheadPosition, // Current playhead position (real-time while scrubbing)
-		handleRulerMouseDown, // Attach to the ruler's onMouseDown
-	};
+      // Store mouse position for auto-scrolling
+      lastMouseXRef.current = e.clientX;
+    },
+    [duration, zoomLevel, seek, rulerRef]
+  );
+
+  useEdgeAutoScroll({
+    isActive: isScrubbing,
+    getMouseClientX: () => lastMouseXRef.current,
+    rulerScrollRef,
+    tracksScrollRef,
+    contentWidth: duration * 50 * zoomLevel,
+  });
+
+  // Mouse move/up event handlers
+  useEffect(() => {
+    if (!isScrubbing) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      handleScrub(e);
+      // Mark that we've dragged if ruler drag is active
+      if (isDraggingRuler) {
+        setHasDraggedRuler(true);
+      }
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      setIsScrubbing(false);
+      if (scrubTime !== null) seek(scrubTime); // finalize seek
+      setScrubTime(null);
+
+      // Handle ruler click vs drag
+      if (isDraggingRuler) {
+        setIsDraggingRuler(false);
+        // If we didn't drag, treat it as a click-to-seek
+        if (!hasDraggedRuler) {
+          handleScrub(e);
+        }
+        setHasDraggedRuler(false);
+      }
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
+    // Edge auto-scroll is handled by useEdgeAutoScroll
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      // nothing to cleanup for edge auto scroll
+    };
+  }, [
+    isScrubbing,
+    scrubTime,
+    seek,
+    handleScrub,
+    isDraggingRuler,
+    hasDraggedRuler,
+    // edge auto scroll hook is independent
+  ]);
+
+  // --- Playhead auto-scroll effect (only during playback) ---
+  useEffect(() => {
+    const { isPlaying } = usePlaybackStore.getState();
+
+    // Only auto-scroll during playback, not during manual interactions
+    if (!isPlaying || isScrubbing) return;
+
+    const rulerViewport = rulerScrollRef.current;
+    const tracksViewport = tracksScrollRef.current;
+    if (!rulerViewport || !tracksViewport) return;
+
+    const playheadPx = playheadPosition * 50 * zoomLevel; // TIMELINE_CONSTANTS.PIXELS_PER_SECOND = 50
+    const viewportWidth = rulerViewport.clientWidth;
+    const scrollMin = 0;
+    const scrollMax = rulerViewport.scrollWidth - viewportWidth;
+
+    // Only auto-scroll if playhead is completely out of view (no buffer)
+    const needsScroll =
+      playheadPx < rulerViewport.scrollLeft ||
+      playheadPx > rulerViewport.scrollLeft + viewportWidth;
+
+    if (needsScroll) {
+      // Center the playhead in the viewport
+      const desiredScroll = Math.max(
+        scrollMin,
+        Math.min(scrollMax, playheadPx - viewportWidth / 2)
+      );
+      rulerViewport.scrollLeft = tracksViewport.scrollLeft = desiredScroll;
+    }
+  }, [
+    playheadPosition,
+    duration,
+    zoomLevel,
+    rulerScrollRef,
+    tracksScrollRef,
+    isScrubbing,
+  ]);
+
+  return {
+    playheadPosition,
+    handlePlayheadMouseDown,
+    handleRulerMouseDown,
+    isDraggingRuler,
+  };
 }

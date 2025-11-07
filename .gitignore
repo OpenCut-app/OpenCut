@@ -27,6 +27,8 @@ node_modules
 *.env
 
 # cursor
-
-.cursor/
 bun.lockb
+apps/transcription/__pycache__
+apps/transcription/env
+
+apps/bg-remover/env

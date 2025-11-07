@@ -1,164 +1,105 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "motion/react";
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useMotionValueEvent,
+  useTransform,
+} from "motion/react";
+import { type PropsWithChildren, useEffect, useRef, useState } from "react";
 
-interface HandlebarsProps {
-	children: React.ReactNode;
-	minWidth?: number;
-	maxWidth?: number;
-	onRangeChange?: (left: number, right: number) => void;
-}
+type HandlebarsProps = PropsWithChildren;
 
-export function Handlebars({
-	children,
-	minWidth = 50,
-	maxWidth = 400,
-	onRangeChange,
-}: HandlebarsProps) {
-	const [leftHandle, setLeftHandle] = useState(0);
-	const [rightHandle, setRightHandle] = useState(maxWidth);
-	const [contentWidth, setContentWidth] = useState(maxWidth);
+export function Handlebars({ children }: HandlebarsProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
-	const leftHandleX = useMotionValue(0);
-	const rightHandleX = useMotionValue(maxWidth);
+  const [width, setWidth] = useState(0);
 
-	const visibleWidth = useTransform(
-		[leftHandleX, rightHandleX],
-		(values: number[]) => values[1] - values[0],
-	);
+  const [leftHandle, setLeftHandle] = useState(0);
+  const [rightHandle, setRightHandle] = useState(width);
 
-	const contentLeft = useTransform(leftHandleX, (left: number) => -left);
+  const leftHandleX = useMotionValue(0);
+  const rightHandleX = useMotionValue(width);
 
-	const containerRef = useRef<HTMLDivElement>(null);
-	const measureRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-	useEffect(() => {
-		if (!measureRef.current) return;
+    const observer = new ResizeObserver(() => {
+      setWidth(el.offsetWidth);
+      setRightHandle(el.offsetWidth);
+      rightHandleX.set(el.offsetWidth);
+    });
 
-		const measureContent = () => {
-			if (measureRef.current) {
-				const width = measureRef.current.scrollWidth;
-				const paddedWidth = width + 32;
-				setContentWidth(paddedWidth);
-				setRightHandle(paddedWidth);
-				rightHandleX.set(paddedWidth);
-			}
-		};
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [rightHandleX.set]);
 
-		measureContent();
-		const timer = setTimeout(measureContent, 50);
+  useMotionValueEvent(leftHandleX, "change", () => {
+    setLeftHandle(leftHandleX.get());
+  });
+  useMotionValueEvent(rightHandleX, "change", () => {
+    setRightHandle(rightHandleX.get());
+  });
+  const leftGradient = useTransform(leftHandleX, [0, width - 10], [0, 100]);
+  const rightGradient = useTransform(rightHandleX, [0, width + 10], [0, 100]);
 
-		return () => clearTimeout(timer);
-	}, [children, rightHandleX]);
+  return (
+    <div className="flex justify-center gap-4 leading-16">
+      <div ref={containerRef} className="relative -rotate-[2.76deg] mt-0.5">
+        <div className="absolute inset-0 w-full h-full rounded-2xl border border-yellow-500 flex justify-between z-1">
+          <motion.div
+            className="absolute z-10 left-0 h-full border border-yellow-500 w-7 rounded-full bg-background flex items-center justify-center select-none"
+            style={{
+              x: leftHandleX,
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: rightHandle - 60 }}
+            dragElastic={0}
+            dragMomentum={false}
+            whileHover={{ scale: 1.05, cursor: "grab" }}
+            whileDrag={{ scale: 1.1, cursor: "grabbing" }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          >
+            <div className="w-2 h-8 rounded-full bg-yellow-500" />
+          </motion.div>
 
-	useEffect(() => {
-		leftHandleX.set(leftHandle);
-	}, [leftHandle, leftHandleX]);
+          <motion.div
+            className="absolute z-10 -left-[30px] h-full border border-yellow-500 w-7 rounded-full bg-background flex items-center justify-center select-none"
+            style={{
+              x: rightHandleX,
+            }}
+            drag="x"
+            dragConstraints={{
+              left: leftHandle + 60,
+              right: width,
+            }}
+            dragElastic={0}
+            dragMomentum={false}
+            whileHover={{ scale: 1.05, cursor: "grab" }}
+            whileDrag={{ scale: 1.1, cursor: "grabbing" }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          >
+            <div className="w-2 h-8 rounded-full bg-yellow-500" />
+          </motion.div>
+        </div>
 
-	useEffect(() => {
-		rightHandleX.set(rightHandle);
-	}, [rightHandle, rightHandleX]);
-
-	useEffect(() => {
-		onRangeChange?.(leftHandle, rightHandle);
-	}, [leftHandle, rightHandle, onRangeChange]);
-
-	const handleLeftDrag = (event: any, info: PanInfo) => {
-		const newLeft = Math.max(
-			0,
-			Math.min(leftHandle + info.offset.x, rightHandle - minWidth),
-		);
-		setLeftHandle(newLeft);
-	};
-
-	const handleRightDrag = (event: any, info: PanInfo) => {
-		const newRight = Math.max(
-			leftHandle + minWidth,
-			Math.min(contentWidth, rightHandle + info.offset.x),
-		);
-		setRightHandle(newRight);
-	};
-
-	return (
-		<div className="flex justify-center gap-4 leading-[4rem] mt-0 md:mt-2">
-			<div
-				ref={measureRef}
-				className="absolute -left-[9999px] top-0 invisible px-4 whitespace-nowrap font-[inherit]"
-			>
-				{children}
-			</div>
-
-			<div
-				ref={containerRef}
-				className="relative -rotate-[2.76deg] max-w-[250px] md:max-w-[454px] mt-2"
-				style={{ width: contentWidth }}
-			>
-				<div className="absolute inset-0 w-full h-full rounded-2xl border border-yellow-500 flex justify-between">
-					<motion.div
-						className="h-full border border-yellow-500 w-7 rounded-full bg-accent flex items-center justify-center cursor-ew-resize select-none"
-						style={{
-							position: "absolute",
-							x: leftHandleX,
-							left: 0,
-							zIndex: 10,
-						}}
-						drag="x"
-						dragConstraints={{ left: 0, right: rightHandle - minWidth }}
-						dragElastic={0}
-						dragMomentum={false}
-						onDrag={handleLeftDrag}
-						whileHover={{ scale: 1.05 }}
-						whileDrag={{ scale: 1.1 }}
-						transition={{ type: "spring", stiffness: 400, damping: 30 }}
-					>
-						<div className="w-2 h-8 rounded-full bg-yellow-500"></div>
-					</motion.div>
-
-					<motion.div
-						className="h-full border border-yellow-500 w-7 rounded-full bg-accent flex items-center justify-center cursor-ew-resize select-none"
-						style={{
-							position: "absolute",
-							x: rightHandleX,
-							left: -30,
-							zIndex: 10,
-						}}
-						drag="x"
-						dragConstraints={{
-							left: leftHandle + minWidth,
-							right: contentWidth,
-						}}
-						dragElastic={0}
-						dragMomentum={false}
-						onDrag={handleRightDrag}
-						whileHover={{ scale: 1.05 }}
-						whileDrag={{ scale: 1.1 }}
-						transition={{ type: "spring", stiffness: 400, damping: 30 }}
-					>
-						<div className="w-2 h-8 rounded-full bg-yellow-500"></div>
-					</motion.div>
-				</div>
-
-				<motion.div
-					className="relative overflow-hidden rounded-2xl"
-					style={{
-						width: visibleWidth,
-						x: leftHandleX,
-						height: "100%",
-					}}
-				>
-					<motion.div
-						className="w-full h-full flex items-center justify-center px-4"
-						style={{
-							x: contentLeft,
-							width: contentWidth,
-							whiteSpace: "nowrap",
-						}}
-					>
-						{children}
-					</motion.div>
-				</motion.div>
-			</div>
-		</div>
-	);
+        <motion.span
+          className="inline-flex items-center justify-center w-full h-full px-9 relative rounded-2xl will-change-auto"
+          style={{
+            mask: useMotionTemplate`linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%, 
+            rgba(255, 255, 255, 0) ${leftGradient}%, 
+            rgba(0, 0, 0) ${leftGradient}%, 
+            rgba(0, 0, 0) ${rightGradient}%, 
+            rgba(255, 255, 255, 0) ${rightGradient}%, 
+            rgba(255, 255, 255, 0) 100%)`,
+          }}
+        >
+          {children}
+        </motion.span>
+      </div>
+    </div>
+  );
 }

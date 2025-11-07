@@ -4,106 +4,106 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { toast } from "sonner";
 
 export const usePlaybackControls = () => {
-	const { isPlaying, currentTime, play, pause, seek } = usePlaybackStore();
+  const { isPlaying, currentTime, play, pause, seek } = usePlaybackStore();
 
-	const {
-		selectedElements,
-		tracks,
-		splitElement,
-		splitAndKeepLeft,
-		splitAndKeepRight,
-		separateAudio,
-	} = useTimelineStore();
+  const {
+    selectedElements,
+    tracks,
+    splitSelected,
+    splitAndKeepLeft,
+    splitAndKeepRight,
+    separateAudio,
+  } = useTimelineStore();
 
-	const handleSplitSelectedElement = useCallback(() => {
-		if (selectedElements.length !== 1) {
-			toast.error("Select exactly one element to split");
-			return;
-		}
+  const handleSplitSelectedElement = useCallback(() => {
+    if (selectedElements.length !== 1) {
+      toast.error("Select exactly one element to split");
+      return;
+    }
 
-		const { trackId, elementId } = selectedElements[0];
-		const track = tracks.find((t) => t.id === trackId);
-		const element = track?.elements.find((e) => e.id === elementId);
+    const { trackId, elementId } = selectedElements[0];
+    const track = tracks.find((t) => t.id === trackId);
+    const element = track?.elements.find((e) => e.id === elementId);
 
-		if (!element) return;
+    if (!element) return;
 
-		const effectiveStart = element.startTime;
-		const effectiveEnd =
-			element.startTime +
-			(element.duration - element.trimStart - element.trimEnd);
+    const effectiveStart = element.startTime;
+    const effectiveEnd =
+      element.startTime +
+      (element.duration - element.trimStart - element.trimEnd);
 
-		if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
-			toast.error("Playhead must be within selected element");
-			return;
-		}
+    if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
+      toast.error("Playhead must be within selected element");
+      return;
+    }
 
-		splitElement(trackId, elementId, currentTime);
-	}, [selectedElements, tracks, currentTime, splitElement]);
+    splitSelected(currentTime, trackId, elementId);
+  }, [selectedElements, tracks, currentTime, splitSelected]);
 
-	const handleSplitAndKeepLeftCallback = useCallback(() => {
-		if (selectedElements.length !== 1) {
-			toast.error("Select exactly one element");
-			return;
-		}
+  const handleSplitAndKeepLeftCallback = useCallback(() => {
+    if (selectedElements.length !== 1) {
+      toast.error("Select exactly one element");
+      return;
+    }
 
-		const { trackId, elementId } = selectedElements[0];
-		const track = tracks.find((t) => t.id === trackId);
-		const element = track?.elements.find((e) => e.id === elementId);
+    const { trackId, elementId } = selectedElements[0];
+    const track = tracks.find((t) => t.id === trackId);
+    const element = track?.elements.find((e) => e.id === elementId);
 
-		if (!element) return;
+    if (!element) return;
 
-		const effectiveStart = element.startTime;
-		const effectiveEnd =
-			element.startTime +
-			(element.duration - element.trimStart - element.trimEnd);
+    const effectiveStart = element.startTime;
+    const effectiveEnd =
+      element.startTime +
+      (element.duration - element.trimStart - element.trimEnd);
 
-		if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
-			toast.error("Playhead must be within selected element");
-			return;
-		}
+    if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
+      toast.error("Playhead must be within selected element");
+      return;
+    }
 
-		splitAndKeepLeft(trackId, elementId, currentTime);
-	}, [selectedElements, tracks, currentTime, splitAndKeepLeft]);
+    splitAndKeepLeft(trackId, elementId, currentTime);
+  }, [selectedElements, tracks, currentTime, splitAndKeepLeft]);
 
-	const handleSplitAndKeepRightCallback = useCallback(() => {
-		if (selectedElements.length !== 1) {
-			toast.error("Select exactly one element");
-			return;
-		}
+  const handleSplitAndKeepRightCallback = useCallback(() => {
+    if (selectedElements.length !== 1) {
+      toast.error("Select exactly one element");
+      return;
+    }
 
-		const { trackId, elementId } = selectedElements[0];
-		const track = tracks.find((t) => t.id === trackId);
-		const element = track?.elements.find((e) => e.id === elementId);
+    const { trackId, elementId } = selectedElements[0];
+    const track = tracks.find((t) => t.id === trackId);
+    const element = track?.elements.find((e) => e.id === elementId);
 
-		if (!element) return;
+    if (!element) return;
 
-		const effectiveStart = element.startTime;
-		const effectiveEnd =
-			element.startTime +
-			(element.duration - element.trimStart - element.trimEnd);
+    const effectiveStart = element.startTime;
+    const effectiveEnd =
+      element.startTime +
+      (element.duration - element.trimStart - element.trimEnd);
 
-		if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
-			toast.error("Playhead must be within selected element");
-			return;
-		}
+    if (currentTime <= effectiveStart || currentTime >= effectiveEnd) {
+      toast.error("Playhead must be within selected element");
+      return;
+    }
 
-		splitAndKeepRight(trackId, elementId, currentTime);
-	}, [selectedElements, tracks, currentTime, splitAndKeepRight]);
+    splitAndKeepRight(trackId, elementId, currentTime);
+  }, [selectedElements, tracks, currentTime, splitAndKeepRight]);
 
-	const handleSeparateAudioCallback = useCallback(() => {
-		if (selectedElements.length !== 1) {
-			toast.error("Select exactly one media element to separate audio");
-			return;
-		}
+  const handleSeparateAudioCallback = useCallback(() => {
+    if (selectedElements.length !== 1) {
+      toast.error("Select exactly one media element to separate audio");
+      return;
+    }
 
-		const { trackId, elementId } = selectedElements[0];
-		const track = tracks.find((t) => t.id === trackId);
+    const { trackId, elementId } = selectedElements[0];
+    const track = tracks.find((t) => t.id === trackId);
 
-		if (!track || track.type !== "media") {
-			toast.error("Select a media element to separate audio");
-			return;
-		}
+    if (!track || track.type !== "media") {
+      toast.error("Select a media element to separate audio");
+      return;
+    }
 
-		separateAudio(trackId, elementId);
-	}, [selectedElements, tracks, separateAudio]);
+    separateAudio(trackId, elementId);
+  }, [selectedElements, tracks, separateAudio]);
 };

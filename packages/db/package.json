@@ -1,30 +1,30 @@
 {
-	"name": "@opencut/db",
-	"version": "0.0.0",
-	"description": "Database package for OpenCut",
-	"main": "./src/index.ts",
-	"types": "./src/index.ts",
-	"exports": {
-		".": "./src/index.ts",
-		"./schema": "./src/schema.ts",
-		"./drizzle.config": "./drizzle.config.ts",
-		"./keys": "./src/keys.ts"
-	},
-	"scripts": {
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:push": "drizzle-kit push",
-		"db:studio": "drizzle-kit studio"
-	},
-	"dependencies": {
-		"@t3-oss/env-nextjs": "^0.13.8",
-		"drizzle-orm": "^0.44.2",
-		"postgres": "^3.4.5",
-		"zod": "^4.0.5"
-	},
-	"devDependencies": {
-		"drizzle-kit": "^0.31.1",
-		"dotenv": "^16.4.7",
-		"@types/pg": "^8.11.10"
-	}
+  "name": "@opencut/db",
+  "version": "0.0.0",
+  "description": "Database package for OpenCut",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./drizzle.config": "./drizzle.config.ts",
+    "./keys": "./src/keys.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@t3-oss/env-nextjs": "^0.13.8",
+    "drizzle-orm": "^0.44.2",
+    "postgres": "^3.4.5",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.1",
+    "dotenv": "^16.4.7",
+    "@types/pg": "^8.11.10"
+  }
 }

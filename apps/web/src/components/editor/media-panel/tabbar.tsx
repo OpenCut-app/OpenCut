@@ -2,123 +2,98 @@
 
 import { cn } from "@/lib/utils";
 import { Tab, tabs, useMediaPanelStore } from "./store";
-import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useEffect, useRef, useState } from "react";
 
 export function TabBar() {
-	const { activeTab, setActiveTab } = useMediaPanelStore();
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const [isAtEnd, setIsAtEnd] = useState(false);
-	const [isAtStart, setIsAtStart] = useState(true);
+  const { activeTab, setActiveTab } = useMediaPanelStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showTopFade, setShowTopFade] = useState(false);
+  const [showBottomFade, setShowBottomFade] = useState(false);
 
-	const scrollToEnd = () => {
-		if (scrollContainerRef.current) {
-			scrollContainerRef.current.scrollTo({
-				left: scrollContainerRef.current.scrollWidth,
-			});
-			setIsAtEnd(true);
-			setIsAtStart(false);
-		}
-	};
+  const checkScrollPosition = () => {
+    const element = scrollRef.current;
+    if (!element) return;
 
-	const scrollToStart = () => {
-		if (scrollContainerRef.current) {
-			scrollContainerRef.current.scrollTo({
-				left: 0,
-			});
-			setIsAtStart(true);
-			setIsAtEnd(false);
-		}
-	};
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    setShowTopFade(scrollTop > 0);
+    setShowBottomFade(scrollTop < scrollHeight - clientHeight - 1);
+  };
 
-	const checkScrollPosition = () => {
-		if (scrollContainerRef.current) {
-			const { scrollLeft, scrollWidth, clientWidth } =
-				scrollContainerRef.current;
-			const isAtEndNow = scrollLeft + clientWidth >= scrollWidth - 1;
-			const isAtStartNow = scrollLeft <= 1;
-			setIsAtEnd(isAtEndNow);
-			setIsAtStart(isAtStartNow);
-		}
-	};
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
 
-	// We're using useEffect because we need to sync with external DOM scroll events
-	useEffect(() => {
-		const container = scrollContainerRef.current;
-		if (!container) return;
+    checkScrollPosition();
+    element.addEventListener("scroll", checkScrollPosition);
+    
+    const resizeObserver = new ResizeObserver(checkScrollPosition);
+    resizeObserver.observe(element);
 
-		checkScrollPosition();
-		container.addEventListener("scroll", checkScrollPosition);
+    return () => {
+      element.removeEventListener("scroll", checkScrollPosition);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
-		const resizeObserver = new ResizeObserver(checkScrollPosition);
-		resizeObserver.observe(container);
-
-		return () => {
-			container.removeEventListener("scroll", checkScrollPosition);
-			resizeObserver.disconnect();
-		};
-	}, []);
-
-	return (
-		<div className="flex">
-			<ScrollButton
-				direction="left"
-				onClick={scrollToStart}
-				isVisible={!isAtStart}
-			/>
-			<div
-				ref={scrollContainerRef}
-				className="h-12 bg-panel-accent px-3 flex justify-start items-center gap-5 overflow-x-auto scrollbar-x-hidden relative w-full"
-			>
-				{(Object.keys(tabs) as Tab[]).map((tabKey) => {
-					const tab = tabs[tabKey];
-					return (
-						<div
-							className={cn(
-								"flex flex-col gap-0.5 items-center cursor-pointer",
-								activeTab === tabKey ? "text-primary" : "text-muted-foreground",
-							)}
-							onClick={() => setActiveTab(tabKey)}
-							key={tabKey}
-						>
-							<tab.icon className="!size-[1.1rem]" />
-							<span className="text-[0.65rem]">{tab.label}</span>
-						</div>
-					);
-				})}
-			</div>
-			<ScrollButton
-				direction="right"
-				onClick={scrollToEnd}
-				isVisible={!isAtEnd}
-			/>
-		</div>
-	);
+  return (
+    <div className="flex relative">
+      <div 
+        ref={scrollRef}
+        className="h-full px-4 flex flex-col justify-start items-center gap-5 overflow-y-auto scrollbar-hidden relative w-full py-4"
+      >
+        {(Object.keys(tabs) as Tab[]).map((tabKey) => {
+          const tab = tabs[tabKey];
+          return (
+            <div
+              className={cn(
+                "flex z-[100] flex-col gap-0.5 items-center cursor-pointer",
+                activeTab === tabKey
+                  ? "text-primary !opacity-100"
+                  : "text-muted-foreground"
+              )}
+              onClick={() => setActiveTab(tabKey)}
+              key={tabKey}
+            >
+              <Tooltip delayDuration={10}>
+                <TooltipTrigger asChild>
+                  <tab.icon className="size-[1.1rem]! opacity-100 hover:opacity-75" />
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  align="center"
+                  variant="sidebar"
+                  sideOffset={8}
+                >
+                  <div className="dark:text-base-gray-950 text-black text-sm font-medium leading-none dark:text-white">
+                    {tab.label}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          );
+        })}
+      </div>
+      
+      <FadeOverlay direction="top" show={showTopFade} />
+      <FadeOverlay direction="bottom" show={showBottomFade} />
+    </div>
+  );
 }
 
-function ScrollButton({
-	direction,
-	onClick,
-	isVisible,
-}: {
-	direction: "left" | "right";
-	onClick: () => void;
-	isVisible: boolean;
-}) {
-	if (!isVisible) return null;
-
-	const Icon = direction === "left" ? ChevronLeft : ChevronRight;
-
-	return (
-		<div className="bg-panel-accent w-12 h-full flex items-center justify-center">
-			<Button
-				size="icon"
-				className="rounded-[0.4rem] w-4 h-7 !bg-foreground/10"
-				onClick={onClick}
-			>
-				<Icon className="!size-4 text-foreground" />
-			</Button>
-		</div>
-	);
+function FadeOverlay({ direction, show }: { direction: "top" | "bottom", show: boolean }) {
+  return (
+    <div 
+      className={cn(
+        "absolute left-0 right-0 h-6 pointer-events-none z-[101] transition-opacity duration-200",
+        direction === "top" && show
+          ? "top-0 bg-gradient-to-b from-panel to-transparent" 
+          : "bottom-0 bg-gradient-to-t from-panel to-transparent"
+      )}
+    />
+  );
 }

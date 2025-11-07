@@ -50,6 +50,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
+      args:
+        - FREESOUND_CLIENT_ID=${FREESOUND_CLIENT_ID}
+        - FREESOUND_API_KEY=${FREESOUND_API_KEY}
     restart: unless-stopped
     ports:
       - "3100:3000" # app is running on 3000 so we run this at 3100
@@ -60,6 +63,14 @@ services:
       - BETTER_AUTH_SECRET=your-production-secret-key-here
       - UPSTASH_REDIS_REST_URL=http://serverless-redis-http:80
       - UPSTASH_REDIS_REST_TOKEN=example_token
+      - FREESOUND_CLIENT_ID=${FREESOUND_CLIENT_ID}
+      - FREESOUND_API_KEY=${FREESOUND_API_KEY}
+      # Transcription (Optional - leave blank to disable auto-captions)
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - MODAL_TRANSCRIPTION_URL=${MODAL_TRANSCRIPTION_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -71,10 +82,10 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-  
-volumes:  
+
+volumes:
   postgres_data:
 
-networks:  
-  default:  
+networks:
+  default:
     name: opencut-network

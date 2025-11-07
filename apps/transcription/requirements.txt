@@ -1,0 +1,5 @@
+modal
+openai-whisper
+boto3
+pydantic
+cryptography
