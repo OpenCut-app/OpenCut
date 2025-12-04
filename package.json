@@ -23,7 +23,8 @@
     "mediabunny": "^1.9.3",
     "next": "^15.3.4",
     "react-country-flag": "^3.1.0",
-    "wavesurfer.js": "^7.9.8"
+    "wavesurfer.js": "^7.9.8",
+    "@upstash/redis": "^1.28.0"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide"

@@ -5,6 +5,7 @@
     "": {
       "name": "opencut",
       "dependencies": {
+        "@upstash/redis": "^1.28.0",
         "mediabunny": "^1.9.3",
         "next": "^15.3.4",
         "react-country-flag": "^3.1.0",
