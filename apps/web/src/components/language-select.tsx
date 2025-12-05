@@ -115,7 +115,23 @@ export function LanguageSelect({
         onClick={expand}
         ref={buttonRef}
       >
-        {!expanded ? (
+        {expanded ? (
+          <div className="flex flex-col gap-2 my-2.5 w-full overflow-y-auto scrollbar-hidden">
+            <LanguageButton
+              language={{ code: "auto", name: "Auto" }}
+              onSelect={handleSelect}
+              selectedCountry={selectedCountry}
+            />
+            {languages.map((language) => (
+              <LanguageButton
+                key={language.code}
+                language={language}
+                onSelect={handleSelect}
+                selectedCountry={selectedCountry}
+              />
+            ))}
+          </div>
+        ) : (
           <div
             className="flex items-center justify-between w-full"
             style={{
@@ -136,22 +152,6 @@ export function LanguageSelect({
                 {selectedCountry === "auto" ? "Auto" : selectedLanguage?.name}
               </span>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 my-2.5 w-full overflow-y-auto scrollbar-hidden">
-            <LanguageButton
-              language={{ code: "auto", name: "Auto" }}
-              onSelect={handleSelect}
-              selectedCountry={selectedCountry}
-            />
-            {languages.map((language) => (
-              <LanguageButton
-                key={language.code}
-                language={language}
-                onSelect={handleSelect}
-                selectedCountry={selectedCountry}
-              />
-            ))}
           </div>
         )}
       </motion.button>
