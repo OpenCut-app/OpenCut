@@ -15,7 +15,7 @@
     "@t3-oss/env-nextjs": "^0.13.8",
     "better-auth": "^1.1.1",
     "zod": "^4.0.5",
-    "@upstash/redis": "^1.28.0"
+    "@upstash/redis": "^1.35.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2"

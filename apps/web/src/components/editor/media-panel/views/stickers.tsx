@@ -104,7 +104,7 @@ function StickerGrid({
           ? "repeat(auto-fill, minmax(var(--sticker-min, 96px), var(--sticker-max, 160px)))"
           : "repeat(auto-fit, minmax(var(--sticker-min, 96px), 1fr))",
         ["--sticker-min" as any]: "96px",
-        ...(capSize ? ({ ["--sticker-max"]: "160px" } as any) : {}),
+        ...(capSize ? ({ "--sticker-max": "160px" } as any) : {}),
       }}
     >
       {icons.map((iconName) => (
@@ -297,9 +297,8 @@ function StickersContentView({ category }: { category: StickerCategory }) {
       setShowCollectionItems(false);
       const timer = setTimeout(() => setShowCollectionItems(true), 350);
       return () => clearTimeout(timer);
-    } else {
-      setShowCollectionItems(false);
     }
+    setShowCollectionItems(false);
   }, [isInCollection]);
 
   return (

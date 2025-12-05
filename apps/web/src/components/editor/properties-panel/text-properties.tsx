@@ -131,7 +131,7 @@ export function TextProperties({
         label: t.label,
         content:
           t.value === "transform" ? (
-            <div className="space-y-6"></div>
+            <div className="space-y-6" />
           ) : (
             <div className="space-y-6">
               <Textarea

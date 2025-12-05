@@ -268,7 +268,7 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       activeProject: TProject | null,
       renderFunction: (time: number) => Promise<ImageData>,
       sceneId?: string,
-      range: number = 3 // seconds
+      range = 3 // seconds
     ) => {
       const framesToPreRender: number[] = [];
 

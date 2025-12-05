@@ -19,7 +19,7 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
 
   useEffect(() => {
     let mounted = true;
-    let ws = wavesurfer.current;
+    const ws = wavesurfer.current;
 
     const initWaveSurfer = async () => {
       if (!waveformRef.current || !audioUrl) return;

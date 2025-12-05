@@ -502,43 +502,7 @@ export function PreviewPanel() {
         mainCtx.putImageData(cachedFrame, 0, 0);
 
         // Pre-render nearby frames in background
-        if (!isPlaying) {
-          // Only during scrubbing to avoid interfering with playback
-          preRenderNearbyFrames(
-            currentTime,
-            tracks,
-            mediaFiles,
-            activeProject,
-            async (time: number) => {
-              const tempCanvas = document.createElement("canvas");
-              tempCanvas.width = displayWidth;
-              tempCanvas.height = displayHeight;
-              const tempCtx = tempCanvas.getContext("2d");
-              if (!tempCtx)
-                throw new Error("Failed to create temp canvas context");
-
-              await renderTimelineFrame({
-                ctx: tempCtx,
-                time,
-                canvasWidth: displayWidth,
-                canvasHeight: displayHeight,
-                tracks,
-                mediaFiles,
-                backgroundType: activeProject?.backgroundType,
-                blurIntensity: activeProject?.blurIntensity,
-                backgroundColor:
-                  activeProject?.backgroundType === "blur"
-                    ? undefined
-                    : activeProject?.backgroundColor || "#000000",
-                projectCanvasSize: canvasSize,
-              });
-
-              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
-            },
-            currentScene?.id,
-            3
-          );
-        } else {
+        if (isPlaying) {
           // Small lookahead while playing
           preRenderNearbyFrames(
             currentTime,
@@ -574,6 +538,42 @@ export function PreviewPanel() {
             currentScene?.id,
             1
           );
+        } else {
+          // Only during scrubbing to avoid interfering with playback
+          preRenderNearbyFrames(
+            currentTime,
+            tracks,
+            mediaFiles,
+            activeProject,
+            async (time: number) => {
+              const tempCanvas = document.createElement("canvas");
+              tempCanvas.width = displayWidth;
+              tempCanvas.height = displayHeight;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (!tempCtx)
+                throw new Error("Failed to create temp canvas context");
+
+              await renderTimelineFrame({
+                ctx: tempCtx,
+                time,
+                canvasWidth: displayWidth,
+                canvasHeight: displayHeight,
+                tracks,
+                mediaFiles,
+                backgroundType: activeProject?.backgroundType,
+                blurIntensity: activeProject?.blurIntensity,
+                backgroundColor:
+                  activeProject?.backgroundType === "blur"
+                    ? undefined
+                    : activeProject?.backgroundColor || "#000000",
+                projectCanvasSize: canvasSize,
+              });
+
+              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
+            },
+            currentScene?.id,
+            3
+          );
         }
         return;
       }
@@ -608,14 +608,11 @@ export function PreviewPanel() {
         }
       } else {
         const c = offscreenCanvasRef.current as OffscreenCanvas;
-        // @ts-ignore width/height exist on OffscreenCanvas in modern browsers
         if (
           (c as unknown as { width: number }).width !== displayWidth ||
           (c as unknown as { height: number }).height !== displayHeight
         ) {
-          // @ts-ignore
           (c as unknown as { width: number }).width = displayWidth;
-          // @ts-ignore
           (c as unknown as { height: number }).height = displayHeight;
         }
       }
