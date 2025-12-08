@@ -13,7 +13,7 @@
 ## Why?
 
 - **Privacy**: Your videos stay on your device
-- **Free features**: Every basic feature of CapCut is paywalled now
+- **Free features**: Every basic feature of CapCut is now free
 - **Simple**: People want editors that are easy to use - CapCut proved that
 
 ## Features
@@ -64,7 +64,6 @@ Before you begin, ensure you have the following installed on your system:
    # Windows PowerShell
    Copy-Item .env.example .env.local
    ```
-
 5. Install dependencies: `bun install`
 6. Start the development server: `bun dev`
 
@@ -78,13 +77,11 @@ Before you begin, ensure you have the following installed on your system:
    # From project root
    docker-compose up -d
    ```
-
 2. Navigate to the web app directory:
 
    ```bash
    cd apps/web
    ```
-
 3. Copy `.env.example` to `.env.local`:
 
    ```bash
@@ -97,7 +94,6 @@ Before you begin, ensure you have the following installed on your system:
    # Windows PowerShell
    Copy-Item .env.example .env.local
    ```
-
 4. Configure required environment variables in `.env.local`:
 
    **Required Variables:**
@@ -136,7 +132,6 @@ Before you begin, ensure you have the following installed on your system:
 
    # Or use an online generator: https://generate-secret.vercel.app/32
    ```
-
 5. Run database migrations: `bun run db:migrate` from (inside apps/web)
 6. Start the development server: `bun run dev` from (inside apps/web)
 
