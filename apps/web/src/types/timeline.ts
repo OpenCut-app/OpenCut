@@ -14,11 +14,18 @@ interface BaseTimelineElement {
   hidden?: boolean;
 }
 
+// Describes optional flip flags to mirror media during rendering.
+export interface MediaTransform {
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
+}
+
 // Media element that references MediaStore
 export interface MediaElement extends BaseTimelineElement {
   type: "media";
   mediaId: string;
   muted?: boolean;
+  transform?: MediaTransform;
 }
 
 // Text element with embedded text data

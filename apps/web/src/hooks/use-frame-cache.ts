@@ -49,6 +49,10 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
         trimStart: number;
         trimEnd: number;
         mediaId?: string;
+        transform?: {
+          flipHorizontal: boolean;
+          flipVertical: boolean;
+        };
         // Text-specific properties
         content?: string;
         fontSize?: number;
@@ -85,6 +89,11 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
                 trimStart: element.trimStart,
                 trimEnd: element.trimEnd,
                 mediaId: mediaElement.mediaId,
+                // Record flip flags so cached frames refresh when mirrors change.
+                transform: {
+                  flipHorizontal: !!mediaElement.transform?.flipHorizontal,
+                  flipVertical: !!mediaElement.transform?.flipVertical,
+                },
               });
             } else if (element.type === "text") {
               const textElement = element as TextElement;

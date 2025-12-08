@@ -172,6 +172,16 @@ export function TimelineElement({
       );
     }
 
+    // Mirror the thumbnail when the media element is flipped on either axis.
+    const flipHorizontal =
+      element.type === "media" && element.transform?.flipHorizontal;
+    const flipVertical =
+      element.type === "media" && element.transform?.flipVertical;
+    const previewTransform =
+      flipHorizontal || flipVertical
+        ? `scale(${flipHorizontal ? -1 : 1}, ${flipVertical ? -1 : 1})`
+        : undefined;
+
     if (
       mediaItem.type === "image" ||
       (mediaItem.type === "video" && mediaItem.thumbnailUrl)
@@ -195,8 +205,12 @@ export function TimelineElement({
                 backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
                 backgroundRepeat: "repeat-x",
                 backgroundSize: `${tileWidth}px ${trackHeight}px`,
-                backgroundPosition: "left center",
+                backgroundPosition: flipHorizontal
+                  ? "right center"
+                  : "left center",
                 pointerEvents: "none",
+                transform: previewTransform,
+                transformOrigin: "center",
               }}
               aria-label={`Tiled ${mediaItem.type === "image" ? "background" : "thumbnail"} of ${mediaItem.name}`}
             />

@@ -1,4 +1,8 @@
-import type { TimelineTrack } from "@/types/timeline";
+import type {
+  MediaElement,
+  MediaTransform,
+  TimelineTrack,
+} from "@/types/timeline";
 import type { MediaFile } from "@/types/media";
 import type { BlurIntensity } from "@/types/project";
 import { videoCache } from "./video-cache";
@@ -18,6 +22,34 @@ export interface RenderContext {
 }
 
 const imageElementCache = new Map<string, HTMLImageElement>();
+
+// Applies flip transforms around the draw rectangle before rendering content.
+function drawWithFlip(
+  ctx: CanvasRenderingContext2D,
+  transform: MediaTransform | undefined,
+  drawX: number,
+  drawY: number,
+  drawW: number,
+  drawH: number,
+  draw: () => void
+) {
+  const flipHorizontal = !!transform?.flipHorizontal;
+  const flipVertical = !!transform?.flipVertical;
+
+  if (!flipHorizontal && !flipVertical) {
+    draw();
+    return;
+  }
+
+  ctx.save();
+  const centerX = drawX + drawW / 2;
+  const centerY = drawY + drawH / 2;
+  ctx.translate(centerX, centerY);
+  ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1);
+  ctx.translate(-centerX, -centerY);
+  draw();
+  ctx.restore();
+}
 
 async function getImageElement(
   mediaItem: MediaFile
@@ -106,8 +138,13 @@ export async function renderTimelineFrame({
         (mediaItem.type === "video" || mediaItem.type === "image")
       );
     });
-    if (bgCandidate && bgCandidate.mediaItem) {
-      const { element, mediaItem } = bgCandidate;
+    if (
+      bgCandidate &&
+      bgCandidate.mediaItem &&
+      bgCandidate.element.type === "media"
+    ) {
+      const element = bgCandidate.element as MediaElement;
+      const mediaItem = bgCandidate.mediaItem;
       try {
         if (mediaItem.type === "video") {
           const localTime = time - element.startTime + element.trimStart;
@@ -129,7 +166,15 @@ export async function renderTimelineFrame({
             const drawY = (canvasHeight - drawH) / 2;
             ctx.save();
             ctx.filter = `blur(${blurPx}px)`;
-            ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH);
+            drawWithFlip(
+              ctx,
+              element.transform,
+              drawX,
+              drawY,
+              drawW,
+              drawH,
+              () => ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH)
+            );
             ctx.restore();
           }
         } else if (mediaItem.type === "image") {
@@ -152,7 +197,15 @@ export async function renderTimelineFrame({
           const drawY = (canvasHeight - drawH) / 2;
           ctx.save();
           ctx.filter = `blur(${blurPx}px)`;
-          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          drawWithFlip(
+            ctx,
+            element.transform,
+            drawX,
+            drawY,
+            drawW,
+            drawH,
+            () => ctx.drawImage(img, drawX, drawY, drawW, drawH)
+          );
           ctx.restore();
         }
       } catch {
@@ -163,6 +216,7 @@ export async function renderTimelineFrame({
 
   for (const { element, mediaItem } of active) {
     if (element.type === "media" && mediaItem) {
+      const mediaElement = element as MediaElement;
       if (mediaItem.type === "video") {
         try {
           const localTime = time - element.startTime + element.trimStart;
@@ -185,7 +239,15 @@ export async function renderTimelineFrame({
           const drawX = (canvasWidth - drawW) / 2;
           const drawY = (canvasHeight - drawH) / 2;
 
-          ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH);
+          drawWithFlip(
+            ctx,
+            mediaElement.transform,
+            drawX,
+            drawY,
+            drawW,
+            drawH,
+            () => ctx.drawImage(frame.canvas, drawX, drawY, drawW, drawH)
+          );
         } catch (error) {
           console.warn(
             `Failed to render video frame for ${mediaItem.name}:`,
@@ -216,7 +278,15 @@ export async function renderTimelineFrame({
         const drawH = mediaH * containScale;
         const drawX = (canvasWidth - drawW) / 2;
         const drawY = (canvasHeight - drawH) / 2;
-        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        drawWithFlip(
+          ctx,
+          mediaElement.transform,
+          drawX,
+          drawY,
+          drawW,
+          drawH,
+          () => ctx.drawImage(img, drawX, drawY, drawW, drawH)
+        );
       }
     }
     if (element.type === "text") {

@@ -127,6 +127,11 @@ interface TimelineStore {
     pushHistory?: boolean
   ) => void;
   toggleTrackMute: (trackId: string) => void;
+  toggleMediaFlip: (
+    trackId: string,
+    elementId: string,
+    axis: "horizontal" | "vertical"
+  ) => void;
   splitAndKeepLeft: (
     trackId: string,
     elementId: string,
@@ -868,6 +873,61 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         get()._tracks.map((track) =>
           track.id === trackId ? { ...track, muted: !track.muted } : track
         )
+      );
+    },
+
+    // Toggles the requested flip axis on a media element, persisting the transform.
+    toggleMediaFlip: (trackId, elementId, axis) => {
+      const { _tracks } = get();
+      const targetTrack = _tracks.find((track) => track.id === trackId);
+      const targetElement = targetTrack?.elements.find(
+        (element) => element.id === elementId
+      );
+
+      if (!targetElement || targetElement.type !== "media") {
+        return;
+      }
+
+      get().pushHistory();
+
+      updateTracksAndSave(
+        _tracks.map((track) => {
+          if (track.id !== trackId) {
+            return track;
+          }
+
+          return {
+            ...track,
+            elements: track.elements.map((element) => {
+              if (element.id !== elementId || element.type !== "media") {
+                return element;
+              }
+
+              const currentTransform = element.transform || {};
+              const key =
+                axis === "horizontal" ? "flipHorizontal" : "flipVertical";
+              const toggledValue = !currentTransform[key];
+              const nextTransform = {
+                flipHorizontal:
+                  key === "flipHorizontal"
+                    ? toggledValue
+                    : !!currentTransform.flipHorizontal,
+                flipVertical:
+                  key === "flipVertical"
+                    ? toggledValue
+                    : !!currentTransform.flipVertical,
+              };
+
+              const hasAnyFlip =
+                nextTransform.flipHorizontal || nextTransform.flipVertical;
+
+              return {
+                ...element,
+                transform: hasAnyFlip ? nextTransform : undefined,
+              };
+            }),
+          };
+        })
       );
     },
 
