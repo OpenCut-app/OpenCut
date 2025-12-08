@@ -10,6 +10,17 @@ interface TimelineMarkerProps {
   isMainMarker: boolean;
 }
 
+/**
+ * Renders a timeline marker positioned horizontally and labeled with a formatted time.
+ *
+ * The marker's horizontal position is derived from `time`, a pixels-per-second constant, and `zoomLevel`.
+ *
+ * @param time - Marker time in seconds used for positioning and label formatting
+ * @param zoomLevel - Horizontal scaling factor applied to the marker position
+ * @param interval - Threshold that controls label precision: if `interval >= 1` whole seconds are shown; otherwise one decimal place is used for sub-second precision
+ * @param isMainMarker - When true, applies emphasis styling to the marker and its label
+ * @returns The marker element to render in the timeline
+ */
 export function TimelineMarker({
   time,
   zoomLevel,

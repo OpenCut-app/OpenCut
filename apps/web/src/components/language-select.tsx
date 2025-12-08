@@ -17,6 +17,12 @@ interface LanguageSelectProps {
   languages: Language[];
 }
 
+/**
+ * Preloads country flag SVGs for the given languages by rendering them off-screen.
+ *
+ * @param languages - Array of language objects whose flags should be rendered to prime the browser's cache
+ * @returns The hidden container element that contains the rendered flag icons
+ */
 function FlagPreloader({ languages }: { languages: Language[] }) {
   return (
     <div className="absolute -top-[9999px] left-0 pointer-events-none">
@@ -32,6 +38,20 @@ function FlagPreloader({ languages }: { languages: Language[] }) {
   );
 }
 
+/**
+ * Renders a compact, animated language selector that expands to a scrollable list of languages.
+ *
+ * Renders a toggle button that shows the currently selected language (or "Auto") and expands into
+ * a list of selectable languages with flag icons. Clicking an item calls `onSelect` with the chosen
+ * country code and collapses the list. Clicking outside the expanded list collapses it with a closing
+ * animation.
+ *
+ * @param selectedCountry - The currently selected country code (use `"auto"` for automatic selection).
+ * @param onSelect - Callback invoked with the selected country code when the user chooses a language.
+ * @param containerRef - Optional ref to the outer container element (provided for external positioning or measurements).
+ * @param languages - Available languages to display, each with a `code` and `name`.
+ * @returns The language selector UI component.
+ */
 export function LanguageSelect({
   selectedCountry,
   onSelect,
@@ -115,7 +135,23 @@ export function LanguageSelect({
         onClick={expand}
         ref={buttonRef}
       >
-        {!expanded ? (
+        {expanded ? (
+          <div className="flex flex-col gap-2 my-2.5 w-full overflow-y-auto scrollbar-hidden">
+            <LanguageButton
+              language={{ code: "auto", name: "Auto" }}
+              onSelect={handleSelect}
+              selectedCountry={selectedCountry}
+            />
+            {languages.map((language) => (
+              <LanguageButton
+                key={language.code}
+                language={language}
+                onSelect={handleSelect}
+                selectedCountry={selectedCountry}
+              />
+            ))}
+          </div>
+        ) : (
           <div
             className="flex items-center justify-between w-full"
             style={{
@@ -137,22 +173,6 @@ export function LanguageSelect({
               </span>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col gap-2 my-2.5 w-full overflow-y-auto scrollbar-hidden">
-            <LanguageButton
-              language={{ code: "auto", name: "Auto" }}
-              onSelect={handleSelect}
-              selectedCountry={selectedCountry}
-            />
-            {languages.map((language) => (
-              <LanguageButton
-                key={language.code}
-                language={language}
-                onSelect={handleSelect}
-                selectedCountry={selectedCountry}
-              />
-            ))}
-          </div>
         )}
       </motion.button>
 
@@ -168,6 +188,14 @@ export function LanguageSelect({
   );
 }
 
+/**
+ * Render a selectable language button showing a flag (or globe) and the language name.
+ *
+ * @param language - The language option to display (code, name, optional flag).
+ * @param onSelect - Callback invoked when the button is clicked; called with `{ code, e }` where `code` is the language code and `e` is the click event.
+ * @param selectedCountry - Currently selected language code (provided for context; not used for rendering selection state here).
+ * @returns The button element that displays the language and triggers `onSelect` when activated.
+ */
 function LanguageButton({
   language,
   onSelect,

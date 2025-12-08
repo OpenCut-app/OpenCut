@@ -8,9 +8,10 @@ const DEFAULT_CANVAS_PRESETS = [
 ];
 
 /**
- * Helper function to find the best matching canvas preset for an aspect ratio
- * @param aspectRatio The target aspect ratio to match
- * @returns The best matching canvas size
+ * Selects the closest predefined canvas preset for a given aspect ratio or returns a reasonable custom size when no close preset exists.
+ *
+ * @param aspectRatio - Target aspect ratio expressed as width divided by height
+ * @returns The chosen canvas size; one of the predefined presets if a preset's aspect ratio is within 0.1 of `aspectRatio`, otherwise a custom size (landscape: width 1920 and height rounded to 1920 / aspectRatio; portrait/square: height 1080 and width rounded to 1080 * aspectRatio)
  */
 export function findBestCanvasPreset(aspectRatio: number): CanvasSize {
   // Calculate aspect ratio for each preset and find the closest match

@@ -3,6 +3,11 @@
 import { useEditorStore } from "@/stores/editor-store";
 import Image from "next/image";
 
+/**
+ * Renders a non-interactive, full-size overlay showing the TikTok layout guide.
+ *
+ * @returns A JSX element containing an absolutely positioned, pointer-events-none container with the TikTok layout guide image filling its bounds.
+ */
 function TikTokGuide() {
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -17,6 +22,13 @@ function TikTokGuide() {
   );
 }
 
+/**
+ * Displays a layout guide overlay based on the editor store's selected platform.
+ *
+ * Renders the TikTokGuide component when `layoutGuide.platform` is `"tiktok"`, otherwise renders `null`.
+ *
+ * @returns The overlay JSX element for the selected platform, or `null` when no guide applies.
+ */
 export function LayoutGuideOverlay() {
   const { layoutGuide } = useEditorStore();
 

@@ -15,6 +15,24 @@ interface EditableTimecodeProps {
   disabled?: boolean;
 }
 
+/**
+ * Render an editable timecode control that toggles between display and inline edit modes.
+ *
+ * Renders the given `time` formatted according to `format` and `fps`. When clicked (unless `disabled`),
+ * the control becomes an inline text input where the user can enter a new timecode. Submitting the input
+ * (Enter or blur) parses the value using the same `format` and `fps`, clamps it to the range [0, duration] if
+ * `duration` is provided, and calls `onTimeChange` with the resulting time. Pressing Escape cancels edits.
+ * Invalid input is indicated via error styling and will not trigger `onTimeChange`.
+ *
+ * @param time - The current time in seconds (or the unit expected by the project's time utilities).
+ * @param duration - Optional maximum time; parsed values greater than this will be clamped to `duration`.
+ * @param format - Timecode format string used for display and parsing (default: `"HH:MM:SS:FF"`).
+ * @param fps - Frames per second used for frame fields in the timecode (default: DEFAULT_FPS).
+ * @param onTimeChange - Callback invoked with the new clamped time when a valid edit is applied.
+ * @param className - Optional additional class names applied to the rendered element or input.
+ * @param disabled - If true, the control is not editable and clicking will not enter edit mode.
+ * @returns A JSX element that displays the formatted timecode and supports inline editing. 
+ */
 export function EditableTimecode({
   time,
   duration,

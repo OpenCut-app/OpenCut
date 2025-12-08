@@ -41,15 +41,25 @@ interface AudioElement {
   muted: boolean;
 }
 
+/**
+ * Produce a single mixed stereo AudioBuffer containing all audible audio items placed on the timeline.
+ *
+ * @param tracks - Timeline tracks to read audio elements from; muted tracks or muted elements are ignored.
+ * @param mediaFiles - Media library entries used to locate and decode audio files referenced by timeline elements.
+ * @param duration - Total output duration in seconds; determines the length of the returned buffer.
+ * @param sampleRate - Output sample rate in Hz (defaults to 44100).
+ * @returns The mixed stereo AudioBuffer spanning `duration` seconds, or `null` if no audio elements were found.
+ */
 async function createTimelineAudioBuffer(
   tracks: TimelineTrack[],
   mediaFiles: MediaFile[],
   duration: number,
-  sampleRate: number = 44100
+  sampleRate = 44_100
 ): Promise<AudioBuffer | null> {
   // Get Web Audio context
-  const audioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)();
+  const audioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )();
 
   // Collect all audio elements from timeline
   const audioElements: AudioElement[] = [];

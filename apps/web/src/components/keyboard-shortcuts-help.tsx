@@ -212,6 +212,14 @@ function ShortcutItem({
   );
 }
 
+/**
+ * Renders a clickable, key-like button that displays a shortcut part and starts recording a new binding when clicked.
+ *
+ * @param children - Content shown inside the key button (typically the key text)
+ * @param isRecording - Whether this key is currently being edited; affects the button's visual state and title
+ * @param onStartRecording - Callback invoked when the button is clicked to begin recording a new shortcut
+ * @returns The button element that displays the key part and triggers `onStartRecording` when activated
+ */
 function EditableShortcutKey({
   children,
   isRecording,

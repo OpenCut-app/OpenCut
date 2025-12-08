@@ -18,6 +18,13 @@ interface PanelBaseViewProps {
   ref?: React.RefObject<HTMLDivElement>;
 }
 
+/**
+ * Renders a vertically scrollable content area with standard padding.
+ *
+ * @param children - Content to render inside the scrollable area.
+ * @param className - Additional CSS classes applied to the inner content container.
+ * @returns The scrollable content element containing the provided `children`.
+ */
 function ViewContent({
   children,
   className,
@@ -32,6 +39,18 @@ function ViewContent({
   );
 }
 
+/**
+ * Render a full-height panel that displays either a simple scrollable content area or a tabs-based layout.
+ *
+ * @param children - Content to render inside the panel or inside the active tab's content area
+ * @param defaultTab - The tab value selected initially when uncontrolled
+ * @param value - Controlled current tab value; when provided, panel uses controlled tab state
+ * @param onValueChange - Callback invoked with the new tab value when the active tab changes
+ * @param tabs - Array of tab descriptors (value, label, optional icon, and content) to render a tabbed interface; if omitted or empty, `children` is rendered instead
+ * @param className - Additional CSS class names applied to the outer container and passed to inner content wrappers
+ * @param ref - Ref forwarded to the outer container div
+ * @returns A React element containing either the scrollable content area or the tabbed layout with each tab's content
+ */
 export function PanelBaseView({
   children,
   defaultTab,

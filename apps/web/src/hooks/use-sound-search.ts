@@ -2,11 +2,20 @@ import { useEffect } from "react";
 import { useSoundsStore } from "@/stores/sounds-store";
 
 /**
- * Custom hook for searching sound effects with race condition protection.
- * Uses global Zustand store to persist search state across tab switches.
- * - Debounced search (300ms)
- * - Race condition protection with cleanup
- * - Proper error handling
+ * Searches sound effects and exposes search results, pagination, and loading state from the global store.
+ *
+ * Performs a debounced (300ms) search with race-condition protection and persists state in a shared store.
+ *
+ * @param query - The search query string to filter sound effects; an empty or whitespace-only string clears results.
+ * @param commercialOnly - If true, restricts results to commercial-only sounds.
+ * @returns An object containing:
+ *  - `results`: the current array of search results,
+ *  - `isLoading`: whether an initial search is in progress,
+ *  - `error`: the current search error message or `null`,
+ *  - `loadMore`: a function to fetch the next page of results,
+ *  - `hasNextPage`: whether more pages are available,
+ *  - `isLoadingMore`: whether a "load more" operation is in progress,
+ *  - `totalCount`: the total number of matching results.
  */
 
 export function useSoundSearch(query: string, commercialOnly: boolean) {

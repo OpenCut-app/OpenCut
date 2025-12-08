@@ -10,7 +10,22 @@ interface UseEdgeAutoScrollParams {
   maxScrollSpeed?: number;
 }
 
-// Provides smooth edge auto-scrolling for horizontal timeline interactions.
+/**
+ * Enables edge-triggered horizontal auto-scrolling for a timeline by synchronizing two scrollable viewports.
+ *
+ * When active, moves both the ruler and tracks viewports left or right while the mouse is within
+ * `edgeThreshold` pixels of the respective edge. Scroll speed scales with proximity to the edge,
+ * up to `maxScrollSpeed`, and scrolling is clamped within the available content range computed
+ * from `contentWidth` and the ruler's intrinsic width.
+ *
+ * @param isActive - If `true`, start auto-scrolling behavior; if `false`, stop and cancel any ongoing scrolling.
+ * @param getMouseClientX - Function that returns the current mouse X coordinate in client (viewport) space.
+ * @param rulerScrollRef - Ref to the primary scrollable ruler viewport element.
+ * @param tracksScrollRef - Ref to the secondary scrollable tracks viewport element; kept in sync with the ruler.
+ * @param contentWidth - Desired content width used to compute the maximum horizontal scroll extent.
+ * @param edgeThreshold - Distance in pixels from an edge within which auto-scrolling begins (default: 100).
+ * @param maxScrollSpeed - Maximum horizontal scroll delta applied per step when the mouse is at the edge (default: 15).
+ */
 export function useEdgeAutoScroll({
   isActive,
   getMouseClientX,

@@ -19,6 +19,14 @@ const apiResponseSchema = z.object({
   fileName: z.string().min(1),
 });
 
+/**
+ * Generates a presigned upload URL and a unique filename for uploading an audio file to Cloudflare R2.
+ *
+ * Accepts a JSON request body with a `fileExtension` (one of "wav", "mp3", "m4a", "flac"). Applies client rate limiting and verifies required transcription environment configuration before producing a signed PUT URL valid for 1 hour.
+ *
+ * @param request - Incoming Next.js request whose JSON body must include `fileExtension`
+ * @returns On success, an object with `uploadUrl` (the presigned PUT URL) and `fileName` (the generated object path). On failure, a JSON error object with an `error` field and optional `message`/`details`; responses use appropriate HTTP status codes (400, 429, 503, 500).
+ */
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting

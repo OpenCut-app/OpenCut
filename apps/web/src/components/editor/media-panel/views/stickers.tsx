@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import type { CSSProperties } from "react";
 import { useStickersStore } from "@/stores/stickers-store";
 import { useMediaStore } from "@/stores/media-store";
 import { useProjectStore } from "@/stores/project-store";
@@ -85,6 +86,17 @@ export function StickersView() {
   );
 }
 
+/**
+ * Renders a responsive grid of stickers for the provided icon names.
+ *
+ * Renders one StickerItem per entry in `icons`, laying out items responsively and optionally capping their maximum size.
+ *
+ * @param icons - Array of sticker icon identifiers (e.g., "prefix:name")
+ * @param onAdd - Callback invoked with an icon name when that sticker is requested to be added
+ * @param addingSticker - Icon identifier that is currently in an "adding"/loading state, or `null`
+ * @param capSize - When true, constrains sticker items to a capped max size for a denser grid
+ * @returns A React element containing the sticker grid
+ */
 function StickerGrid({
   icons,
   onAdd,
@@ -96,17 +108,19 @@ function StickerGrid({
   addingSticker: string | null;
   capSize?: boolean;
 }) {
+  const gridStyle: CSSProperties & Record<string, string> = {
+    gridTemplateColumns: capSize
+      ? "repeat(auto-fill, minmax(var(--sticker-min, 96px), var(--sticker-max, 160px)))"
+      : "repeat(auto-fit, minmax(var(--sticker-min, 96px), 1fr))",
+    "--sticker-min": "96px",
+  };
+
+  if (capSize) {
+    gridStyle["--sticker-max"] = "160px";
+  }
+
   return (
-    <div
-      className="grid gap-2"
-      style={{
-        gridTemplateColumns: capSize
-          ? "repeat(auto-fill, minmax(var(--sticker-min, 96px), var(--sticker-max, 160px)))"
-          : "repeat(auto-fit, minmax(var(--sticker-min, 96px), 1fr))",
-        ["--sticker-min" as any]: "96px",
-        ...(capSize ? ({ ["--sticker-max"]: "160px" } as any) : {}),
-      }}
-    >
+    <div className="grid gap-2" style={gridStyle}>
       {icons.map((iconName) => (
         <StickerItem
           key={iconName}
@@ -161,6 +175,14 @@ function EmptyView({ message }: { message: string }) {
   );
 }
 
+/**
+ * Renders the stickers panel for a given category, handling browsing, searching, collection views, and adding stickers to the timeline.
+ *
+ * This component coordinates sticker-related UI state and interactions (search input with debounce, collection listing and pagination, recent stickers, loading states, and adding a sticker to the timeline) and renders the appropriate subviews (recent, collection, search results, or browse collections) based on the current view mode.
+ *
+ * @param category - The sticker category to display (`"all" | "general" | "brands" | "emoji"`).
+ * @returns The React element for the stickers content view.
+ */
 function StickersContentView({ category }: { category: StickerCategory }) {
   const { activeProject } = useProjectStore();
   const { addElementAtTime } = useTimelineStore();
@@ -297,9 +319,8 @@ function StickersContentView({ category }: { category: StickerCategory }) {
       setShowCollectionItems(false);
       const timer = setTimeout(() => setShowCollectionItems(true), 350);
       return () => clearTimeout(timer);
-    } else {
-      setShowCollectionItems(false);
     }
+    setShowCollectionItems(false);
   }, [isInCollection]);
 
   return (
@@ -343,6 +364,7 @@ function StickersContentView({ category }: { category: StickerCategory }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
+                          type="button"
                           onClick={clearRecentStickers}
                           className="ml-auto h-5 w-5 p-0 rounded hover:bg-accent flex items-center justify-center"
                         >

@@ -1,5 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 
+/**
+ * Tracks and applies a temporary highlight to an element by id: scrolls it into view and clears the highlight after a timeout.
+ *
+ * @param highlightId - The id of the element to highlight; pass `null` to skip highlighting.
+ * @param onClearHighlight - Callback invoked when the highlight duration ends and the highlight is cleared.
+ * @param highlightDuration - Time in milliseconds before the highlight is cleared.
+ * @returns An object containing `highlightedId` (the current highlighted id or `null`) and `registerElement` (a function to register or unregister elements by id)
+ */
 export function useHighlightScroll(
   highlightId: string | null,
   onClearHighlight: () => void,

@@ -8,6 +8,15 @@ import { MediaProperties } from "./media-properties";
 import { TextProperties } from "./text-properties";
 import { SquareSlashIcon } from "lucide-react";
 
+/**
+ * Render the properties panel for selected timeline elements.
+ *
+ * Renders a scrollable panel containing property editors for each selected element:
+ * text elements use TextProperties; media elements use AudioProperties for audio files
+ * and MediaProperties for non-audio files. When no elements are selected, renders an empty placeholder view.
+ *
+ * @returns The React element for the properties panel or the empty placeholder view
+ */
 export function PropertiesPanel() {
   const { selectedElements, tracks } = useTimelineStore();
   const { mediaFiles } = useMediaStore();
@@ -38,7 +47,7 @@ export function PropertiesPanel() {
 
               return (
                 <div key={elementId}>
-                  <MediaProperties element={element} />
+                  <MediaProperties element={element} trackId={trackId} />
                 </div>
               );
             }

@@ -9,6 +9,14 @@ import {
 } from "@/components/ui/tooltip";
 import { useEffect, useRef, useState } from "react";
 
+/**
+ * Renders a vertical, scrollable sidebar of icon tabs with tooltips and edge fades.
+ *
+ * Highlights the active tab, updates the active tab when a tab is clicked, and shows
+ * top/bottom gradient overlays when the scroll position is not at the respective edge.
+ *
+ * @returns The rendered tab bar element.
+ */
 export function TabBar() {
   const { activeTab, setActiveTab } = useMediaPanelStore();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,7 +38,7 @@ export function TabBar() {
 
     checkScrollPosition();
     element.addEventListener("scroll", checkScrollPosition);
-    
+
     const resizeObserver = new ResizeObserver(checkScrollPosition);
     resizeObserver.observe(element);
 
@@ -42,7 +50,7 @@ export function TabBar() {
 
   return (
     <div className="flex relative">
-      <div 
+      <div
         ref={scrollRef}
         className="h-full px-4 flex flex-col justify-start items-center gap-5 overflow-y-auto scrollbar-hidden relative w-full py-4"
       >
@@ -78,20 +86,33 @@ export function TabBar() {
           );
         })}
       </div>
-      
+
       <FadeOverlay direction="top" show={showTopFade} />
       <FadeOverlay direction="bottom" show={showBottomFade} />
     </div>
   );
 }
 
-function FadeOverlay({ direction, show }: { direction: "top" | "bottom", show: boolean }) {
+/**
+ * Renders a directional gradient overlay that visually fades content at an edge.
+ *
+ * @param direction - Which edge to place the gradient on; `"top"` positions it at the top, `"bottom"` positions it at the bottom.
+ * @param show - Whether the overlay is visible.
+ * @returns A div element that displays a top or bottom gradient overlay when `show` is `true`.
+ */
+function FadeOverlay({
+  direction,
+  show,
+}: {
+  direction: "top" | "bottom";
+  show: boolean;
+}) {
   return (
-    <div 
+    <div
       className={cn(
         "absolute left-0 right-0 h-6 pointer-events-none z-[101] transition-opacity duration-200",
         direction === "top" && show
-          ? "top-0 bg-gradient-to-b from-panel to-transparent" 
+          ? "top-0 bg-gradient-to-b from-panel to-transparent"
           : "bottom-0 bg-gradient-to-t from-panel to-transparent"
       )}
     />

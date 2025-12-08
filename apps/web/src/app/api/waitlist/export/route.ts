@@ -10,6 +10,17 @@ import {
 const requestSchema = exportWaitlistSchema;
 const responseSchema = exportWaitlistResponseSchema;
 
+/**
+ * Handle POST requests to add an email to the export waitlist while enforcing per-IP rate limits.
+ *
+ * Validates JSON input, checks for an existing waitlist entry, inserts a new entry when needed,
+ * and returns a JSON response indicating success or an error condition.
+ *
+ * @returns A JSON response object:
+ * - `{ success: true, alreadySubscribed: true }` when the email is already on the waitlist
+ * - `{ success: true }` when a new waitlist entry is created
+ * - `{ error: string, ... }` with details and an appropriate HTTP status for invalid input, rate limit exceeded, or internal errors
+ */
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get("x-forwarded-for") ?? "anonymous";

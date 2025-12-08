@@ -10,7 +10,13 @@ export interface ZeroKnowledgeEncryptionResult {
 }
 
 /**
- * Encrypt data with a randomly generated key (true zero-knowledge)
+ * Encrypts plaintext bytes using a freshly generated 256-bit AES-GCM key.
+ *
+ * @param data - The plaintext to encrypt as an ArrayBuffer
+ * @returns An object containing:
+ *  - `encryptedData`: ciphertext including the AES-GCM authentication tag,
+ *  - `key`: the raw 32-byte (256-bit) encryption key as an ArrayBuffer,
+ *  - `iv`: the 12-byte initialization vector as an ArrayBuffer
  */
 export async function encryptWithRandomKey(
   data: ArrayBuffer
@@ -47,7 +53,10 @@ export async function encryptWithRandomKey(
 }
 
 /**
- * Convert ArrayBuffer to base64 string for transmission
+ * Encode an ArrayBuffer as a Base64 string.
+ *
+ * @param buffer - The binary data to encode
+ * @returns The Base64-encoded representation of `buffer`
  */
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -59,7 +68,10 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 /**
- * Convert base64 string back to ArrayBuffer
+ * Decode a Base64-encoded string into an ArrayBuffer.
+ *
+ * @param base64 - The Base64-encoded input string
+ * @returns The decoded bytes as an ArrayBuffer
  */
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binary = atob(base64);

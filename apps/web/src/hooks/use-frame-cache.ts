@@ -26,6 +26,12 @@ const __sharedFrameCache: Map<number, CachedFrame> =
   __frameCacheGlobal.__sharedFrameCache ?? new Map<number, CachedFrame>();
 __frameCacheGlobal.__sharedFrameCache = __sharedFrameCache;
 
+/**
+ * Provides utilities to manage a per-frame render cache for a video/timeline editor.
+ *
+ * @param options - Configuration for the frame cache. `maxCacheSize` limits stored frames (default 300). `cacheResolution` sets frames-per-second bucketing used for cache keys (default 30).
+ * @returns An object with methods to query, read, write, invalidate, and pre-render cached frames, plus the current `cacheSize`.
+ */
 export function useFrameCache(options: FrameCacheOptions = {}) {
   const { maxCacheSize = 300, cacheResolution = 30 } = options; // 10 seconds at 30fps
 
@@ -49,6 +55,8 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
         trimStart: number;
         trimEnd: number;
         mediaId?: string;
+        flipH?: boolean;
+        flipV?: boolean;
         // Text-specific properties
         content?: string;
         fontSize?: number;
@@ -85,6 +93,8 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
                 trimStart: element.trimStart,
                 trimEnd: element.trimEnd,
                 mediaId: mediaElement.mediaId,
+                flipH: mediaElement.flipH ?? false,
+                flipV: mediaElement.flipV ?? false,
               });
             } else if (element.type === "text") {
               const textElement = element as TextElement;
@@ -268,7 +278,7 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       activeProject: TProject | null,
       renderFunction: (time: number) => Promise<ImageData>,
       sceneId?: string,
-      range: number = 3 // seconds
+      range = 3 // seconds
     ) => {
       const framesToPreRender: number[] = [];
 

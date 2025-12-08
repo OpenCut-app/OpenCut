@@ -1,4 +1,3 @@
-
 export const ICONIFY_HOSTS = [
   "https://api.iconify.design",
   "https://api.simplesvg.com",
@@ -97,9 +96,18 @@ export async function getCollection(
   }
 }
 
+/**
+ * Search for icons matching the given query and optional filters.
+ *
+ * @param query - Text query to search icon names and tags
+ * @param limit - Maximum number of icons to return
+ * @param prefixes - Optional array of collection prefixes to restrict the search to
+ * @param category - Optional collection category to filter results
+ * @returns An `IconSearchResult` containing matching icons, total count, pagination fields, and a map of collections; if the search fails, returns an empty result with zero totals
+ */
 export async function searchIcons(
   query: string,
-  limit: number = 64,
+  limit = 64,
   prefixes?: string[],
   category?: string
 ): Promise<IconSearchResult> {

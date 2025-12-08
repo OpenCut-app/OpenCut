@@ -15,6 +15,19 @@ interface InputWithBackProps {
   disableAnimation?: boolean;
 }
 
+/**
+ * Render an input field with an animated back/close button that toggles an expanded state.
+ *
+ * The back button is positioned relative to the component and the input shifts when expanded.
+ *
+ * @param isExpanded - Whether the input area is expanded.
+ * @param setIsExpanded - Callback to update the expanded state; invoked with the new boolean state when the back button is clicked.
+ * @param placeholder - Optional input placeholder text (defaults to "Search anything").
+ * @param value - Optional controlled input value.
+ * @param onChange - Optional change handler called with the updated input string when the value changes.
+ * @param disableAnimation - When true, disables animated transitions.
+ * @returns A JSX element containing the back button and the input field.
+ */
 export function InputWithBack({
   isExpanded,
   setIsExpanded,

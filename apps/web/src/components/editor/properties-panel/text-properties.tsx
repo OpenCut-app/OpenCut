@@ -27,6 +27,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+/**
+ * Renders a properties panel for editing a text element within a timeline track.
+ *
+ * @param element - The text element being edited; controls are bound to this element's properties.
+ * @param trackId - Identifier of the timeline track that contains the element; used when applying updates.
+ * @returns The properties panel UI bound to the provided text element and track.
+ */
 export function TextProperties({
   element,
   trackId,
@@ -131,7 +138,7 @@ export function TextProperties({
         label: t.label,
         content:
           t.value === "transform" ? (
-            <div className="space-y-6"></div>
+            <div className="space-y-6" />
           ) : (
             <div className="space-y-6">
               <Textarea

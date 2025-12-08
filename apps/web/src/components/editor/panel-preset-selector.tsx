@@ -25,6 +25,13 @@ const PRESET_DESCRIPTIONS: Record<PanelPreset, string> = {
   "vertical-preview": "Full height preview on right for vertical videos",
 };
 
+/**
+ * Renders a dropdown for selecting and resetting panel presets.
+ *
+ * Displays each preset with a label and description, highlights the currently active preset, and provides a per-preset reset button.
+ *
+ * @returns The React element for the panel preset selector dropdown.
+ */
 export function PanelPresetSelector() {
   const { activePreset, setActivePreset, resetPreset } = usePanelStore();
 

@@ -13,6 +13,14 @@ interface FontPickerProps {
   className?: string;
 }
 
+/**
+ * Renders a font selection dropdown whose items are styled with their respective font families.
+ *
+ * @param defaultValue - Optional font to select initially
+ * @param onValueChange - Optional callback invoked with the selected `FontFamily` when the selection changes
+ * @param className - Optional additional CSS classes applied to the trigger element
+ * @returns A React element that renders a font picker dropdown
+ */
 export function FontPicker({
   defaultValue,
   onValueChange,
@@ -20,7 +28,9 @@ export function FontPicker({
 }: FontPickerProps) {
   return (
     <Select defaultValue={defaultValue} onValueChange={onValueChange}>
-      <SelectTrigger className={`w-full bg-panel-accent h-8 text-xs ${className || ""}`}>
+      <SelectTrigger
+        className={`w-full bg-panel-accent h-8 text-xs ${className || ""}`}
+      >
         <SelectValue placeholder="Select a font" />
       </SelectTrigger>
       <SelectContent>

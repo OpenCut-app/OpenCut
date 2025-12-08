@@ -88,6 +88,13 @@ const apiResponseSchema = z.object({
   minRating: z.number().optional(),
 });
 
+/**
+ * Handle GET requests to search Freesound and return a normalized search response.
+ *
+ * Validates query parameters, applies rate limiting and sound-effect filters, queries the Freesound API, transforms results into the API's response shape, and returns the formatted JSON payload or a JSON error object.
+ *
+ * @param request - The incoming NextRequest containing URL query parameters (q, type, page, page_size, sort, min_rating, commercial_only) and client headers used for rate limiting.
+ * @returns A JSON object with search metadata and an array of transformed sound results when successful; otherwise a JSON error object with an `error` field and optional `details` or `message` fields describing the failure.
 export async function GET(request: NextRequest) {
   try {
     const ip = request.headers.get("x-forwarded-for") ?? "anonymous";

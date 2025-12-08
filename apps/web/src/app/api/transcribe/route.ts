@@ -49,6 +49,19 @@ const apiResponseSchema = z.object({
   language: z.string(),
 });
 
+/**
+ * Handle POST requests to transcribe a file and return structured transcription results.
+ *
+ * Validates rate limits and request body, forwards the transcription request to the configured
+ * transcription service, validates the service response, and returns a JSON payload with
+ * `text`, `segments`, and `language` on success.
+ *
+ * On error the response is a JSON object containing an `error` string and often a `message`
+ * with an appropriate HTTP status code (examples: 400 for invalid input, 429 for rate limit,
+ * 502 for upstream transcription errors, 503 for missing configuration, 500 for internal errors).
+ *
+ * @returns A JSON response with the transcription `{ text, segments, language }` on success; otherwise a JSON error object with `error` and optional `message`.
+ */
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting

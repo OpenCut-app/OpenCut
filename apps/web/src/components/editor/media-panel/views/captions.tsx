@@ -32,6 +32,13 @@ export const languages: Language[] = [
 
 const PRIVACY_DIALOG_KEY = "opencut-transcription-privacy-accepted";
 
+/**
+ * UI panel that generates caption text elements from the project's timeline audio while preserving user privacy.
+ *
+ * Renders language selection, progress and error UI, and a privacy consent dialog. When triggered, it extracts audio from the timeline, performs client-side zero-knowledge encryption, uploads the encrypted audio for transcription, and inserts the resulting caption text elements into a new text track on the timeline.
+ *
+ * @returns The component's JSX element.
+ */
 export function Captions() {
   const [selectedCountry, setSelectedCountry] = useState("auto");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -188,7 +195,10 @@ export function Captions() {
   };
 
   return (
-    <BaseView ref={containerRef} className="flex flex-col justify-between h-full">
+    <BaseView
+      ref={containerRef}
+      className="flex flex-col justify-between h-full"
+    >
       <PropertyGroup title="Language">
         <LanguageSelect
           selectedCountry={selectedCountry}

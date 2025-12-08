@@ -20,6 +20,11 @@ import { Check, Copy, Download, RotateCcw, X } from "lucide-react";
 import { ExportFormat, ExportQuality, ExportResult } from "@/types/export";
 import { PropertyGroup } from "./properties-panel/property-item";
 
+/**
+ * Renders the Export button and its associated popover, enabling export actions when a project is active.
+ *
+ * @returns A JSX element containing the Export button trigger and, when an active project exists, the ExportPopover; the button is disabled and non-interactive when no project is available.
+ */
 export function ExportButton() {
   const [isExportPopoverOpen, setIsExportPopoverOpen] = useState(false);
   const { activeProject } = useProjectStore();
@@ -54,7 +59,7 @@ export function ExportButton() {
             <TransitionUpIcon className="z-50" />
             <span className="text-[0.875rem] z-50">Export</span>
             <div className="absolute w-full h-full left-0 top-0 bg-linear-to-t from-white/0 to-white/50 z-10 rounded-[0.8rem] flex items-center justify-center">
-              <div className="absolute w-[calc(100%-2px)] h-[calc(100%-2px)] top-[0.08rem] bg-linear-270 from-[#2567EC] to-[#37B6F7] z-50 rounded-[0.8rem]"></div>
+              <div className="absolute w-[calc(100%-2px)] h-[calc(100%-2px)] top-[0.08rem] bg-linear-270 from-[#2567EC] to-[#37B6F7] z-50 rounded-[0.8rem]" />
             </div>
           </div>
         </button>
@@ -268,6 +273,13 @@ function ExportPopover({
   );
 }
 
+/**
+ * Render an error view for a failed export with actions to copy the error and retry.
+ *
+ * @param error - The error message to display and to copy to the clipboard when the user activates Copy
+ * @param onRetry - Callback invoked when the user activates Retry
+ * @returns A JSX element showing the failure message and action buttons for copying the error and retrying the export
+ */
 function ExportError({
   error,
   onRetry,
@@ -287,9 +299,7 @@ function ExportError({
     <div className="space-y-4">
       <div className="flex flex-col gap-1.5">
         <p className="text-sm font-medium text-red-400">Export failed</p>
-        <p className="text-xs text-muted-foreground">
-          {error}
-        </p>
+        <p className="text-xs text-muted-foreground">{error}</p>
       </div>
 
       <div className="flex gap-2">

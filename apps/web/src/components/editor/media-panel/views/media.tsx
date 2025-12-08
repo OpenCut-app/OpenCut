@@ -68,6 +68,13 @@ function MediaItemWithContextMenu({
   );
 }
 
+/**
+ * Renders the media gallery and editor panel with upload, drag-and-drop, view modes, sorting, previews, and item operations.
+ *
+ * Displays upload controls and view/sort toggles, provides a drag-and-drop and file-picker upload surface, and shows media items as either a grid or list with previews and per-item actions (delete, export placeholder).
+ *
+ * @returns The React element representing the media view panel.
+ */
 export function MediaView() {
   const { mediaFiles, addMediaFile, removeMediaFile } = useMediaStore();
   const { activeProject } = useProjectStore();
@@ -141,7 +148,7 @@ export function MediaView() {
   };
 
   const filteredMediaItems = useMemo(() => {
-    let filtered = mediaFiles.filter((item) => {
+    const filtered = mediaFiles.filter((item) => {
       if (item.ephemeral) return false;
       return true;
     });
