@@ -1,4 +1,3 @@
-import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 import "./globals.css";
@@ -10,6 +9,7 @@ import { baseMetaData } from "./metadata";
 import { defaultFont } from "../lib/font-config";
 import { BotIdClient } from "botid/client";
 import { env } from "@/env";
+import CustomThemeProvider from "@/components/theme-provider";
 
 export const metadata = baseMetaData;
 
@@ -35,7 +35,7 @@ export default function RootLayout({
         <BotIdClient protect={protectedRoutes} />
       </head>
       <body className={`${defaultFont.className} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark">
+        <CustomThemeProvider attribute="class" defaultTheme="dark">
           <TooltipProvider>
             <StorageProvider>
               <ScenesMigrator>{children}</ScenesMigrator>
@@ -55,7 +55,7 @@ export default function RootLayout({
               data-track-sessions={false}
             />
           </TooltipProvider>
-        </ThemeProvider>
+        </CustomThemeProvider>
       </body>
     </html>
   );
