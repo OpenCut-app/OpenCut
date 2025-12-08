@@ -3,6 +3,7 @@
 import { Button } from "./ui/button";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 interface ThemeToggleProps {
   className?: string;
@@ -10,6 +11,12 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // ensure component only renders theme-dependent text on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <Button
@@ -19,7 +26,9 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       <Sun className="!size-[1.1rem]" />
-      <span className="sr-only">{theme === "dark" ? "Light" : "Dark"}</span>
+      {mounted && (
+        <span className="sr-only">{theme === "dark" ? "Light" : "Dark"}</span>
+      )}
     </Button>
   );
 }
