@@ -22,8 +22,8 @@ export function Header() {
   );
 
   const rightContent = (
-    <nav className="flex items-center gap-2">
-      <div className="flex items-center gap-4">
+    <nav className="flex items-center gap-1 justify-center">
+      <div className="flex items-center gap-3">
         <Link href="/blog">
           <Button variant="text" className="text-sm p-0">
             Blog
