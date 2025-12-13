@@ -27,6 +27,8 @@ import {
   SplitSquareHorizontal,
   Scissors,
   LayersIcon,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import {
   SplitButton,
@@ -63,6 +65,10 @@ export function TimelineToolbar({
     toggleSnapping,
     rippleEditingEnabled,
     toggleRippleEditing,
+    undo,
+    redo,
+    history,
+    redoStack,
   } = useTimelineStore();
   const { currentTime, duration, isPlaying, toggle, seek } = usePlaybackStore();
   const { toggleBookmark, isBookmarked, activeProject } = useProjectStore();
@@ -174,10 +180,41 @@ export function TimelineToolbar({
   };
 
   const currentBookmarked = isBookmarked(currentTime);
+
   return (
     <div className="flex items-center justify-between px-2 py-1 border-b h-10">
       <div className="flex items-center gap-1">
         <TooltipProvider delayDuration={500}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={undo}
+                disabled={history.length === 0}
+                className={history.length === 0 ? "opacity-30" : ""}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={redo}
+                disabled={redoStack.length === 0}
+                className={redoStack.length === 0 ? "opacity-30" : ""}
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+          </Tooltip>
+          <div className="w-px h-6 bg-border mx-1" />
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="text" size="icon" onClick={toggle}>
