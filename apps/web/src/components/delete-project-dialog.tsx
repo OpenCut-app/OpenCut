@@ -49,7 +49,7 @@ export function DeleteProjectDialog({
         </DialogHeader>
         <DialogFooter>
           <Button
-            variant="text"
+            variant="outline"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
