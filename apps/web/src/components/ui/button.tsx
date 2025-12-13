@@ -21,7 +21,7 @@ const buttonVariants = cva(
           "border border-input bg-transparent shadow-xs hover:opacity-75 transition-opacity hover:text-accent-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-foreground/15 border border-input",
-        text: "bg-transparent p-0 rounded-none opacity-100 hover:opacity-50 transition-opacity", // Instead of ghost (matches app better)
+        text: "bg-transparent p-0 rounded-none opacity-100 hover:bg-foreground/15 transition-opacity", // Instead of ghost (matches app better)
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

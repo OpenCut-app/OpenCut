@@ -105,7 +105,7 @@ export function KeyboardShortcutsHelp() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="text" size="sm" className="gap-2">
+        <Button variant="text" size="sm" className="gap-2 dark:bg-neutral-800 dark:border-neutral-800 dark:text-white bg-gray-200 border-1 border-gray-300 text-black "> 
           <Keyboard className="w-4 h-4" />
           Shortcuts
         </Button>
@@ -178,14 +178,14 @@ function ShortcutItem({
   });
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center py-0.5 justify-between">
       <div className="flex items-center gap-3">
         {shortcut.icon && (
           <div className="text-muted-foreground">{shortcut.icon}</div>
         )}
         <span className="text-sm">{shortcut.description}</span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1"> 
         {displayKeys.map((key: string, index: number) => (
           <div key={key} className="flex items-center gap-1">
             <div className="flex items-center">
@@ -232,7 +232,7 @@ function EditableShortcutKey({
       variant="outline"
       size="sm"
       className={`font-sans px-2 min-w-6 min-h-6 leading-none mr-1 hover:bg-opacity-80 ${
-        isRecording ? "border-primary bg-primary/10" : "border bg-accent/50"
+        isRecording ? "border-primary bg-primary/10" : "border bg-foreground/15"
       }`}
       onClick={handleClick}
       title={
