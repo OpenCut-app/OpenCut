@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 > If you don't know what Modal is: it allows us to process the actual audio and transcribe with Whisper by providing the infra to run Python code with a lot of RAM, generally affordable.
 
-5. Once you've got a Modal accoumt, run this:
+5. Once you've got a Modal account, run this:
 
 ```bash
 python -m modal setup
