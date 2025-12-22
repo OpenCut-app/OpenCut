@@ -12,7 +12,8 @@ Thanks for using OpenCut! If you need help, here are your options:
 - **Questions**: Use GitHub Discussions for general questions
 
 ## Community
-- Join our discussions on GitHub
+- **Discord**: Join our [Discord server](https://discord.gg/zmR9N35cjK) for real-time help and discussions
+- **GitHub Discussions**: Ask questions and share ideas
 - Follow the [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## Response Times
