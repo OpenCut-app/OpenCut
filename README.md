@@ -108,18 +108,38 @@ Before you begin, ensure you have the following installed on your system:
 
    # Generate a secure secret for Better Auth
    BETTER_AUTH_SECRET="your-generated-secret-here"
-   BETTER_AUTH_URL="http://localhost:3000"
+   NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:3000"
 
    # Redis (matches docker-compose.yaml)
    UPSTASH_REDIS_REST_URL="http://localhost:8079"
    UPSTASH_REDIS_REST_TOKEN="example_token"
 
-   # Marble Blog
-   MARBLE_WORKSPACE_KEY=cm6ytuq9x0000i803v0isidst # example organization key
+   # Marble Blog (example organization key - optional for local development)
+   MARBLE_WORKSPACE_KEY=cm6ytuq9x0000i803v0isidst
    NEXT_PUBLIC_MARBLE_API_URL=https://api.marblecms.com
 
    # Development
    NODE_ENV="development"
+   ```
+
+   **Optional Variables (for advanced features):**
+
+   ```bash
+   # Freesound API (for audio library feature)
+   # Get credentials at https://freesound.org/apiv2/apply/
+   FREESOUND_CLIENT_ID=...
+   FREESOUND_API_KEY=...
+
+   # Cloudflare R2 (for auto-captions/transcription feature)
+   # Get these from Cloudflare Dashboard > R2 > Manage R2 API tokens
+   CLOUDFLARE_ACCOUNT_ID=your-account-id
+   R2_ACCESS_KEY_ID=your-access-key-id
+   R2_SECRET_ACCESS_KEY=your-secret-access-key
+   R2_BUCKET_NAME=opencut-transcription
+
+   # Modal transcription endpoint (from modal deploy transcription.py)
+   # See apps/transcription/README.md for setup instructions
+   MODAL_TRANSCRIPTION_URL=https://your-username--opencut-transcription-transcribe-audio.modal.run
    ```
 
    **Generate BETTER_AUTH_SECRET:**
