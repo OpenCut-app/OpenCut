@@ -122,6 +122,7 @@ export function TimelineTrackContent({
   };
 
   const timelineRef = useRef<HTMLDivElement>(null);
+  const trackContainerRef = useRef<HTMLDivElement>(null);
   const [isDropping, setIsDropping] = useState(false);
   const [dropPosition, setDropPosition] = useState<number | null>(null);
   const [wouldOverlap, setWouldOverlap] = useState(false);
@@ -132,6 +133,19 @@ export function TimelineTrackContent({
   } | null>(null);
 
   const lastMouseXRef = useRef(0);
+  const [dragOverlay, setDragOverlay] = useState<{
+    show: boolean;
+    time: number;
+    duration: number;
+    trackId: string | null;
+  } | null>(null);
+
+  // Clear drag overlay when drag ends
+  useEffect(() => {
+    if (!dragState.isDragging) {
+      setDragOverlay(null);
+    }
+  }, [dragState.isDragging]);
 
   // Set up mouse event listeners for drag
   useEffect(() => {
@@ -229,16 +243,126 @@ export function TimelineTrackContent({
       }
 
       updateDragTime(finalTime);
+
+      // Update drag overlay to show where element will be dropped
+      // Show overlay on the track the mouse is currently over
+      if (dragState.elementId && dragState.trackId) {
+        const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
+        const element = sourceTrack?.elements.find(
+          (e) => e.id === dragState.elementId
+        );
+        if (element) {
+          const elementDuration =
+            element.duration - element.trimStart - element.trimEnd;
+
+          // Check if mouse is over this track
+          const trackContainer = trackContainerRef.current;
+          const trackContainerRect = trackContainer?.getBoundingClientRect();
+
+          const isMouseOverThisTrack =
+            trackContainerRect &&
+            e.clientY >= trackContainerRect.top &&
+            e.clientY <= trackContainerRect.bottom;
+
+          if (isMouseOverThisTrack) {
+            // Only show overlay for tracks above the source track
+            const sourceTrackIndex = tracks.findIndex(
+              (t) => t.id === dragState.trackId
+            );
+            const currentTrackIndex = tracks.findIndex(
+              (t) => t.id === track.id
+            );
+
+            // Only show overlay if current track is above the source track
+            if (currentTrackIndex < sourceTrackIndex) {
+              // Calculate overlay time using same logic as drop handler
+              let overlayTime = finalTime;
+              const tracksContainer = tracksScrollRef.current;
+
+              if (tracksContainer) {
+                const containerRect = tracksContainer.getBoundingClientRect();
+                const scrollLeft = tracksContainer.scrollLeft;
+                const mouseX = e.clientX - containerRect.left;
+                const mouseTime = Math.max(
+                  0,
+                  (mouseX + scrollLeft) /
+                    (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel)
+                );
+                const adjustedTime = Math.max(
+                  0,
+                  mouseTime - dragState.clickOffsetTime
+                );
+                const projectStore = useProjectStore.getState();
+                const projectFps =
+                  projectStore.activeProject?.fps || DEFAULT_FPS;
+                overlayTime = snapTimeToFrame(adjustedTime, projectFps);
+              }
+
+              setDragOverlay({
+                show: true,
+                time: overlayTime,
+                duration: elementDuration,
+                trackId: track.id,
+              });
+            } else {
+              // Clear overlay if not above source track
+              setDragOverlay((prev) =>
+                prev?.trackId === track.id ? null : prev
+              );
+            }
+          } else {
+            // Clear overlay if mouse left this track
+            setDragOverlay((prev) =>
+              prev?.trackId === track.id ? null : prev
+            );
+          }
+        }
+      }
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (!dragState.elementId || !dragState.trackId) return;
+      if (!dragState.elementId || !dragState.trackId || !dragState.isDragging) {
+        return;
+      }
 
-      // If this track initiated the drag, we should handle the mouse up regardless of where it occurs
+      // First, check if we should handle this mouseup at all for this track
       const isTrackThatStartedDrag = dragState.trackId === track.id;
 
+      // Get all necessary rects upfront
+      const trackContainer = trackContainerRef.current;
+      const trackContainerRect = trackContainer?.getBoundingClientRect();
       const timelineRect = timelineRef.current?.getBoundingClientRect();
-      if (!timelineRect) {
+
+      // Check if mouse is over this track
+      let isMouseOverThisTrack = false;
+
+      if (trackContainerRect) {
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+
+        // Check if directly over the track
+        const isDirectlyOver =
+          mouseY >= trackContainerRect.top &&
+          mouseY <= trackContainerRect.bottom &&
+          mouseX >= trackContainerRect.left &&
+          mouseX <= trackContainerRect.right;
+
+        if (isDirectlyOver) {
+          isMouseOverThisTrack = true;
+        }
+      } else if (timelineRect) {
+        // Fallback to timeline rect if track container not available
+        isMouseOverThisTrack =
+          e.clientY >= timelineRect.top &&
+          e.clientY <= timelineRect.bottom &&
+          e.clientX >= timelineRect.left &&
+          e.clientX <= timelineRect.right;
+      }
+
+      const tracksContainer = tracksScrollRef.current;
+
+      // If we don't have track container bounds, try to handle with source track only
+      if (!trackContainerRect) {
         if (isTrackThatStartedDrag) {
           if (rippleEditingEnabled) {
             updateElementStartTimeWithRipple(
@@ -260,14 +384,44 @@ export function TimelineTrackContent({
         return;
       }
 
-      const isMouseOverThisTrack =
-        e.clientY >= timelineRect.top && e.clientY <= timelineRect.bottom;
+      if (!isMouseOverThisTrack && !isTrackThatStartedDrag) {
+        // Clear overlay if mouse left this track
+        setDragOverlay((prev) => (prev?.trackId === track.id ? null : prev));
+        return;
+      }
 
-      if (!isMouseOverThisTrack && !isTrackThatStartedDrag) return;
+      // Calculate final time - always use tracksScrollRef for consistent calculation
+      // This works for both empty and non-empty tracks
+      let finalTime = dragState.currentTime;
+      if (tracksContainer) {
+        const containerRect = tracksContainer.getBoundingClientRect();
+        const scrollLeft = tracksContainer.scrollLeft;
+        const mouseX = e.clientX - containerRect.left;
+        const mouseTime = Math.max(
+          0,
+          (mouseX + scrollLeft) /
+            (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel)
+        );
+        const adjustedTime = Math.max(0, mouseTime - dragState.clickOffsetTime);
+        const projectStore = useProjectStore.getState();
+        const projectFps = projectStore.activeProject?.fps || DEFAULT_FPS;
+        finalTime = snapTimeToFrame(adjustedTime, projectFps);
+      } else if (timelineRect) {
+        // Fallback to timeline rect if scroll ref not available
+        const mouseX = e.clientX - timelineRect.left;
+        const mouseTime = Math.max(
+          0,
+          mouseX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel)
+        );
+        const adjustedTime = Math.max(0, mouseTime - dragState.clickOffsetTime);
+        const projectStore = useProjectStore.getState();
+        const projectFps = projectStore.activeProject?.fps || DEFAULT_FPS;
+        finalTime = snapTimeToFrame(adjustedTime, projectFps);
+      }
 
-      const finalTime = dragState.currentTime;
-
+      // Handle drop on track
       if (isMouseOverThisTrack) {
+        // PRIORITY 2: Handle drop ON track
         const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
         const movingElement = sourceTrack?.elements.find(
           (c) => c.id === dragState.elementId
@@ -281,21 +435,28 @@ export function TimelineTrackContent({
           const movingElementEnd = finalTime + movingElementDuration;
 
           const targetTrack = tracks.find((t) => t.id === track.id);
-          const hasOverlap = targetTrack?.elements.some((existingElement) => {
-            if (
-              dragState.trackId === track.id &&
-              existingElement.id === dragState.elementId
-            ) {
-              return false;
-            }
-            const existingStart = existingElement.startTime;
-            const existingEnd =
-              existingElement.startTime +
-              (existingElement.duration -
-                existingElement.trimStart -
-                existingElement.trimEnd);
-            return finalTime < existingEnd && movingElementEnd > existingStart;
-          });
+          // For empty tracks, elements array is empty, so some() returns false (no overlap)
+          // This is correct - empty tracks can always accept drops
+          const hasOverlap = targetTrack
+            ? targetTrack.elements.some((existingElement) => {
+                // Skip the element being moved if it's on the same track
+                if (
+                  dragState.trackId === track.id &&
+                  existingElement.id === dragState.elementId
+                ) {
+                  return false;
+                }
+                const existingStart = existingElement.startTime;
+                const existingEnd =
+                  existingElement.startTime +
+                  (existingElement.duration -
+                    existingElement.trimStart -
+                    existingElement.trimEnd);
+                return (
+                  finalTime < existingEnd && movingElementEnd > existingStart
+                );
+              })
+            : false; // If target track not found, allow drop (shouldn't happen)
 
           if (!hasOverlap) {
             if (dragState.trackId === track.id) {
@@ -313,6 +474,7 @@ export function TimelineTrackContent({
                 );
               }
             } else {
+              // Moving to different track - handle the move
               moveElementToTrack(
                 dragState.trackId,
                 track.id,
@@ -333,16 +495,28 @@ export function TimelineTrackContent({
                   );
                 }
               });
+              // End drag since we handled the drop on this track
+              endDragAction();
+              onSnapPointChange?.(null);
+              return; // Don't let source track also handle this
             }
           }
         }
       } else if (isTrackThatStartedDrag) {
+        // PRIORITY 3: Handle drop on source track
         // Mouse is not over this track, but this track started the drag
-        // This means user released over ruler/outside - update position within same track
+        // Check if element still exists in this track (might have been moved to another track)
         const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
         const movingElement = sourceTrack?.elements.find(
           (c) => c.id === dragState.elementId
         );
+
+        // If element no longer exists in source track, it was moved - don't process
+        if (!movingElement) {
+          endDragAction();
+          onSnapPointChange?.(null);
+          return;
+        }
 
         if (movingElement) {
           const movingElementDuration =
@@ -383,6 +557,9 @@ export function TimelineTrackContent({
         // Clear snap point when drag ends
         onSnapPointChange?.(null);
       }
+
+      // Clear drag overlay
+      setDragOverlay(null);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -930,8 +1107,8 @@ export function TimelineTrackContent({
           const isCompatible = isVideoOrImage
             ? canElementGoOnTrack("media", track.type)
             : isAudio
-              ? canElementGoOnTrack("media", track.type)
-              : false;
+            ? canElementGoOnTrack("media", track.type)
+            : false;
 
           let targetTrack = tracks.find((t) => t.id === targetTrackId);
 
@@ -1106,6 +1283,7 @@ export function TimelineTrackContent({
 
   return (
     <div
+      ref={trackContainerRef}
       className="w-full h-full hover:bg-muted/20"
       onClick={(e) => {
         // If clicking empty area (not on an element), deselect all elements
@@ -1122,6 +1300,29 @@ export function TimelineTrackContent({
         ref={timelineRef}
         className="h-full relative track-elements-container min-w-full"
       >
+        {/* Drag Overlay - shows where element will be dropped */}
+        {dragOverlay?.show &&
+          dragOverlay.trackId === track.id &&
+          dragOverlay.time !== null && (
+            <div
+              className="absolute top-0 h-full pointer-events-none z-40"
+              style={{
+                left: `${
+                  dragOverlay.time *
+                  TIMELINE_CONSTANTS.PIXELS_PER_SECOND *
+                  zoomLevel
+                }px`,
+                width: `${Math.max(
+                  TIMELINE_CONSTANTS.ELEMENT_MIN_WIDTH,
+                  dragOverlay.duration *
+                    TIMELINE_CONSTANTS.PIXELS_PER_SECOND *
+                    zoomLevel
+                )}px`,
+              }}
+            >
+              <div className="h-full border-2 border-dashed border-primary/60 bg-primary/5 rounded-[0.5rem]" />
+            </div>
+          )}
         {track.elements.length === 0 ? (
           <div
             className={`h-full w-full rounded-sm border-2 border-dashed flex items-center justify-center text-xs text-muted-foreground transition-colors ${

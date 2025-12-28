@@ -380,10 +380,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         type === "media"
           ? "Media Track"
           : type === "text"
-            ? "Text Track"
-            : type === "audio"
-              ? "Audio Track"
-              : "Track";
+          ? "Text Track"
+          : type === "audio"
+          ? "Audio Track"
+          : "Track";
 
       const newTrack: TimelineTrack = {
         id: generateUUID(),
@@ -391,6 +391,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         type,
         elements: [],
         muted: false,
+        createdAt: Date.now(),
       };
 
       updateTracksAndSave([...get()._tracks, newTrack]);
@@ -404,10 +405,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         type === "media"
           ? "Media Track"
           : type === "text"
-            ? "Text Track"
-            : type === "audio"
-              ? "Audio Track"
-              : "Track";
+          ? "Text Track"
+          : type === "audio"
+          ? "Audio Track"
+          : "Track";
 
       const newTrack: TimelineTrack = {
         id: generateUUID(),
@@ -415,6 +416,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         type,
         elements: [],
         muted: false,
+        createdAt: Date.now(),
       };
 
       const newTracks = [...get()._tracks];
@@ -1014,6 +1016,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             },
           ],
           muted: false,
+          createdAt: Date.now(),
         };
 
         updateTracksAndSave([...get()._tracks, newAudioTrack]);
@@ -1095,7 +1098,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         } catch (error) {
           return {
             success: false,
-            error: `Failed to process ${fileType} file: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error: `Failed to process ${fileType} file: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
           };
         }
 
@@ -1107,7 +1112,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         } catch (error) {
           return {
             success: false,
-            error: `Failed to add media to project: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error: `Failed to add media to project: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
           };
         }
 
@@ -1149,7 +1156,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         console.error("Failed to replace element media:", error);
         return {
           success: false,
-          error: `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          error: `Unexpected error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         };
       }
     },
@@ -1531,8 +1540,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trackId && elementId
           ? [{ trackId, elementId }]
           : selectedElements.length > 0
-            ? selectedElements
-            : [];
+          ? selectedElements
+          : [];
 
       if (elementsToDelete.length === 0) return;
 
@@ -1569,8 +1578,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trackId && elementId
           ? [{ trackId, elementId }]
           : selectedElements.length > 0
-            ? selectedElements
-            : [];
+          ? selectedElements
+          : [];
 
       if (elementsToProcess.length === 0) return;
 
@@ -1662,8 +1671,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trackId && elementId
           ? [{ trackId, elementId }]
           : selectedElements.length > 0
-            ? selectedElements
-            : [];
+          ? selectedElements
+          : [];
 
       if (elementsToProcess.length === 0) return;
 
@@ -1700,8 +1709,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         trackId && elementId
           ? [{ trackId, elementId }]
           : selectedElements.length > 0
-            ? selectedElements
-            : [];
+          ? selectedElements
+          : [];
 
       if (elementsToProcess.length === 0) return;
 
@@ -1794,7 +1803,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         console.error("Unexpected error replacing clip:", error);
         const { toast } = await import("sonner");
         toast.error(
-          `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`
+          `Unexpected error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     },

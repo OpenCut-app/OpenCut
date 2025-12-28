@@ -28,6 +28,7 @@ export const defaultKeybindings: KeybindingConfig = {
   "ctrl+z": "undo",
   "ctrl+shift+z": "redo",
   "ctrl+y": "redo",
+  "ctrl+x": "delete-selected",
   delete: "delete-selected",
   backspace: "delete-selected",
 };
@@ -164,7 +165,18 @@ export const useKeybindingsStore = create<KeybindingsState>()(
     }),
     {
       name: "opencut-keybindings",
-      version: 2,
+      version: 3,
+      merge: (persistedState: any, currentState: any) => {
+        // Merge defaults with persisted state to ensure new keybindings are included
+        return {
+          ...currentState,
+          ...persistedState,
+          keybindings: {
+            ...defaultKeybindings,
+            ...persistedState?.keybindings,
+          },
+        };
+      },
     }
   )
 );

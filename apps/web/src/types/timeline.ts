@@ -87,6 +87,7 @@ export interface TimelineTrack {
   elements: TimelineElement[];
   muted?: boolean;
   isMain?: boolean;
+  createdAt?: number; // Timestamp when track was created, used for race condition prevention
 }
 
 export function sortTracksByOrder(tracks: TimelineTrack[]): TimelineTrack[] {
@@ -126,6 +127,7 @@ export function ensureMainTrack(tracks: TimelineTrack[]): TimelineTrack[] {
       elements: [],
       muted: false,
       isMain: true,
+      createdAt: Date.now(),
     };
     return [mainTrack, ...tracks];
   }

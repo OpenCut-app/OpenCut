@@ -340,12 +340,12 @@ export function TimelineElement({
                 ? `Toggle mute ${selectedElements.length} elements`
                 : `Toggle visibility ${selectedElements.length} elements`
               : hasAudio
-                ? isMuted
-                  ? "Unmute"
-                  : "Mute"
-                : element.hidden
-                  ? "Show"
-                  : "Hide"}{" "}
+              ? isMuted
+                ? "Unmute"
+                : "Mute"
+              : element.hidden
+              ? "Show"
+              : "Hide"}{" "}
             {!isMultipleSelected && (element.type === "text" ? "text" : "clip")}
           </span>
         </ContextMenuItem>
