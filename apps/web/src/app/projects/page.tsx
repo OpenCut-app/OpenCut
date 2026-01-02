@@ -296,8 +296,8 @@ export default function ProjectsPage() {
         </div>
 
         {isSelectionMode && sortedProjects.length > 0 && (
-          <button
-            type="button"
+          <div
+            role="button"
             onClick={() => handleSelectAll(!allSelected)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -315,7 +315,7 @@ export default function ProjectsPage() {
             <span className="text-sm text-muted-foreground">
               ({selectedProjects.size} of {sortedProjects.length} selected)
             </span>
-          </button>
+          </div>
         )}
 
         {isLoading || !isInitialized ? (
@@ -566,14 +566,15 @@ function ProjectCard({
   return (
     <>
       {isSelectionMode ? (
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={handleCardClick}
           onKeyDown={handleCardKeyDown}
           className="block group cursor-pointer w-full text-left"
         >
           {cardContent}
-        </button>
+        </div>
       ) : (
         <Link href={`/editor/${project.id}`} className="block group">
           {cardContent}
