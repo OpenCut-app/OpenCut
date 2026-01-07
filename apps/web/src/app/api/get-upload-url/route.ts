@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // Check transcription configuration
+    /**
+     * Check transcription configuration (runtime guard)
+     * This is your existing check; it produces the helpful error message.
+     */
     const transcriptionCheck = isTranscriptionConfigured();
     if (!transcriptionCheck.configured) {
       console.error(
@@ -40,7 +43,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Transcription not configured",
-          message: `Auto-captions require environment variables: ${transcriptionCheck.missingVars.join(", ")}. Check README for setup instructions.`,
+          message: `Auto-captions require environment variables: ${transcriptionCheck.missingVars.join(
+            ", "
+          )}. Check README for setup instructions.`,
+        },
+        { status: 503 }
+      );
+    }
+
+    /**
+     * Hard type-guard (compile-time + runtime safety)
+     * Your env schema now allows these to be optional, so TS sees `string | undefined`.
+     * This block guarantees they're present before use.
+     */
+    const r2AccessKeyId = env.R2_ACCESS_KEY_ID;
+    const r2SecretAccessKey = env.R2_SECRET_ACCESS_KEY;
+    const r2BucketName = env.R2_BUCKET_NAME;
+    const cloudflareAccountId = env.CLOUDFLARE_ACCOUNT_ID;
+
+    if (
+      !r2AccessKeyId ||
+      !r2SecretAccessKey ||
+      !r2BucketName ||
+      !cloudflareAccountId
+    ) {
+      return NextResponse.json(
+        {
+          error: "Transcription not configured",
+          message:
+            "Auto-captions require R2 env vars. Set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, and CLOUDFLARE_ACCOUNT_ID.",
         },
         { status: 503 }
       );
@@ -70,8 +101,8 @@ export async function POST(request: NextRequest) {
 
     // Initialize R2 client
     const client = new AwsClient({
-      accessKeyId: env.R2_ACCESS_KEY_ID,
-      secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      accessKeyId: r2AccessKeyId,
+      secretAccessKey: r2SecretAccessKey,
     });
 
     // Generate unique filename with timestamp
@@ -80,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // Create presigned URL
     const url = new URL(
-      `https://${env.R2_BUCKET_NAME}.${env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
+      `https://${r2BucketName}.${cloudflareAccountId}.r2.cloudflarestorage.com/${fileName}`
     );
 
     url.searchParams.set("X-Amz-Expires", "3600"); // 1 hour expiry
@@ -101,10 +132,7 @@ export async function POST(request: NextRequest) {
 
     const responseValidation = apiResponseSchema.safeParse(responseData);
     if (!responseValidation.success) {
-      console.error(
-        "Invalid API response structure:",
-        responseValidation.error
-      );
+      console.error("Invalid API response structure:", responseValidation.error);
       return NextResponse.json(
         { error: "Internal response formatting error" },
         { status: 500 }
@@ -118,9 +146,7 @@ export async function POST(request: NextRequest) {
       {
         error: "Failed to generate upload URL",
         message:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
+          error instanceof Error ? error.message : "An unexpected error occurred",
       },
       { status: 500 }
     );
