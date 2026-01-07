@@ -1,150 +1,103 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { AwsClient } from "aws4fetch";
-import { nanoid } from "nanoid";
 import { env } from "@/env";
-import { baseRateLimit } from "@/lib/rate-limit";
-import { isTranscriptionConfigured } from "@/lib/transcription-utils";
 
-const uploadRequestSchema = z.object({
-  fileExtension: z.enum(["wav", "mp3", "m4a", "flac"], {
-    errorMap: () => ({
-      message: "File extension must be wav, mp3, m4a, or flac",
-    }),
-  }),
+const querySchema = z.object({
+  query: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  page_size: z.coerce.number().int().min(1).max(150).default(20),
+  sort: z
+    .enum(["relevance", "duration", "downloads", "rating", "created"])
+    .default("relevance"),
 });
 
-const apiResponseSchema = z.object({
-  uploadUrl: z.string().url(),
-  fileName: z.string().min(1),
-});
+function isFreesoundConfigured() {
+  return Boolean(env.FREESOUND_API_KEY);
+}
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Rate limiting
-    const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
-    const { success } = await baseRateLimit.limit(ip);
-
-    if (!success) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-    }
-
-    /**
-     * Check transcription configuration (runtime guard)
-     * This is your existing check; it produces the helpful error message.
-     */
-    const transcriptionCheck = isTranscriptionConfigured();
-    if (!transcriptionCheck.configured) {
-      console.error(
-        "Missing environment variables:",
-        JSON.stringify(transcriptionCheck.missingVars)
-      );
-
+    // If Freesound isn't configured, disable this endpoint cleanly.
+    if (!isFreesoundConfigured()) {
       return NextResponse.json(
         {
-          error: "Transcription not configured",
-          message: `Auto-captions require environment variables: ${transcriptionCheck.missingVars.join(
-            ", "
-          )}. Check README for setup instructions.`,
-        },
-        { status: 503 }
-      );
-    }
-
-    /**
-     * Hard type-guard (compile-time + runtime safety)
-     * Your env schema now allows these to be optional, so TS sees `string | undefined`.
-     * This block guarantees they're present before use.
-     */
-    const r2AccessKeyId = env.R2_ACCESS_KEY_ID;
-    const r2SecretAccessKey = env.R2_SECRET_ACCESS_KEY;
-    const r2BucketName = env.R2_BUCKET_NAME;
-    const cloudflareAccountId = env.CLOUDFLARE_ACCOUNT_ID;
-
-    if (
-      !r2AccessKeyId ||
-      !r2SecretAccessKey ||
-      !r2BucketName ||
-      !cloudflareAccountId
-    ) {
-      return NextResponse.json(
-        {
-          error: "Transcription not configured",
+          error: "Freesound not configured",
           message:
-            "Auto-captions require R2 env vars. Set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, and CLOUDFLARE_ACCOUNT_ID.",
+            "This endpoint requires FREESOUND_API_KEY. Set it (and FREESOUND_CLIENT_ID if needed) to enable sound search.",
         },
         { status: 503 }
       );
     }
 
-    // Parse and validate request body
-    const rawBody = await request.json().catch(() => null);
-    if (!rawBody) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
-
-    const validationResult = uploadRequestSchema.safeParse(rawBody);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid request parameters",
-          details: validationResult.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
-    }
-
-    const { fileExtension } = validationResult.data;
-
-    // Initialize R2 client
-    const client = new AwsClient({
-      accessKeyId: r2AccessKeyId,
-      secretAccessKey: r2SecretAccessKey,
+    const url = new URL(request.url);
+    const parsed = querySchema.safeParse({
+      query: url.searchParams.get("query") ?? undefined,
+      page: url.searchParams.get("page") ?? undefined,
+      page_size: url.searchParams.get("page_size") ?? undefined,
+      sort: url.searchParams.get("sort") ?? undefined,
     });
 
-    // Generate unique filename with timestamp
-    const timestamp = Date.now();
-    const fileName = `audio/${timestamp}-${nanoid()}.${fileExtension}`;
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid query", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    // Create presigned URL
-    const url = new URL(
-      `https://${r2BucketName}.${cloudflareAccountId}.r2.cloudflarestorage.com/${fileName}`
+    const { query, page, page_size, sort } = parsed.data;
+
+    // Freesound sort mapping (matches previous logic style)
+    const sortParam =
+      sort === "relevance"
+        ? "score"
+        : sort === "created"
+          ? "created"
+          : `${sort}_desc`;
+
+    // ✅ token must be string; we already guarded above.
+    const token = env.FREESOUND_API_KEY as string;
+
+    const params = new URLSearchParams({
+      query: query || "",
+      token,
+      page: page.toString(),
+      page_size: page_size.toString(),
+      sort: sortParam,
+      fields:
+        "id,name,previews,username,license,created,description,duration,download,downloads,avg_rating,num_ratings,tags,images,url",
+    });
+
+    const response = await fetch(
+      `https://freesound.org/apiv2/search/text/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        // avoid caching in builds/edge contexts
+        cache: "no-store",
+      }
     );
 
-    url.searchParams.set("X-Amz-Expires", "3600"); // 1 hour expiry
-
-    const signed = await client.sign(new Request(url, { method: "PUT" }), {
-      aws: { signQuery: true },
-    });
-
-    if (!signed.url) {
-      throw new Error("Failed to generate presigned URL");
-    }
-
-    // Prepare and validate response
-    const responseData = {
-      uploadUrl: signed.url,
-      fileName,
-    };
-
-    const responseValidation = apiResponseSchema.safeParse(responseData);
-    if (!responseValidation.success) {
-      console.error("Invalid API response structure:", responseValidation.error);
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
       return NextResponse.json(
-        { error: "Internal response formatting error" },
-        { status: 500 }
+        {
+          error: "Freesound request failed",
+          status: response.status,
+          details: text || response.statusText,
+        },
+        { status: 502 }
       );
     }
 
-    return NextResponse.json(responseValidation.data);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Error generating upload URL:", error);
+    console.error("Error in sounds search route:", error);
     return NextResponse.json(
       {
-        error: "Failed to generate upload URL",
+        error: "Internal error",
         message:
           error instanceof Error ? error.message : "An unexpected error occurred",
       },
