@@ -127,6 +127,7 @@ interface TimelineStore {
     pushHistory?: boolean
   ) => void;
   toggleTrackMute: (trackId: string) => void;
+  toggleTrackVisibility: (trackId: string) => void;
   splitAndKeepLeft: (
     trackId: string,
     elementId: string,
@@ -867,6 +868,15 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       updateTracksAndSave(
         get()._tracks.map((track) =>
           track.id === trackId ? { ...track, muted: !track.muted } : track
+        )
+      );
+    },
+
+    toggleTrackVisibility: (trackId) => {
+      get().pushHistory();
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId ? { ...track, hidden: !track.hidden } : track
         )
       );
     },

@@ -22,6 +22,7 @@ import {
   ZoomOut,
   Bookmark,
   Eye,
+  EyeOff,
   VolumeOff,
   Volume2,
 } from "lucide-react";
@@ -84,6 +85,7 @@ export function Timeline() {
     snappingEnabled,
     setSelectedElements,
     toggleTrackMute,
+    toggleTrackVisibility,
     dragState,
   } = useTimelineStore();
   const { mediaFiles, addMediaFile } = useMediaStore();
@@ -788,7 +790,17 @@ export function Timeline() {
                             onClick={() => toggleTrackMute(track.id)}
                           />
                         )}
-                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        {track.hidden ? (
+                          <EyeOff
+                            className="h-4 w-4 text-destructive cursor-pointer"
+                            onClick={() => toggleTrackVisibility(track.id)}
+                          />
+                        ) : (
+                          <Eye
+                            className="h-4 w-4 text-muted-foreground cursor-pointer"
+                            onClick={() => toggleTrackVisibility(track.id)}
+                          />
+                        )}
                         <TrackIcon track={track} />
                       </div>
                     </div>

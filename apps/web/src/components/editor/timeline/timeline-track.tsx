@@ -1106,7 +1106,7 @@ export function TimelineTrackContent({
 
   return (
     <div
-      className="w-full h-full hover:bg-muted/20"
+      className={`w-full h-full hover:bg-muted/20 ${track.hidden ? "opacity-40" : ""}`}
       onClick={(e) => {
         // If clicking empty area (not on an element), deselect all elements
         if (!(e.target as HTMLElement).closest(".timeline-element")) {
