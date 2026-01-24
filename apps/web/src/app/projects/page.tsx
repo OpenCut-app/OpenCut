@@ -289,8 +289,9 @@ export default function ProjectsPage() {
         </div>
 
         {isSelectionMode && sortedProjects.length > 0 && (
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => handleSelectAll(!allSelected)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -299,16 +300,18 @@ export default function ProjectsPage() {
               }
             }}
             className="w-full hover:cursor-pointer gap-2 mb-6 p-4 bg-muted/30 rounded-lg border items-center flex"
-            tabIndex={0}
           >
-            <Checkbox checked={someSelected ? "indeterminate" : allSelected} />
+            <Checkbox
+              checked={someSelected ? "indeterminate" : allSelected}
+              onCheckedChange={(checked) => handleSelectAll(!!checked)}
+            />
             <span className="text-sm font-medium">
               {allSelected ? "Deselect All" : "Select All"}
             </span>
             <span className="text-sm text-muted-foreground">
               ({selectedProjects.size} of {sortedProjects.length} selected)
             </span>
-          </button>
+          </div>
         )}
 
         {isLoading || !isInitialized ? (
@@ -434,11 +437,7 @@ function ProjectCard({
   };
 
   const cardContent = (
-    <Card
-      className={`overflow-hidden bg-background border-none p-0 transition-all ${
-        isSelectionMode && isSelected ? "ring-2 ring-primary" : ""
-      }`}
-    >
+    <Card className="overflow-hidden bg-background border-none p-0 transition-all">
       <div
         className={`relative aspect-square bg-muted transition-opacity ${
           isDropdownOpen ? "opacity-65" : "opacity-100 group-hover:opacity-65"
