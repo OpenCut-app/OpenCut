@@ -20,7 +20,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   // Avoid hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
-      <Button size="icon" variant="text" className={`h-7 ${className ?? ""}`}>
+      <Button type="button" size="icon" variant="text" className={`h-7 ${className ?? ""}`}>
         <span className="!size-[1.1rem]" />
         <span className="sr-only">Toggle theme</span>
       </Button>
@@ -31,6 +31,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
 
   return (
     <Button
+      type="button"
       size="icon"
       variant="text"
       className={`h-7 ${className ?? ""}`}
