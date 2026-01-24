@@ -21,12 +21,15 @@ import { FaDiscord } from "react-icons/fa6";
 import { PanelPresetSelector } from "./panel-preset-selector";
 import { ExportButton } from "./export-button";
 import { ThemeToggle } from "../theme-toggle";
+import { useAIChatStore } from "@/stores/ai-chat-store";
+import { Sparkles } from "lucide-react";
 
 export function EditorHeader() {
   const { activeProject, renameProject, deleteProject } = useProjectStore();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const router = useRouter();
+  const { toggleOpen: toggleAIChat, isOpen: isAIChatOpen } = useAIChatStore();
 
   const handleNameSave = async (newName: string) => {
     console.log("handleNameSave", newName);
@@ -114,6 +117,15 @@ export function EditorHeader() {
   const rightContent = (
     <nav className="flex items-center gap-2">
       <PanelPresetSelector />
+      <Button
+        variant={isAIChatOpen ? "default" : "secondary"}
+        size="icon"
+        onClick={toggleAIChat}
+        title="AI Editor (Ctrl+I)"
+        className="h-8 w-8"
+      >
+        <Sparkles className="h-4 w-4" />
+      </Button>
       <KeyboardShortcutsHelp />
       <ExportButton />
       <ThemeToggle />
