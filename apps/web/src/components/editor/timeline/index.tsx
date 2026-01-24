@@ -779,28 +779,30 @@ export function Timeline() {
                       style={{ height: `${getTrackHeight(track.type)}px` }}
                     >
                       <div className="flex items-center justify-end flex-1 min-w-0 gap-2">
-                        {track.muted ? (
-                          <VolumeOff
-                            className="h-4 w-4 text-destructive cursor-pointer"
-                            onClick={() => toggleTrackMute(track.id)}
-                          />
-                        ) : (
-                          <Volume2
-                            className="h-4 w-4 text-muted-foreground cursor-pointer"
-                            onClick={() => toggleTrackMute(track.id)}
-                          />
-                        )}
-                        {track.hidden ? (
-                          <EyeOff
-                            className="h-4 w-4 text-destructive cursor-pointer"
-                            onClick={() => toggleTrackVisibility(track.id)}
-                          />
-                        ) : (
-                          <Eye
-                            className="h-4 w-4 text-muted-foreground cursor-pointer"
-                            onClick={() => toggleTrackVisibility(track.id)}
-                          />
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleTrackMute(track.id)}
+                          aria-label={track.muted ? "Unmute track" : "Mute track"}
+                          className="p-0.5 rounded hover:bg-muted/50 focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          {track.muted ? (
+                            <VolumeOff className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <Volume2 className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleTrackVisibility(track.id)}
+                          aria-label={track.hidden ? "Show track" : "Hide track"}
+                          className="p-0.5 rounded hover:bg-muted/50 focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          {track.hidden ? (
+                            <EyeOff className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
                         <TrackIcon track={track} />
                       </div>
                     </div>
