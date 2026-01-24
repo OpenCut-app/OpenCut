@@ -29,6 +29,7 @@
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.35.0",
     "@vercel/analytics": "^1.4.1",
+    "@supabase/supabase-js": "^2.49.1",
     "aws4fetch": "^1.0.20",
     "better-auth": "^1.2.7",
     "botid": "^1.4.2",
