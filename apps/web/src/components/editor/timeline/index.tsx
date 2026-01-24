@@ -786,9 +786,13 @@ export function Timeline() {
                           className="p-0.5 rounded hover:bg-muted/50 focus:outline-none focus:ring-1 focus:ring-ring"
                         >
                           {track.muted ? (
-                            <VolumeOff className="h-4 w-4 text-destructive" />
+                            <VolumeOff className="h-4 w-4 text-destructive">
+                              <title>Unmute track</title>
+                            </VolumeOff>
                           ) : (
-                            <Volume2 className="h-4 w-4 text-muted-foreground" />
+                            <Volume2 className="h-4 w-4 text-muted-foreground">
+                              <title>Mute track</title>
+                            </Volume2>
                           )}
                         </button>
                         <button
@@ -798,9 +802,13 @@ export function Timeline() {
                           className="p-0.5 rounded hover:bg-muted/50 focus:outline-none focus:ring-1 focus:ring-ring"
                         >
                           {track.hidden ? (
-                            <EyeOff className="h-4 w-4 text-destructive" />
+                            <EyeOff className="h-4 w-4 text-destructive">
+                              <title>Show track</title>
+                            </EyeOff>
                           ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
+                            <Eye className="h-4 w-4 text-muted-foreground">
+                              <title>Hide track</title>
+                            </Eye>
                           )}
                         </button>
                         <TrackIcon track={track} />
