@@ -7,6 +7,7 @@ const requestSchema = z.object({
   queryEmbedding: z.array(z.number()).optional(),
   limit: z.number().positive().max(50).optional(),
   minQualityScore: z.number().min(0).max(1).optional(),
+  contextWindowSeconds: z.number().min(0).max(120).optional(),
   ownerId: z.string().uuid().optional(),
   videoId: z.string().uuid().optional(),
 });
