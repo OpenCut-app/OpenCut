@@ -86,6 +86,7 @@ export interface TimelineTrack {
   type: TrackType;
   elements: TimelineElement[];
   muted?: boolean;
+  hidden?: boolean;
   isMain?: boolean;
 }
 
