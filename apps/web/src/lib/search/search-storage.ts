@@ -93,6 +93,7 @@ const searchSegments = async (
       query_embedding: query.queryEmbedding,
       match_count: limit,
       min_quality: minQualityScore,
+      context_window: query.contextWindowSeconds ?? 0,
       owner_id_filter: query.ownerId ?? null,
       video_id_filter: query.videoId ?? null,
     });
@@ -114,6 +115,7 @@ const searchSegments = async (
     query_text: query.queryText,
     match_count: limit,
     min_quality: minQualityScore,
+    context_window: query.contextWindowSeconds ?? 0,
     owner_id_filter: query.ownerId ?? null,
     video_id_filter: query.videoId ?? null,
   });

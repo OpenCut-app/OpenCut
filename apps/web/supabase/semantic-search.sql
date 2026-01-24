@@ -42,6 +42,7 @@ create or replace function search_video_segments_text(
   query_text text,
   match_count int default 10,
   min_quality numeric default 0,
+  context_window numeric default 0,
   owner_id_filter uuid default null,
   video_id_filter uuid default null
 ) returns table (
@@ -54,27 +55,51 @@ create or replace function search_video_segments_text(
   visual_tags text[],
   keywords text[],
   quality_score numeric,
-  similarity_score numeric
+  similarity_score numeric,
+  context_group_id uuid
 ) language sql stable as $$
-  select
-    video_segments.id,
-    video_segments.video_id,
-    video_segments.start_time_seconds,
-    video_segments.end_time_seconds,
-    video_segments.transcript_text,
-    video_segments.visual_summary,
-    video_segments.visual_tags,
-    video_segments.keywords,
-    video_segments.quality_score,
-    ts_rank_cd(video_segments.search_tsv, plainto_tsquery('english', query_text)) as similarity_score
-  from video_segments
-  join video_assets on video_assets.id = video_segments.video_id
-  where video_segments.quality_score >= min_quality
-    and (owner_id_filter is null or video_assets.owner_id = owner_id_filter)
-    and (video_id_filter is null or video_segments.video_id = video_id_filter)
-    and video_segments.search_tsv @@ plainto_tsquery('english', query_text)
-  order by similarity_score desc
-  limit match_count;
+  with base_results as (
+    select
+      video_segments.id as segment_id,
+      video_segments.video_id,
+      video_segments.start_time_seconds,
+      video_segments.end_time_seconds,
+      video_segments.transcript_text,
+      video_segments.visual_summary,
+      video_segments.visual_tags,
+      video_segments.keywords,
+      video_segments.quality_score,
+      ts_rank_cd(video_segments.search_tsv, plainto_tsquery('english', query_text)) as similarity_score
+    from video_segments
+    join video_assets on video_assets.id = video_segments.video_id
+    where video_segments.quality_score >= min_quality
+      and (owner_id_filter is null or video_assets.owner_id = owner_id_filter)
+      and (video_id_filter is null or video_segments.video_id = video_id_filter)
+      and video_segments.search_tsv @@ plainto_tsquery('english', query_text)
+    order by similarity_score desc
+    limit match_count
+  ),
+  expanded as (
+    select
+      video_segments.id,
+      video_segments.video_id,
+      video_segments.start_time_seconds,
+      video_segments.end_time_seconds,
+      video_segments.transcript_text,
+      video_segments.visual_summary,
+      video_segments.visual_tags,
+      video_segments.keywords,
+      video_segments.quality_score,
+      base_results.similarity_score,
+      base_results.segment_id as context_group_id
+    from base_results
+    join video_segments
+      on video_segments.video_id = base_results.video_id
+     and video_segments.start_time_seconds >= base_results.start_time_seconds - context_window
+     and video_segments.end_time_seconds <= base_results.end_time_seconds + context_window
+  )
+  select * from expanded
+  order by similarity_score desc, start_time_seconds asc;
 $$;
 
 create or replace function search_video_segments(
@@ -82,6 +107,7 @@ create or replace function search_video_segments(
   query_embedding vector(768),
   match_count int default 10,
   min_quality numeric default 0,
+  context_window numeric default 0,
   owner_id_filter uuid default null,
   video_id_filter uuid default null
 ) returns table (
@@ -94,26 +120,50 @@ create or replace function search_video_segments(
   visual_tags text[],
   keywords text[],
   quality_score numeric,
-  similarity_score numeric
+  similarity_score numeric,
+  context_group_id uuid
 ) language sql stable as $$
-  select
-    video_segments.id,
-    video_segments.video_id,
-    video_segments.start_time_seconds,
-    video_segments.end_time_seconds,
-    video_segments.transcript_text,
-    video_segments.visual_summary,
-    video_segments.visual_tags,
-    video_segments.keywords,
-    video_segments.quality_score,
-    ((1 - (video_segments.embedding <=> query_embedding)) * 0.6 +
-     ts_rank_cd(video_segments.search_tsv, plainto_tsquery('english', query_text)) * 0.4) as similarity_score
-  from video_segments
-  join video_assets on video_assets.id = video_segments.video_id
-  where video_segments.quality_score >= min_quality
-    and video_segments.embedding is not null
-    and (owner_id_filter is null or video_assets.owner_id = owner_id_filter)
-    and (video_id_filter is null or video_segments.video_id = video_id_filter)
-  order by similarity_score desc
-  limit match_count;
+  with base_results as (
+    select
+      video_segments.id as segment_id,
+      video_segments.video_id,
+      video_segments.start_time_seconds,
+      video_segments.end_time_seconds,
+      video_segments.transcript_text,
+      video_segments.visual_summary,
+      video_segments.visual_tags,
+      video_segments.keywords,
+      video_segments.quality_score,
+      ((1 - (video_segments.embedding <=> query_embedding)) * 0.6 +
+       ts_rank_cd(video_segments.search_tsv, plainto_tsquery('english', query_text)) * 0.4) as similarity_score
+    from video_segments
+    join video_assets on video_assets.id = video_segments.video_id
+    where video_segments.quality_score >= min_quality
+      and video_segments.embedding is not null
+      and (owner_id_filter is null or video_assets.owner_id = owner_id_filter)
+      and (video_id_filter is null or video_segments.video_id = video_id_filter)
+    order by similarity_score desc
+    limit match_count
+  ),
+  expanded as (
+    select
+      video_segments.id,
+      video_segments.video_id,
+      video_segments.start_time_seconds,
+      video_segments.end_time_seconds,
+      video_segments.transcript_text,
+      video_segments.visual_summary,
+      video_segments.visual_tags,
+      video_segments.keywords,
+      video_segments.quality_score,
+      base_results.similarity_score,
+      base_results.segment_id as context_group_id
+    from base_results
+    join video_segments
+      on video_segments.video_id = base_results.video_id
+     and video_segments.start_time_seconds >= base_results.start_time_seconds - context_window
+     and video_segments.end_time_seconds <= base_results.end_time_seconds + context_window
+  )
+  select * from expanded
+  order by similarity_score desc, start_time_seconds asc;
 $$;

@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { searchSegments } from "@/lib/search/search-storage";
+import { analyzeVideoSegment } from "@/lib/search/vlm-gemini";
 
 const requestSchema = z.object({
-  queryText: z.string().min(1),
-  queryEmbedding: z.array(z.number()).optional(),
-  limit: z.number().positive().max(50).optional(),
-  minQualityScore: z.number().min(0).max(1).optional(),
-  contextWindowSeconds: z.number().min(0).max(120).optional(),
-  ownerId: z.string().uuid().optional(),
-  videoId: z.string().uuid().optional(),
+  videoBase64: z.string().min(1),
+  mimeType: z.string().min(1),
+  segmentStartSeconds: z.number().nonnegative(),
+  segmentEndSeconds: z.number().positive(),
+  transcriptText: z.string().optional(),
 });
 
 export const POST = async (request: NextRequest) => {
@@ -30,8 +28,8 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const results = await searchSegments(validation.data);
-    return NextResponse.json({ results });
+    const result = await analyzeVideoSegment(validation.data);
+    return NextResponse.json({ result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -39,6 +39,7 @@ interface SegmentSearchQuery {
   queryEmbedding?: number[];
   limit?: number;
   minQualityScore?: number;
+  contextWindowSeconds?: number;
   ownerId?: string;
   videoId?: string;
 }
@@ -54,6 +55,7 @@ interface SegmentSearchResult {
   keywords: string[] | null;
   qualityScore: number | null;
   similarityScore: number | null;
+  contextGroupId?: string;
 }
 
 interface ChunkingOptions {

@@ -23,6 +23,8 @@ import { useAiEngineStore } from "@/stores/ai-engine-store";
 import { ingestMultipleVideos, validateSourceVideos } from "@/lib/ai-engine";
 import { runPipeline } from "@/lib/ai-engine/pipeline";
 import type { SourceVideo, PipelineStage } from "@/types/ai-engine";
+import { indexAiEngineProject } from "@/lib/search/ai-engine-indexing";
+import { Loader } from "@/components/ui/loader";
 import { toast } from "sonner";
 
 interface UploadedVideoPreview {
@@ -56,6 +58,7 @@ const AiEnginePage = () => {
 
   const [uploadedPreviews, setUploadedPreviews] = useState<UploadedVideoPreview[]>([]);
   const [isIngesting, setIsIngesting] = useState(false);
+  const [isIndexing, setIsIndexing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [targetDuration, setTargetDuration] = useState(60);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,6 +196,39 @@ const AiEnginePage = () => {
     }
   }, []);
 
+  const handleIndexProject = useCallback(async () => {
+    if (!project) {
+      toast.error("Upload videos before indexing");
+      return;
+    }
+
+    if (project.analyses.length === 0 || project.chunks.length === 0) {
+      toast.error("Run analysis before indexing");
+      return;
+    }
+
+    setIsIndexing(true);
+
+    try {
+      const summaries = await indexAiEngineProject(project);
+      if (summaries.length === 0) {
+        toast.error("No transcript data found for indexing");
+        return;
+      }
+
+      const totalSegments = summaries.reduce(
+        (count, summary) => count + summary.segmentCount,
+        0
+      );
+      toast.success(`Indexed ${totalSegments} segments for search`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Indexing failed";
+      toast.error(message);
+    } finally {
+      setIsIndexing(false);
+    }
+  }, [project]);
+
   const handleReset = useCallback(() => {
     resetProject();
     setUploadedPreviews([]);
@@ -285,6 +321,23 @@ const AiEnginePage = () => {
               segmentCount={project.synthesizedTimeline?.segments.length || 0}
               onDownload={handleDownload}
             />
+          )}
+
+          {project && project.analyses.length > 0 && !isProcessing && (
+            <div className="flex flex-col items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleIndexProject}
+                disabled={isIndexing || isIngesting}
+                className="gap-2"
+              >
+                {isIndexing ? <Loader /> : <Sparkles className="size-5" />}
+                Index for Search
+              </Button>
+              <p className="text-xs text-muted-foreground text-center max-w-md">
+                Index segments to enable fast semantic search across your uploads.
+              </p>
+            </div>
           )}
 
           {uploadedPreviews.length > 0 && !isProcessing && !isComplete && (
