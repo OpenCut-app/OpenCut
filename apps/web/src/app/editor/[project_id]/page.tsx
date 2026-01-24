@@ -17,6 +17,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/providers/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/editor/onboarding";
+import { AIChatSheet } from "@/components/editor/ai-chat";
 
 export default function Editor() {
   const {
@@ -453,6 +454,7 @@ export default function Editor() {
           )}
         </div>
         <Onboarding />
+        <AIChatSheet />
       </div>
     </EditorProvider>
   );

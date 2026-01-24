@@ -32,6 +32,8 @@ export const env = createEnv({
     EMBEDDINGS_API_KEY: z.string().optional(),
     EMBEDDINGS_MODEL: z.string().optional(),
     EMBEDDINGS_DIMENSIONS: z.string().optional(),
+    // Gemini AI
+    GEMINI_API_KEY: z.string().optional(),
   },
   client: {},
   runtimeEnv: {
@@ -57,5 +59,7 @@ export const env = createEnv({
     EMBEDDINGS_API_KEY: process.env.EMBEDDINGS_API_KEY,
     EMBEDDINGS_MODEL: process.env.EMBEDDINGS_MODEL,
     EMBEDDINGS_DIMENSIONS: process.env.EMBEDDINGS_DIMENSIONS,
+    // Gemini AI
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
 });
