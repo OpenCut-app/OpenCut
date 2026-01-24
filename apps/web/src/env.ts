@@ -27,6 +27,11 @@ export const env = createEnv({
     // Supabase (semantic search)
     SUPABASE_URL: z.string().url().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+    // Embeddings
+    EMBEDDINGS_API_URL: z.string().url().optional(),
+    EMBEDDINGS_API_KEY: z.string().optional(),
+    EMBEDDINGS_MODEL: z.string().optional(),
+    EMBEDDINGS_DIMENSIONS: z.string().optional(),
   },
   client: {},
   runtimeEnv: {
@@ -47,5 +52,10 @@ export const env = createEnv({
     // Supabase (semantic search)
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // Embeddings
+    EMBEDDINGS_API_URL: process.env.EMBEDDINGS_API_URL,
+    EMBEDDINGS_API_KEY: process.env.EMBEDDINGS_API_KEY,
+    EMBEDDINGS_MODEL: process.env.EMBEDDINGS_MODEL,
+    EMBEDDINGS_DIMENSIONS: process.env.EMBEDDINGS_DIMENSIONS,
   },
 });
