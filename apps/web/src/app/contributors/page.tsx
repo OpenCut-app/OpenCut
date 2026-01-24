@@ -7,7 +7,6 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import {
   GithubIcon,
-  MarbleIcon,
   VercelIcon,
   DataBuddyIcon,
 } from "@/components/icons";
@@ -253,7 +252,6 @@ export default async function ContributorsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {EXTERNAL_TOOLS.map((tool, index) => {
                   const IconComponent = {
-                    MarbleIcon,
                     VercelIcon,
                     DataBuddyIcon,
                   }[tool.icon];

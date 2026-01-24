@@ -24,6 +24,9 @@ export const env = createEnv({
     R2_BUCKET_NAME: z.string().optional(),
     // Modal transcription
     MODAL_TRANSCRIPTION_URL: z.string().optional(),
+    // Supabase (semantic search)
+    SUPABASE_URL: z.string().url().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   },
   client: {},
   runtimeEnv: {
@@ -41,5 +44,8 @@ export const env = createEnv({
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     // Modal transcription
     MODAL_TRANSCRIPTION_URL: process.env.MODAL_TRANSCRIPTION_URL,
+    // Supabase (semantic search)
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
 });

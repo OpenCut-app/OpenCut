@@ -195,6 +195,57 @@ A comprehensive list of all features currently implemented in the OpenCut video 
 
 ---
 
+## AI Engine (Short-Form Video Generation)
+
+### Video Ingestion
+- Multi-video upload (1-5 videos) with drag-and-drop
+- Automatic metadata extraction (duration, dimensions, FPS, audio channels)
+- Thumbnail generation
+- Video validation (minimum 5 seconds, valid dimensions)
+
+### Intelligent Chunking
+- Configurable chunk duration (default 4s) with overlap (default 1s)
+- Visual analysis: brightness, blur score, motion intensity, face detection
+- Audio analysis: volume, peak volume, silence ratio, noise level
+- Timecode generation
+
+### AI-Powered Analysis (Gemini 2.0 Flash)
+- Transcript extraction with confidence scoring
+- Semantic topic identification with relevance scores
+- Emotion categorization (neutral, excited, serious, humorous, inspirational, informative)
+- Scene type classification (talking-head, b-roll, screen-capture, interview, transition)
+- Energy scoring and visual quality assessment
+- Filler content and silence detection
+- Keyword extraction
+- Heuristic fallback when API unavailable
+
+### Smart Scoring & Selection
+- Multi-factor scoring: relevance, quality, narrative continuity, energy, hook potential
+- Configurable scoring weights
+- Pruning with constraints (target duration, minimum core ideas, narrative gap limits)
+- Prevents abrupt scene jumps
+
+### Timeline Synthesis
+- Automatic hook segment identification (high-energy opening)
+- Closing segment selection (inspirational/high-energy ending)
+- Smart segment ordering across multiple source videos
+- Transition planning (cut, crossfade, zoom-in, zoom-out)
+
+### Refinement & Export
+- Aspect ratio reframing with subject tracking (9:16, 1:1, 4:5)
+- Audio cleanup: noise reduction, filler word removal, loudness normalization (LUFS targeting), compression
+- Automatic caption generation with keyword highlighting
+- Configurable caption styling (font, size, color, position)
+- Export preset support (default: TikTok/Reels 1080x1920@30fps)
+
+### Pipeline Controls
+- Real-time progress tracking with stage labels
+- Configurable target duration (15-90 seconds)
+- Abort/cancel support
+- Error handling with retry
+
+---
+
 ## Keyboard Shortcuts
 
 ### Default Bindings
@@ -296,6 +347,7 @@ A comprehensive list of all features currently implemented in the OpenCut video 
 | Cloudflare R2 | Media uploads |
 | Marble CMS | Blog/content integration |
 | Databuddy | Anonymous analytics |
+| Google Gemini API | AI video analysis for short-form generation |
 
 ---
 
