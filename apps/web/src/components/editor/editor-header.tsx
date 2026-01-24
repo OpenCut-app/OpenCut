@@ -17,7 +17,6 @@ import Link from "next/link";
 import { RenameProjectDialog } from "../rename-project-dialog";
 import { DeleteProjectDialog } from "../delete-project-dialog";
 import { useRouter } from "next/navigation";
-import { FaDiscord } from "react-icons/fa6";
 import { PanelPresetSelector } from "./panel-preset-selector";
 import { ExportButton } from "./export-button";
 import { ThemeToggle } from "../theme-toggle";
@@ -84,18 +83,6 @@ export function EditorHeader() {
           >
             <Trash className="h-4 w-4" />
             Delete Project
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link
-              href="https://discord.gg/zmR9N35cjK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5"
-            >
-              <FaDiscord className="h-4 w-4" />
-              Discord
-            </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
