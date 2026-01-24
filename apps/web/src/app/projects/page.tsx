@@ -2,7 +2,6 @@
 
 import {
   Calendar,
-  ChevronLeft,
   Loader2,
   MoreHorizontal,
   ArrowDown01,
@@ -138,13 +137,7 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="pt-6 px-6 flex items-center justify-between w-full h-16">
-        <Link
-          href="/"
-          className="flex items-center gap-1 hover:text-muted-foreground transition-colors"
-        >
-          <ChevronLeft className="size-5! shrink-0" />
-          <span className="text-sm font-medium">Back</span>
-        </Link>
+        <div />
         <div className="block md:hidden">
           {isSelectionMode ? (
             <div className="flex items-center gap-2">
