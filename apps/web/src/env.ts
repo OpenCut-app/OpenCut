@@ -15,15 +15,15 @@ export const env = createEnv({
       .default("development"),
     UPSTASH_REDIS_REST_URL: z.string().url(),
     UPSTASH_REDIS_REST_TOKEN: z.string(),
-    FREESOUND_CLIENT_ID: z.string(),
-    FREESOUND_API_KEY: z.string(),
+    FREESOUND_CLIENT_ID: z.string().optional(),
+    FREESOUND_API_KEY: z.string().optional(),
     // R2 / Cloudflare
-    CLOUDFLARE_ACCOUNT_ID: z.string(),
-    R2_ACCESS_KEY_ID: z.string(),
-    R2_SECRET_ACCESS_KEY: z.string(),
-    R2_BUCKET_NAME: z.string(),
+    CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+    R2_ACCESS_KEY_ID: z.string().optional(),
+    R2_SECRET_ACCESS_KEY: z.string().optional(),
+    R2_BUCKET_NAME: z.string().optional(),
     // Modal transcription
-    MODAL_TRANSCRIPTION_URL: z.string(),
+    MODAL_TRANSCRIPTION_URL: z.string().optional(),
   },
   client: {},
   runtimeEnv: {
