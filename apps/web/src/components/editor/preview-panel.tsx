@@ -38,6 +38,10 @@ interface ActiveElement {
   mediaItem: MediaFile | null;
 }
 
+interface WebAudioWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 export function PreviewPanel() {
   const { tracks, getTotalDuration, updateTextElement } = useTimelineStore();
   const { mediaFiles } = useMediaStore();
@@ -54,11 +58,18 @@ export function PreviewPanel() {
   const offscreenCanvasRef = useRef<OffscreenCanvas | HTMLCanvasElement | null>(
     null
   );
+  const preRenderAbortRef = useRef<AbortController | null>(null);
+  const isPlayingRef = useRef(false);
+  const drawLatestRef = useRef<(() => Promise<void>) | null>(null);
+  const renderInFlightRef = useRef(false);
+  const renderQueuedRef = useRef(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioGainRef = useRef<GainNode | null>(null);
   const audioBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
+  const audioDecodeFailuresRef = useRef<Set<string>>(new Set());
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const audioScheduleSeqRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [previewDimensions, setPreviewDimensions] = useState({
     width: 0,
@@ -306,21 +317,90 @@ export function PreviewPanel() {
     };
   }, []);
 
-  // Web Audio: schedule only on play/pause/seek/volume/mute changes
-  useEffect(() => {
-    const stopAll = () => {
-      for (const src of playingSourcesRef.current) {
-        try {
-          src.stop();
-        } catch {}
+  const ensureAudioContextRunning = useCallback(() => {
+    const win = window as WebAudioWindow;
+    const Ctx = win.AudioContext ?? win.webkitAudioContext;
+    if (!Ctx) return;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new Ctx();
+    }
+
+    if (!audioGainRef.current) {
+      audioGainRef.current = audioContextRef.current.createGain();
+      audioGainRef.current.connect(audioContextRef.current.destination);
+    }
+
+    if (audioContextRef.current.state === "suspended") {
+      audioContextRef.current.resume().catch(() => {});
+    }
+  }, []);
+
+  const toggleWithAudio = useCallback(() => {
+    ensureAudioContextRunning();
+    toggle();
+  }, [ensureAudioContextRunning, toggle]);
+
+  const requestDraw = useCallback(() => {
+    renderQueuedRef.current = true;
+    if (renderInFlightRef.current) return;
+    renderInFlightRef.current = true;
+
+    const run = async () => {
+      try {
+        while (renderQueuedRef.current) {
+          renderQueuedRef.current = false;
+          const draw = drawLatestRef.current;
+          if (!draw) return;
+          await draw();
+        }
+      } finally {
+        renderInFlightRef.current = false;
       }
-      playingSourcesRef.current.clear();
     };
 
-    type WebAudioWindow = Window & {
-      AudioContext?: typeof AudioContext;
-      webkitAudioContext?: typeof AudioContext;
+    run().catch((error) => {
+      console.warn("Preview render loop failed:", error);
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleUserGesture = () => {
+      ensureAudioContextRunning();
     };
+
+    window.addEventListener("pointerdown", handleUserGesture);
+    window.addEventListener("keydown", handleUserGesture);
+    return () => {
+      window.removeEventListener("pointerdown", handleUserGesture);
+      window.removeEventListener("keydown", handleUserGesture);
+    };
+  }, [ensureAudioContextRunning]);
+
+  useEffect(() => {
+    const mediaIds = new Set(mediaFiles.map((mediaFile) => mediaFile.id));
+    for (const cachedId of audioBuffersRef.current.keys()) {
+      if (!mediaIds.has(cachedId)) {
+        audioBuffersRef.current.delete(cachedId);
+      }
+    }
+    for (const cachedId of audioDecodeFailuresRef.current) {
+      if (!mediaIds.has(cachedId)) {
+        audioDecodeFailuresRef.current.delete(cachedId);
+      }
+    }
+  }, [mediaFiles]);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    if (isPlaying) {
+      preRenderAbortRef.current?.abort();
+      preRenderAbortRef.current = null;
+    }
+  }, [isPlaying]);
+
+  // Web Audio: schedule only on play/pause/seek/volume/mute changes
+  useEffect(() => {
     const ensureAudioGraph = async () => {
       if (!audioContextRef.current) {
         const win = window as WebAudioWindow;
@@ -332,11 +412,6 @@ export function PreviewPanel() {
         audioGainRef.current = audioContextRef.current!.createGain();
         audioGainRef.current.connect(audioContextRef.current!.destination);
       }
-      if (audioContextRef.current!.state === "suspended") {
-        try {
-          await audioContextRef.current!.resume();
-        } catch {}
-      }
       const gainValue = muted ? 0 : Math.max(0, Math.min(1, volume));
       audioGainRef.current!.gain.setValueAtTime(
         gainValue,
@@ -345,6 +420,9 @@ export function PreviewPanel() {
     };
 
     const scheduleNow = async () => {
+      const scheduleSeq = audioScheduleSeqRef.current + 1;
+      audioScheduleSeqRef.current = scheduleSeq;
+
       await ensureAudioGraph();
       const audioCtx = audioContextRef.current!;
       const gain = audioGainRef.current!;
@@ -356,10 +434,9 @@ export function PreviewPanel() {
 
       const audible: Array<{
         id: string;
-        elementStart: number;
-        trimStart: number;
-        trimEnd: number;
-        duration: number;
+        startDelay: number;
+        localTime: number;
+        playDuration: number;
         muted: boolean;
         trackMuted: boolean;
       }> = [];
@@ -368,18 +445,24 @@ export function PreviewPanel() {
         for (const element of track.elements) {
           if (element.type !== "media") continue;
           const media = idToMedia.get(element.mediaId);
-          if (!media || media.type !== "audio") continue;
+          if (!media || (media.type !== "audio" && media.type !== "video"))
+            continue;
           const visibleDuration =
             element.duration - element.trimStart - element.trimEnd;
           if (visibleDuration <= 0) continue;
-          const localTime = playbackNow - element.startTime + element.trimStart;
-          if (localTime < 0 || localTime >= visibleDuration) continue;
+          const elementEnd = element.startTime + visibleDuration;
+          if (elementEnd <= playbackNow) continue;
+
+          const startDelay = Math.max(0, element.startTime - playbackNow);
+          const offsetIntoClip = Math.max(0, playbackNow - element.startTime);
+          const localTime = element.trimStart + offsetIntoClip;
+          const playDuration = Math.max(0, visibleDuration - offsetIntoClip);
+          if (playDuration <= 0) continue;
           audible.push({
             id: media.id,
-            elementStart: element.startTime,
-            trimStart: element.trimStart,
-            trimEnd: element.trimEnd,
-            duration: element.duration,
+            startDelay,
+            localTime,
+            playDuration,
             muted: !!element.muted,
             trackMuted: !!track.muted,
           });
@@ -392,37 +475,52 @@ export function PreviewPanel() {
       // Decode buffers as needed
       const decodePromises: Array<Promise<void>> = [];
       for (const id of uniqueIds) {
+        if (audioDecodeFailuresRef.current.has(id)) continue;
         if (!audioBuffersRef.current.has(id)) {
           const mediaItem = idToMedia.get(id);
           if (!mediaItem) continue;
           const p = (async () => {
-            const arr = await mediaItem.file.arrayBuffer();
-            const buf = await audioCtx.decodeAudioData(arr.slice(0));
-            audioBuffersRef.current.set(id, buf);
+            try {
+              const arr = await mediaItem.file.arrayBuffer();
+              const buf = await audioCtx.decodeAudioData(arr.slice(0));
+              audioBuffersRef.current.set(id, buf);
+            } catch (error) {
+              audioDecodeFailuresRef.current.add(id);
+              console.warn(
+                `Failed to decode audio for ${mediaItem.name}:`,
+                error
+              );
+            }
           })();
           decodePromises.push(p);
         }
       }
       await Promise.all(decodePromises);
 
+      if (scheduleSeq !== audioScheduleSeqRef.current) return;
+
       const startAt = audioCtx.currentTime + 0.02;
       for (const entry of audible) {
         if (entry.muted || entry.trackMuted) continue;
         const buffer = audioBuffersRef.current.get(entry.id);
         if (!buffer) continue;
-        const visibleDuration =
-          entry.duration - entry.trimStart - entry.trimEnd;
-        const localTime = Math.max(
+        if (entry.playDuration <= 0) continue;
+        if (entry.localTime >= buffer.duration) continue;
+        const remainingInBuffer = Math.max(
           0,
-          playbackNow - entry.elementStart + entry.trimStart
+          buffer.duration - entry.localTime
         );
-        const playDuration = Math.max(0, visibleDuration - localTime);
-        if (playDuration <= 0) continue;
+        const clampedDuration = Math.min(entry.playDuration, remainingInBuffer);
+        if (clampedDuration <= 0) continue;
         const src = audioCtx.createBufferSource();
         src.buffer = buffer;
         src.connect(gain);
         try {
-          src.start(startAt, localTime, playDuration);
+          src.start(
+            startAt + entry.startDelay,
+            entry.localTime,
+            clampedDuration
+          );
           playingSourcesRef.current.add(src);
         } catch {}
       }
@@ -436,11 +534,11 @@ export function PreviewPanel() {
         } catch {}
       }
       playingSourcesRef.current.clear();
-      void scheduleNow();
+      scheduleNow().catch(() => {});
     };
 
     // Apply volume/mute changes immediately
-    void ensureAudioGraph();
+    ensureAudioGraph().catch(() => {});
 
     // Start/stop on play state changes
     for (const src of playingSourcesRef.current) {
@@ -450,7 +548,7 @@ export function PreviewPanel() {
     }
     playingSourcesRef.current.clear();
     if (isPlaying) {
-      void scheduleNow();
+      scheduleNow().catch(() => {});
     }
 
     window.addEventListener("playback-seek", onSeek as EventListener);
@@ -468,210 +566,231 @@ export function PreviewPanel() {
   // Canvas: draw current frame with caching
   useEffect(() => {
     const draw = async () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const mainCtx = canvas.getContext("2d");
-      if (!mainCtx) return;
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const mainCtx = canvas.getContext("2d", { alpha: false });
+        if (!mainCtx) return;
 
-      // Set canvas internal resolution to avoid blurry scaling
-      const displayWidth = Math.max(1, Math.floor(previewDimensions.width));
-      const displayHeight = Math.max(1, Math.floor(previewDimensions.height));
-      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-      }
-
-      // Throttle rendering to project FPS during playback only
-      const fps = activeProject?.fps || DEFAULT_FPS;
-      const minDelta = 1 / fps;
-      if (isPlaying) {
-        if (currentTime - lastFrameTimeRef.current < minDelta) {
-          return;
-        }
-        lastFrameTimeRef.current = currentTime;
-      }
-
-      const cachedFrame = getCachedFrame(
-        currentTime,
-        tracks,
-        mediaFiles,
-        activeProject,
-        currentScene?.id
-      );
-      if (cachedFrame) {
-        mainCtx.putImageData(cachedFrame, 0, 0);
-
-        // Pre-render nearby frames in background
-        if (!isPlaying) {
-          // Only during scrubbing to avoid interfering with playback
-          preRenderNearbyFrames(
-            currentTime,
-            tracks,
-            mediaFiles,
-            activeProject,
-            async (time: number) => {
-              const tempCanvas = document.createElement("canvas");
-              tempCanvas.width = displayWidth;
-              tempCanvas.height = displayHeight;
-              const tempCtx = tempCanvas.getContext("2d");
-              if (!tempCtx)
-                throw new Error("Failed to create temp canvas context");
-
-              await renderTimelineFrame({
-                ctx: tempCtx,
-                time,
-                canvasWidth: displayWidth,
-                canvasHeight: displayHeight,
-                tracks,
-                mediaFiles,
-                backgroundType: activeProject?.backgroundType,
-                blurIntensity: activeProject?.blurIntensity,
-                backgroundColor:
-                  activeProject?.backgroundType === "blur"
-                    ? undefined
-                    : activeProject?.backgroundColor || "#000000",
-                projectCanvasSize: canvasSize,
-              });
-
-              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
-            },
-            currentScene?.id,
-            3
-          );
-        } else {
-          // Small lookahead while playing
-          preRenderNearbyFrames(
-            currentTime,
-            tracks,
-            mediaFiles,
-            activeProject,
-            async (time: number) => {
-              const tempCanvas = document.createElement("canvas");
-              tempCanvas.width = displayWidth;
-              tempCanvas.height = displayHeight;
-              const tempCtx = tempCanvas.getContext("2d");
-              if (!tempCtx)
-                throw new Error("Failed to create temp canvas context");
-
-              await renderTimelineFrame({
-                ctx: tempCtx,
-                time,
-                canvasWidth: displayWidth,
-                canvasHeight: displayHeight,
-                tracks,
-                mediaFiles,
-                backgroundType: activeProject?.backgroundType,
-                blurIntensity: activeProject?.blurIntensity,
-                backgroundColor:
-                  activeProject?.backgroundType === "blur"
-                    ? undefined
-                    : activeProject?.backgroundColor || "#000000",
-                projectCanvasSize: canvasSize,
-              });
-
-              return tempCtx.getImageData(0, 0, displayWidth, displayHeight);
-            },
-            currentScene?.id,
-            1
-          );
-        }
-        return;
-      }
-
-      // Cache miss - render from scratch
-      if (!offscreenCanvasRef.current) {
-        const hasOffscreen =
-          typeof (globalThis as unknown as { OffscreenCanvas?: unknown })
-            .OffscreenCanvas !== "undefined";
-        if (hasOffscreen) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          offscreenCanvasRef.current = new (globalThis as any).OffscreenCanvas(
-            displayWidth,
-            displayHeight
-          ) as OffscreenCanvas;
-        } else {
-          const c = document.createElement("canvas");
-          c.width = displayWidth;
-          c.height = displayHeight;
-          offscreenCanvasRef.current = c;
-        }
-      }
-      // Ensure size matches
-      if (
-        offscreenCanvasRef.current &&
-        (offscreenCanvasRef.current as HTMLCanvasElement).getContext
-      ) {
-        const c = offscreenCanvasRef.current as HTMLCanvasElement;
-        if (c.width !== displayWidth || c.height !== displayHeight) {
-          c.width = displayWidth;
-          c.height = displayHeight;
-        }
-      } else {
-        const c = offscreenCanvasRef.current as OffscreenCanvas;
-        // @ts-ignore width/height exist on OffscreenCanvas in modern browsers
-        if (
-          (c as unknown as { width: number }).width !== displayWidth ||
-          (c as unknown as { height: number }).height !== displayHeight
-        ) {
-          // @ts-ignore
-          (c as unknown as { width: number }).width = displayWidth;
-          // @ts-ignore
-          (c as unknown as { height: number }).height = displayHeight;
-        }
-      }
-      const offscreenCanvas = offscreenCanvasRef.current as
-        | HTMLCanvasElement
-        | OffscreenCanvas;
-      const offCtx = (offscreenCanvas as HTMLCanvasElement).getContext
-        ? (offscreenCanvas as HTMLCanvasElement).getContext("2d")
-        : (offscreenCanvas as OffscreenCanvas).getContext("2d");
-      if (!offCtx) return;
-
-      await renderTimelineFrame({
-        ctx: offCtx as CanvasRenderingContext2D,
-        time: currentTime,
-        canvasWidth: displayWidth,
-        canvasHeight: displayHeight,
-        tracks,
-        mediaFiles,
-        backgroundType: activeProject?.backgroundType,
-        blurIntensity: activeProject?.blurIntensity,
-        backgroundColor:
-          activeProject?.backgroundType === "blur"
-            ? undefined
-            : activeProject?.backgroundColor || "#000000",
-        projectCanvasSize: canvasSize,
-      });
-
-      const imageData = (offCtx as CanvasRenderingContext2D).getImageData(
-        0,
-        0,
-        displayWidth,
-        displayHeight
-      );
-      cacheFrame(
-        currentTime,
-        imageData,
-        tracks,
-        mediaFiles,
-        activeProject,
-        currentScene?.id
-      );
-
-      // Blit offscreen to visible canvas
-      mainCtx.clearRect(0, 0, displayWidth, displayHeight);
-      if ((offscreenCanvas as HTMLCanvasElement).getContext) {
-        mainCtx.drawImage(offscreenCanvas as HTMLCanvasElement, 0, 0);
-      } else {
-        mainCtx.drawImage(
-          offscreenCanvas as unknown as CanvasImageSource,
-          0,
-          0
+        const devicePixelRatio = Math.min(2, window.devicePixelRatio || 1);
+        const cssWidth = Math.max(1, Math.floor(previewDimensions.width));
+        const cssHeight = Math.max(1, Math.floor(previewDimensions.height));
+        const renderWidth = Math.max(
+          1,
+          Math.floor(cssWidth * devicePixelRatio)
         );
+        const renderHeight = Math.max(
+          1,
+          Math.floor(cssHeight * devicePixelRatio)
+        );
+
+        if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
+          canvas.width = renderWidth;
+          canvas.height = renderHeight;
+        }
+
+        // Throttle rendering to project FPS during playback only
+        const fps = activeProject?.fps || DEFAULT_FPS;
+        const minDelta = 1 / fps;
+        if (isPlaying) {
+          if (currentTime - lastFrameTimeRef.current < minDelta) {
+            return;
+          }
+          lastFrameTimeRef.current = currentTime;
+        }
+
+        const renderSize = { width: renderWidth, height: renderHeight };
+
+        if (!isPlaying) {
+          const cachedFrame = getCachedFrame(
+            currentTime,
+            tracks,
+            mediaFiles,
+            activeProject,
+            currentScene?.id,
+            renderSize
+          );
+
+          if (cachedFrame) {
+            renderSeqRef.current += 1;
+            mainCtx.setTransform(1, 0, 0, 1, 0, 0);
+            mainCtx.clearRect(0, 0, renderWidth, renderHeight);
+            mainCtx.drawImage(cachedFrame, 0, 0);
+
+            preRenderAbortRef.current?.abort();
+            preRenderAbortRef.current = new AbortController();
+            const abortSignal = preRenderAbortRef.current.signal;
+            const preRenderSeq = renderSeqRef.current;
+
+            preRenderNearbyFrames(
+              currentTime,
+              tracks,
+              mediaFiles,
+              activeProject,
+              async (time: number) => {
+                if (abortSignal.aborted)
+                  throw new Error("Pre-render cancelled");
+                if (isPlayingRef.current)
+                  throw new Error("Pre-render interrupted by playback");
+                if (preRenderSeq !== renderSeqRef.current)
+                  throw new Error("Pre-render stale");
+
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width = renderWidth;
+                tempCanvas.height = renderHeight;
+                const tempCtx = tempCanvas.getContext("2d", { alpha: false });
+                if (!tempCtx)
+                  throw new Error("Failed to create temp canvas context");
+
+                await renderTimelineFrame({
+                  ctx: tempCtx,
+                  time,
+                  canvasWidth: renderWidth,
+                  canvasHeight: renderHeight,
+                  tracks,
+                  mediaFiles,
+                  backgroundType: activeProject?.backgroundType,
+                  blurIntensity: activeProject?.blurIntensity,
+                  backgroundColor:
+                    activeProject?.backgroundType === "blur"
+                      ? undefined
+                      : activeProject?.backgroundColor || "#000000",
+                  projectCanvasSize: canvasSize,
+                });
+
+                if (abortSignal.aborted)
+                  throw new Error("Pre-render cancelled");
+
+                return await createImageBitmap(tempCanvas);
+              },
+              currentScene?.id,
+              2,
+              renderSize,
+              abortSignal
+            );
+
+            return;
+          }
+        }
+
+        const renderSeq = renderSeqRef.current + 1;
+        renderSeqRef.current = renderSeq;
+        preRenderAbortRef.current?.abort();
+        preRenderAbortRef.current = null;
+
+        // Cache miss - render from scratch
+        if (!offscreenCanvasRef.current) {
+          const hasOffscreen =
+            typeof (globalThis as unknown as { OffscreenCanvas?: unknown })
+              .OffscreenCanvas !== "undefined";
+          if (hasOffscreen) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            offscreenCanvasRef.current = new (
+              globalThis as any
+            ).OffscreenCanvas(renderWidth, renderHeight) as OffscreenCanvas;
+          } else {
+            const c = document.createElement("canvas");
+            c.width = renderWidth;
+            c.height = renderHeight;
+            offscreenCanvasRef.current = c;
+          }
+        }
+
+        // Ensure size matches
+        if (
+          offscreenCanvasRef.current &&
+          (offscreenCanvasRef.current as HTMLCanvasElement).getContext
+        ) {
+          const c = offscreenCanvasRef.current as HTMLCanvasElement;
+          if (c.width !== renderWidth || c.height !== renderHeight) {
+            c.width = renderWidth;
+            c.height = renderHeight;
+          }
+        } else {
+          const c = offscreenCanvasRef.current as OffscreenCanvas;
+          // @ts-expect-error width/height exist on OffscreenCanvas in modern browsers
+          if (
+            (c as unknown as { width: number }).width !== renderWidth ||
+            (c as unknown as { height: number }).height !== renderHeight
+          ) {
+            // @ts-expect-error
+            (c as unknown as { width: number }).width = renderWidth;
+            // @ts-expect-error
+            (c as unknown as { height: number }).height = renderHeight;
+          }
+        }
+
+        const offscreenCanvas = offscreenCanvasRef.current as
+          | HTMLCanvasElement
+          | OffscreenCanvas;
+        const offCtx = (offscreenCanvas as HTMLCanvasElement).getContext
+          ? (offscreenCanvas as HTMLCanvasElement).getContext("2d", {
+              alpha: false,
+            })
+          : (offscreenCanvas as OffscreenCanvas).getContext("2d", {
+              alpha: false,
+            });
+        if (!offCtx) return;
+
+        await renderTimelineFrame({
+          ctx: offCtx as CanvasRenderingContext2D,
+          time: currentTime,
+          canvasWidth: renderWidth,
+          canvasHeight: renderHeight,
+          tracks,
+          mediaFiles,
+          backgroundType: activeProject?.backgroundType,
+          blurIntensity: activeProject?.blurIntensity,
+          backgroundColor:
+            activeProject?.backgroundType === "blur"
+              ? undefined
+              : activeProject?.backgroundColor || "#000000",
+          projectCanvasSize: canvasSize,
+        });
+
+        if (renderSeq !== renderSeqRef.current) return;
+
+        // Blit offscreen to visible canvas
+        mainCtx.setTransform(1, 0, 0, 1, 0, 0);
+        mainCtx.clearRect(0, 0, renderWidth, renderHeight);
+        if ((offscreenCanvas as HTMLCanvasElement).getContext) {
+          mainCtx.drawImage(offscreenCanvas as HTMLCanvasElement, 0, 0);
+        } else {
+          mainCtx.drawImage(
+            offscreenCanvas as unknown as CanvasImageSource,
+            0,
+            0
+          );
+        }
+
+        if (!isPlaying) {
+          const bitmap = await createImageBitmap(
+            offscreenCanvas as unknown as ImageBitmapSource
+          );
+          if (renderSeq !== renderSeqRef.current) {
+            try {
+              bitmap.close();
+            } catch {}
+            return;
+          }
+
+          cacheFrame(
+            currentTime,
+            bitmap,
+            tracks,
+            mediaFiles,
+            activeProject,
+            currentScene?.id,
+            renderSize
+          );
+        }
+      } catch (error) {
+        console.warn("Failed to render preview frame:", error);
       }
     };
 
-    void draw();
+    drawLatestRef.current = draw;
+    requestDraw();
   }, [
     activeElements,
     currentTime,
@@ -685,6 +804,7 @@ export function PreviewPanel() {
     cacheFrame,
     preRenderNearbyFrames,
     isPlaying,
+    requestDraw,
   ]);
 
   // Get media elements for blur background (video/image only)
@@ -756,7 +876,7 @@ export function PreviewPanel() {
             isExpanded={isExpanded}
             currentTime={currentTime}
             setCurrentTime={setCurrentTime}
-            toggle={toggle}
+            toggle={toggleWithAudio}
             getTotalDuration={getTotalDuration}
           />
         </div>
@@ -774,7 +894,7 @@ export function PreviewPanel() {
           toggleExpanded={toggleExpanded}
           currentTime={currentTime}
           setCurrentTime={setCurrentTime}
-          toggle={toggle}
+          toggle={toggleWithAudio}
           getTotalDuration={getTotalDuration}
         />
       )}
@@ -800,6 +920,7 @@ function FullscreenToolbar({
   const { isPlaying, seek } = usePlaybackStore();
   const { activeProject } = useProjectStore();
   const [isDragging, setIsDragging] = useState(false);
+  const lastDragTimeRef = useRef(0);
 
   const totalDuration = getTotalDuration();
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
@@ -810,7 +931,7 @@ function FullscreenToolbar({
     const clickX = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, clickX / rect.width));
     const newTime = percentage * totalDuration;
-    setCurrentTime(Math.max(0, Math.min(newTime, totalDuration)));
+    seek(Math.max(0, Math.min(newTime, totalDuration)));
   };
 
   const handleTimelineDrag = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -819,17 +940,21 @@ function FullscreenToolbar({
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setIsDragging(true);
+    lastDragTimeRef.current = currentTime;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       moveEvent.preventDefault();
       const dragX = moveEvent.clientX - rect.left;
       const percentage = Math.max(0, Math.min(1, dragX / rect.width));
       const newTime = percentage * totalDuration;
-      setCurrentTime(Math.max(0, Math.min(newTime, totalDuration)));
+      const clampedTime = Math.max(0, Math.min(newTime, totalDuration));
+      lastDragTimeRef.current = clampedTime;
+      setCurrentTime(clampedTime);
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      seek(lastDragTimeRef.current);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       document.body.style.userSelect = "";
@@ -843,12 +968,12 @@ function FullscreenToolbar({
 
   const skipBackward = () => {
     const newTime = Math.max(0, currentTime - 1);
-    setCurrentTime(newTime);
+    seek(newTime);
   };
 
   const skipForward = () => {
     const newTime = Math.min(totalDuration, currentTime + 1);
-    setCurrentTime(newTime);
+    seek(newTime);
   };
 
   return (

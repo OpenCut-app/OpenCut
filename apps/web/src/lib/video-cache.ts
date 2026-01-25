@@ -15,35 +15,66 @@ interface VideoSinkData {
 export class VideoCache {
   private sinks = new Map<string, VideoSinkData>();
   private initPromises = new Map<string, Promise<void>>();
+  private operationQueue = new Map<string, Promise<void>>();
 
   async getFrameAt(
     mediaId: string,
     file: File,
     time: number
   ): Promise<WrappedCanvas | null> {
-    await this.ensureSink(mediaId, file);
+    const clampedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
 
-    const sinkData = this.sinks.get(mediaId);
-    if (!sinkData) return null;
+    return this.queueOperation(mediaId, async () => {
+      await this.ensureSink(mediaId, file);
 
-    if (
-      sinkData.currentFrame &&
-      this.isFrameValid(sinkData.currentFrame, time)
-    ) {
-      return sinkData.currentFrame;
-    }
+      const sinkData = this.sinks.get(mediaId);
+      if (!sinkData) return null;
 
-    if (
-      sinkData.iterator &&
-      sinkData.currentFrame &&
-      time >= sinkData.lastTime &&
-      time < sinkData.lastTime + 2.0
-    ) {
-      const frame = await this.iterateToTime(sinkData, time);
-      if (frame) return frame;
-    }
+      if (
+        sinkData.currentFrame &&
+        this.isFrameValid(sinkData.currentFrame, clampedTime)
+      ) {
+        return sinkData.currentFrame;
+      }
 
-    return await this.seekToTime(sinkData, time);
+      if (
+        sinkData.iterator &&
+        sinkData.currentFrame &&
+        clampedTime >= sinkData.lastTime &&
+        clampedTime < sinkData.lastTime + 2.0
+      ) {
+        const frame = await this.iterateToTime(sinkData, clampedTime);
+        if (frame) return frame;
+      }
+
+      const seekFrame = await this.seekToTime(sinkData, clampedTime);
+      if (seekFrame) return seekFrame;
+
+      const didReset = await this.resetSink(mediaId, file);
+      if (!didReset) return sinkData.currentFrame;
+
+      const resetSinkData = this.sinks.get(mediaId);
+      if (!resetSinkData) return sinkData.currentFrame;
+
+      const retryFrame = await this.seekToTime(resetSinkData, clampedTime);
+      return retryFrame ?? resetSinkData.currentFrame;
+    });
+  }
+
+  private queueOperation<T>(
+    mediaId: string,
+    operation: () => Promise<T>
+  ): Promise<T> {
+    const previous = this.operationQueue.get(mediaId) ?? Promise.resolve();
+    const next = previous.catch(() => {}).then(operation);
+    this.operationQueue.set(
+      mediaId,
+      next.then(
+        () => {},
+        () => {}
+      )
+    );
+    return next;
   }
 
   private isFrameValid(frame: WrappedCanvas, time: number): boolean {
@@ -98,9 +129,30 @@ export class VideoCache {
       }
     } catch (error) {
       console.warn("Failed to seek video:", error);
+      sinkData.iterator = null;
     }
 
     return null;
+  }
+
+  private async resetSink(mediaId: string, file: File): Promise<boolean> {
+    const existing = this.sinks.get(mediaId);
+    if (existing?.iterator) {
+      try {
+        await existing.iterator.return();
+      } catch {}
+    }
+
+    this.sinks.delete(mediaId);
+    this.initPromises.delete(mediaId);
+
+    try {
+      await this.ensureSink(mediaId, file);
+      return this.sinks.has(mediaId);
+    } catch (error) {
+      console.warn(`Failed to reset video sink for ${mediaId}:`, error);
+      return false;
+    }
   }
   private async ensureSink(mediaId: string, file: File): Promise<void> {
     if (this.sinks.has(mediaId)) return;
@@ -164,6 +216,7 @@ export class VideoCache {
     }
 
     this.initPromises.delete(mediaId);
+    this.operationQueue.delete(mediaId);
   }
 
   clearAll(): void {
