@@ -14,7 +14,8 @@ export const formatTimeCode = (
   const minutes = Math.floor((timeInSeconds % 3600) / 60);
   const seconds = Math.floor(timeInSeconds % 60);
   const centiseconds = Math.floor((timeInSeconds % 1) * 100);
-  const frames = Math.floor((timeInSeconds % 1) * fps);
+  const safeFps = Number.isFinite(fps) && fps > 0 ? fps : DEFAULT_FPS;
+  const frames = Math.floor((timeInSeconds % 1) * safeFps);
 
   switch (format) {
     case "MM:SS":
@@ -24,7 +25,7 @@ export const formatTimeCode = (
     case "HH:MM:SS:CS":
       return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${centiseconds.toString().padStart(2, "0")}`;
     case "HH:MM:SS:FF":
-      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames.toString().padStart(Math.max(2, `${Math.max(0, safeFps - 1)}`.length), "0")}`;
   }
 };
 

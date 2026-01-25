@@ -93,6 +93,7 @@ function addTextElement(args: ToolArgs): ToolExecutionResult {
     boxShadowColor: DEFAULT_TEXT_ELEMENT.boxShadowColor,
     boxShadowOffsetX: DEFAULT_TEXT_ELEMENT.boxShadowOffsetX,
     boxShadowOffsetY: DEFAULT_TEXT_ELEMENT.boxShadowOffsetY,
+    boxShadowOpacity: DEFAULT_TEXT_ELEMENT.boxShadowOpacity,
     textAlign:
       (args.textAlign as "left" | "center" | "right") ||
       DEFAULT_TEXT_ELEMENT.textAlign,

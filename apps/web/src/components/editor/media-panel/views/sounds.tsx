@@ -45,7 +45,9 @@ export function SoundsView() {
             <TabsTrigger value="saved">Saved</TabsTrigger>
           </TabsList>
         </div>
-        <Separator className="my-4" />
+        <div className="my-4">
+          <Separator />
+        </div>
         <TabsContent
           value="sound-effects"
           className="p-5 pt-0 mt-0 flex-1 flex flex-col min-h-0"
@@ -234,7 +236,7 @@ function SoundEffectsView() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="text"
+              variant="ghost"
               size="icon"
               className={cn(showCommercialOnly && "text-primary")}
             >
@@ -422,7 +424,7 @@ function SavedSoundsView() {
         <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
           <DialogTrigger asChild>
             <Button
-              variant="text"
+              variant="ghost"
               size="sm"
               className="h-auto text-muted-foreground hover:text-destructive !opacity-100"
             >
@@ -438,7 +440,7 @@ function SavedSoundsView() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="text" onClick={() => setShowClearDialog(false)}>
+              <Button variant="ghost" onClick={() => setShowClearDialog(false)}>
                 Cancel
               </Button>
               <Button
@@ -535,7 +537,7 @@ function AudioItem({
 
       <div className="flex items-center gap-3 pr-2">
         <Button
-          variant="text"
+          variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-foreground !opacity-100 w-auto"
           onClick={handleAddToTimeline}
@@ -544,7 +546,7 @@ function AudioItem({
           <PlusIcon className="w-4 h-4" />
         </Button>
         <Button
-          variant="text"
+          variant="ghost"
           size="icon"
           className={`hover:text-foreground !opacity-100 w-auto ${
             isSaved

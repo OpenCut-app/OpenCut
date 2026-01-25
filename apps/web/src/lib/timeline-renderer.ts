@@ -302,27 +302,8 @@ export async function renderTimelineFrame({
       const shouldDrawBackground =
         !!text.backgroundColor && text.backgroundColor !== "transparent";
 
-      if (hasBoxShadow && !shouldDrawBackground) {
-        ctx.save();
-        ctx.fillStyle = text.boxShadowColor ?? "#000000";
-        ctx.fillText(text.content, shadowOffsetX, shadowOffsetY);
-        ctx.restore();
-      }
-
       if (shouldDrawBackground) {
         ctx.save();
-        if (hasBoxShadow) {
-          ctx.fillStyle = text.boxShadowColor ?? "#000000";
-          fillRoundedRect(
-            ctx,
-            backgroundX + shadowOffsetX,
-            backgroundY + shadowOffsetY,
-            backgroundW,
-            backgroundH,
-            radius
-          );
-        }
-
         ctx.fillStyle = text.backgroundColor;
         fillRoundedRect(
           ctx,
@@ -332,6 +313,18 @@ export async function renderTimelineFrame({
           backgroundH,
           radius
         );
+        ctx.restore();
+      }
+
+      if (hasBoxShadow) {
+        ctx.save();
+        const clampedShadowOpacity = Math.max(
+          0,
+          Math.min(1, text.boxShadowOpacity ?? 0.6)
+        );
+        ctx.globalAlpha = ctx.globalAlpha * clampedShadowOpacity;
+        ctx.fillStyle = text.boxShadowColor ?? "#000000";
+        ctx.fillText(text.content, shadowOffsetX, shadowOffsetY);
         ctx.restore();
       }
 

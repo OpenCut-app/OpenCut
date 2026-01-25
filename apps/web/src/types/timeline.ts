@@ -37,6 +37,7 @@ export interface TextElement extends BaseTimelineElement {
   boxShadowColor?: string;
   boxShadowOffsetX?: number;
   boxShadowOffsetY?: number;
+  boxShadowOpacity?: number;
   textAlign: "left" | "center" | "right";
   fontWeight: "normal" | "bold";
   fontStyle: "normal" | "italic";

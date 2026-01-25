@@ -75,6 +75,9 @@ export function TextProperties({
     primaryElement.boxShadowOffsetX ?? 0,
     primaryElement.boxShadowOffsetY ?? 0
   );
+  const boxShadowOpacityPercent = Math.round(
+    Math.max(0, Math.min(1, primaryElement.boxShadowOpacity ?? 0.6)) * 100
+  );
 
   // Track the last selected color for toggling
   const lastSelectedColor = useRef("#000000");
@@ -479,32 +482,55 @@ export function TextProperties({
               <PropertyItem direction="column">
                 <PropertyItemLabel>Box shadow</PropertyItemLabel>
                 <PropertyItemValue>
-                  <div className="flex items-center gap-2">
-                    <Slider
-                      value={[boxShadowOffset]}
-                      min={0}
-                      max={40}
-                      step={1}
-                      onValueChange={([value]) =>
-                        applyTextUpdates({
-                          boxShadowOffsetX: value,
-                          boxShadowOffsetY: value,
-                        })
-                      }
-                      className="w-full"
-                    />
-                    <ColorPicker
-                      value={uppercase(
-                        (primaryElement.boxShadowColor || "#000000").replace(
-                          "#",
-                          ""
-                        )
-                      )}
-                      onChange={(color) =>
-                        applyTextUpdates({ boxShadowColor: `#${color}` })
-                      }
-                      containerRef={containerRef}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-14 text-xs text-muted-foreground">
+                        Offset
+                      </div>
+                      <Slider
+                        value={[boxShadowOffset]}
+                        min={0}
+                        max={40}
+                        step={1}
+                        onValueChange={([value]) =>
+                          applyTextUpdates({
+                            boxShadowOffsetX: value,
+                            boxShadowOffsetY: value,
+                          })
+                        }
+                        className="flex-1"
+                      />
+                      <ColorPicker
+                        value={uppercase(
+                          (primaryElement.boxShadowColor || "#000000").replace(
+                            "#",
+                            ""
+                          )
+                        )}
+                        onChange={(color) =>
+                          applyTextUpdates({ boxShadowColor: `#${color}` })
+                        }
+                        containerRef={containerRef}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-14 text-xs text-muted-foreground">
+                        Opacity
+                      </div>
+                      <Slider
+                        value={[boxShadowOpacityPercent]}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onValueChange={([value]) =>
+                          applyTextUpdates({ boxShadowOpacity: value / 100 })
+                        }
+                        className="flex-1"
+                      />
+                      <div className="w-10 text-xs tabular-nums text-muted-foreground text-right">
+                        {boxShadowOpacityPercent}%
+                      </div>
+                    </div>
                   </div>
                 </PropertyItemValue>
               </PropertyItem>

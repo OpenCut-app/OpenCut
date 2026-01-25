@@ -7,6 +7,28 @@ import { useTimelineStore } from "./timeline-store";
 import { useProjectStore } from "./project-store";
 import { usePlaybackStore } from "./playback-store";
 
+const mergeUniqueSoundEffectsById = (
+  existingSoundEffects: SoundEffect[],
+  incomingSoundEffects: SoundEffect[],
+) => {
+  const seenSoundIds = new Set<number>();
+  const mergedSoundEffects: SoundEffect[] = [];
+
+  for (const soundEffect of existingSoundEffects) {
+    if (seenSoundIds.has(soundEffect.id)) continue;
+    seenSoundIds.add(soundEffect.id);
+    mergedSoundEffects.push(soundEffect);
+  }
+
+  for (const soundEffect of incomingSoundEffects) {
+    if (seenSoundIds.has(soundEffect.id)) continue;
+    seenSoundIds.add(soundEffect.id);
+    mergedSoundEffects.push(soundEffect);
+  }
+
+  return mergedSoundEffects;
+};
+
 interface SoundsStore {
   topSoundEffects: SoundEffect[];
   isLoading: boolean;
@@ -102,7 +124,8 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
   isLoadingSavedSounds: false,
   savedSoundsError: null,
 
-  setTopSoundEffects: (sounds) => set({ topSoundEffects: sounds }),
+  setTopSoundEffects: (sounds) =>
+    set({ topSoundEffects: mergeUniqueSoundEffectsById([], sounds) }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
   setHasLoaded: (loaded) => set({ hasLoaded: loaded }),
@@ -110,7 +133,10 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
   // Search actions
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSearchResults: (results) =>
-    set({ searchResults: results, currentPage: 1 }),
+    set({
+      searchResults: mergeUniqueSoundEffectsById([], results),
+      currentPage: 1,
+    }),
   setSearching: (searching) => set({ isSearching: searching }),
   setSearchError: (error) => set({ searchError: error }),
   setLastSearchQuery: (query) => set({ lastSearchQuery: query }),
@@ -123,11 +149,14 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
   setLoadingMore: (loading) => set({ isLoadingMore: loading }),
   appendSearchResults: (results) =>
     set((state) => ({
-      searchResults: [...state.searchResults, ...results],
+      searchResults: mergeUniqueSoundEffectsById(state.searchResults, results),
     })),
   appendTopSounds: (results) =>
     set((state) => ({
-      topSoundEffects: [...state.topSoundEffects, ...results],
+      topSoundEffects: mergeUniqueSoundEffectsById(
+        state.topSoundEffects,
+        results,
+      ),
     })),
   resetPagination: () =>
     set({
@@ -274,7 +303,7 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
         error instanceof Error
           ? error.message
           : "Failed to add sound to timeline",
-        { id: `sound-${sound.id}` }
+        { id: `sound-${sound.id}` },
       );
       return false;
     }

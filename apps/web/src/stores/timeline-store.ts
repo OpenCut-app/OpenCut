@@ -233,6 +233,7 @@ interface TimelineStore {
         | "boxShadowColor"
         | "boxShadowOffsetX"
         | "boxShadowOffsetY"
+        | "boxShadowOpacity"
         | "textAlign"
         | "fontWeight"
         | "fontStyle"
@@ -262,6 +263,7 @@ interface TimelineStore {
         | "boxShadowColor"
         | "boxShadowOffsetX"
         | "boxShadowOffsetY"
+        | "boxShadowOpacity"
         | "textAlign"
         | "fontWeight"
         | "fontStyle"
@@ -2004,6 +2006,10 @@ function buildTextElement(
       typeof t.boxShadowOffsetY === "number"
         ? t.boxShadowOffsetY
         : DEFAULT_TEXT_ELEMENT.boxShadowOffsetY,
+    boxShadowOpacity:
+      typeof t.boxShadowOpacity === "number"
+        ? t.boxShadowOpacity
+        : DEFAULT_TEXT_ELEMENT.boxShadowOpacity,
     textAlign: t.textAlign ?? DEFAULT_TEXT_ELEMENT.textAlign,
     fontWeight: t.fontWeight ?? DEFAULT_TEXT_ELEMENT.fontWeight,
     fontStyle: t.fontStyle ?? DEFAULT_TEXT_ELEMENT.fontStyle,

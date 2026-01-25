@@ -17,6 +17,7 @@ export const DEFAULT_TEXT_ELEMENT: Omit<TextElement, "id"> = {
   boxShadowColor: "#000000",
   boxShadowOffsetX: 0,
   boxShadowOffsetY: 0,
+  boxShadowOpacity: 0.6,
   textAlign: "center",
   fontWeight: "normal",
   fontStyle: "normal",
