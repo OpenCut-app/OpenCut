@@ -30,7 +30,7 @@ export function TabBar() {
 
     checkScrollPosition();
     element.addEventListener("scroll", checkScrollPosition);
-    
+
     const resizeObserver = new ResizeObserver(checkScrollPosition);
     resizeObserver.observe(element);
 
@@ -42,7 +42,7 @@ export function TabBar() {
 
   return (
     <div className="flex relative">
-      <div 
+      <div
         ref={scrollRef}
         className="h-full px-4 flex flex-col justify-start items-center gap-5 overflow-y-auto scrollbar-hidden relative w-full py-4"
       >
@@ -51,7 +51,7 @@ export function TabBar() {
           return (
             <div
               className={cn(
-                "flex z-[100] flex-col gap-0.5 items-center cursor-pointer",
+                "flex z-10 flex-col gap-0.5 items-center cursor-pointer",
                 activeTab === tabKey
                   ? "text-primary !opacity-100"
                   : "text-muted-foreground"
@@ -78,20 +78,26 @@ export function TabBar() {
           );
         })}
       </div>
-      
+
       <FadeOverlay direction="top" show={showTopFade} />
       <FadeOverlay direction="bottom" show={showBottomFade} />
     </div>
   );
 }
 
-function FadeOverlay({ direction, show }: { direction: "top" | "bottom", show: boolean }) {
+function FadeOverlay({
+  direction,
+  show,
+}: {
+  direction: "top" | "bottom";
+  show: boolean;
+}) {
   return (
-    <div 
+    <div
       className={cn(
-        "absolute left-0 right-0 h-6 pointer-events-none z-[101] transition-opacity duration-200",
+        "absolute left-0 right-0 h-6 pointer-events-none z-20 transition-opacity duration-200",
         direction === "top" && show
-          ? "top-0 bg-gradient-to-b from-panel to-transparent" 
+          ? "top-0 bg-gradient-to-b from-panel to-transparent"
           : "bottom-0 bg-gradient-to-t from-panel to-transparent"
       )}
     />
