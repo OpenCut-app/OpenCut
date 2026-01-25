@@ -9,7 +9,7 @@ import { MediaFile } from "@/types/media";
 import { TProject } from "@/types/project";
 
 interface CachedFrame {
-  imageData: ImageData;
+  imageBitmap: ImageBitmap;
   timelineHash: string;
   timestamp: number;
 }
@@ -17,6 +17,11 @@ interface CachedFrame {
 interface FrameCacheOptions {
   maxCacheSize?: number; // Maximum number of cached frames
   cacheResolution?: number; // Frames per second to cache at
+}
+
+interface RenderSize {
+  width: number;
+  height: number;
 }
 
 // Shared singleton cache across hook instances (HMR-safe)
@@ -27,9 +32,15 @@ const __sharedFrameCache: Map<number, CachedFrame> =
 __frameCacheGlobal.__sharedFrameCache = __sharedFrameCache;
 
 export function useFrameCache(options: FrameCacheOptions = {}) {
-  const { maxCacheSize = 300, cacheResolution = 30 } = options; // 10 seconds at 30fps
+  const { maxCacheSize = 60, cacheResolution = 30 } = options; // 2 seconds at 30fps
 
   const frameCacheRef = useRef(__sharedFrameCache);
+
+  const closeImageBitmap = useCallback((imageBitmap: ImageBitmap) => {
+    try {
+      imageBitmap.close();
+    } catch {}
+  }, []);
 
   // Generate a hash of the timeline state that affects rendering
   const getTimelineHash = useCallback(
@@ -136,12 +147,21 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       tracks: TimelineTrack[],
       mediaFiles: MediaFile[],
       activeProject: TProject | null,
-      sceneId?: string
+      sceneId?: string,
+      renderSize?: RenderSize
     ): boolean => {
       const frameKey = Math.floor(time * cacheResolution);
       const cached = frameCacheRef.current.get(frameKey);
 
       if (!cached) return false;
+
+      if (
+        renderSize &&
+        (cached.imageBitmap.width !== renderSize.width ||
+          cached.imageBitmap.height !== renderSize.height)
+      ) {
+        return false;
+      }
 
       const currentHash = getTimelineHash(
         time,
@@ -162,12 +182,21 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       tracks: TimelineTrack[],
       mediaFiles: MediaFile[],
       activeProject: TProject | null,
-      sceneId?: string
-    ): ImageData | null => {
+      sceneId?: string,
+      renderSize?: RenderSize
+    ): ImageBitmap | null => {
       const frameKey = Math.floor(time * cacheResolution);
       const cached = frameCacheRef.current.get(frameKey);
 
       if (!cached) {
+        return null;
+      }
+
+      if (
+        renderSize &&
+        (cached.imageBitmap.width !== renderSize.width ||
+          cached.imageBitmap.height !== renderSize.height)
+      ) {
         return null;
       }
 
@@ -178,34 +207,28 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
         activeProject,
         sceneId
       );
-      console.log(cached.timelineHash === currentHash);
       if (cached.timelineHash !== currentHash) {
         // Cache is stale, remove it
-        console.log(
-          "Cache miss - hash mismatch:",
-          JSON.stringify({
-            cachedHash: cached.timelineHash.slice(0, 100),
-            currentHash: currentHash.slice(0, 100),
-          })
-        );
+        closeImageBitmap(cached.imageBitmap);
         frameCacheRef.current.delete(frameKey);
         return null;
       }
 
-      return cached.imageData;
+      return cached.imageBitmap;
     },
-    [getTimelineHash, cacheResolution]
+    [getTimelineHash, cacheResolution, closeImageBitmap]
   );
 
   // Cache a rendered frame
   const cacheFrame = useCallback(
     (
       time: number,
-      imageData: ImageData,
+      imageBitmap: ImageBitmap,
       tracks: TimelineTrack[],
       mediaFiles: MediaFile[],
       activeProject: TProject | null,
-      sceneId?: string
+      sceneId?: string,
+      renderSize?: RenderSize
     ): void => {
       const frameKey = Math.floor(time * cacheResolution);
       const timelineHash = getTimelineHash(
@@ -225,23 +248,41 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
         // Remove oldest 20% of entries
         const toRemove = Math.floor(entries.length * 0.2);
         for (let i = 0; i < toRemove; i++) {
+          closeImageBitmap(entries[i][1].imageBitmap);
           frameCacheRef.current.delete(entries[i][0]);
         }
       }
 
+      const existing = frameCacheRef.current.get(frameKey);
+      if (existing) {
+        closeImageBitmap(existing.imageBitmap);
+      }
+
+      if (
+        renderSize &&
+        (imageBitmap.width !== renderSize.width ||
+          imageBitmap.height !== renderSize.height)
+      ) {
+        closeImageBitmap(imageBitmap);
+        return;
+      }
+
       frameCacheRef.current.set(frameKey, {
-        imageData,
+        imageBitmap,
         timelineHash,
         timestamp: Date.now(),
       });
     },
-    [getTimelineHash, cacheResolution, maxCacheSize]
+    [getTimelineHash, cacheResolution, maxCacheSize, closeImageBitmap]
   );
 
   // Clear cache when timeline changes significantly
   const invalidateCache = useCallback(() => {
+    for (const cached of frameCacheRef.current.values()) {
+      closeImageBitmap(cached.imageBitmap);
+    }
     frameCacheRef.current.clear();
-  }, []);
+  }, [closeImageBitmap]);
 
   // Get render status for timeline indicator
   const getRenderStatus = useCallback(
@@ -266,9 +307,11 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       tracks: TimelineTrack[],
       mediaFiles: MediaFile[],
       activeProject: TProject | null,
-      renderFunction: (time: number) => Promise<ImageData>,
+      renderFunction: (time: number) => Promise<ImageBitmap>,
       sceneId?: string,
-      range: number = 3 // seconds
+      range = 3, // seconds
+      renderSize?: RenderSize,
+      abortSignal?: AbortSignal
     ) => {
       const framesToPreRender: number[] = [];
 
@@ -311,13 +354,15 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
       });
 
       // Cap total scheduled renders to avoid jank (e.g., up to 90 frames)
-      const CAP = Math.max(30, Math.min(90, cacheResolution * 3));
+      const CAP = Math.max(15, Math.min(30, cacheResolution));
       const toSchedule = expandedTimes.slice(0, CAP);
 
       // Pre-render during idle time
       for (const time of toSchedule) {
+        if (abortSignal?.aborted) return;
         requestIdleCallback(async () => {
           try {
+            if (abortSignal?.aborted) return;
             const imageData = await renderFunction(time);
             cacheFrame(
               time,
@@ -325,7 +370,8 @@ export function useFrameCache(options: FrameCacheOptions = {}) {
               tracks,
               mediaFiles,
               activeProject,
-              sceneId
+              sceneId,
+              renderSize
             );
           } catch (error) {
             console.warn(`Pre-render failed for time ${time}:`, error);

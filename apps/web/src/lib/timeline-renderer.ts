@@ -194,12 +194,7 @@ export async function renderTimelineFrame({
         }
       }
       if (mediaItem.type === "image") {
-        const img = new Image();
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error("Image load failed"));
-          img.src = mediaItem.url || URL.createObjectURL(mediaItem.file);
-        });
+        const img = await getImageElement(mediaItem);
         const mediaW = Math.max(
           1,
           mediaItem.width || img.naturalWidth || canvasWidth
