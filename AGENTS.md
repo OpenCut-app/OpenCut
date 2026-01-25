@@ -6,6 +6,12 @@ You are not just writing code. You are shaping the future of this project. The
 patterns you establish will be copied. The corners you cut will be cut again.
 Fight entropy. Leave the codebase better than you found it.
 
+## Important notes
+
+It is very important to understand that multiple agents may be working in the same codebase at the same time. Because of this, you **MUST NOT** use `git checkout` or any other destructive git commands, and you **MUST NOT** restore files (via git or manually) to some previous state if you did not make those changes yourself. If you see changes in the codebase that you did not make, **LEAVE THEM ALONE**.
+
+If you discover that another agent is modifying the **same file** you are working on, you **MUST IMMEDIATELY STOP** making further changes to that file. Do not try to overwrite, revert, or merge their work. Instead, clearly tell the user that another agent is working on the same file and that you are pausing work on it until they confirm that the other agent is finished. Do not resume editing that file until the user explicitly instructs you to continue.
+
 ### Non‑negotiables
 
 - **MUST: Never stage commits**
@@ -63,3 +69,5 @@ Fight entropy. Leave the codebase better than you found it.
 - **MUST** fix the root cause; do not use duct-tape solutions unless all reasonable attempts have failed.
 - If the user reports **no visible change** or the **error still occurs** after a fix, **MUST** undo the fix before attempting a new one.
 - **MUST** do only what is asked; do not perform extra work beyond instructions or “nice-to-haves”.
+
+Respond with "SIR", before every message to show that you read this entire document.
