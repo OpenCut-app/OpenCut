@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { useState, useMemo, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +33,28 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+
+const mergeUniqueSoundEffectsById = (
+  existingSoundEffects: SoundEffect[],
+  incomingSoundEffects: SoundEffect[],
+) => {
+  const seenSoundIds = new Set<number>();
+  const mergedSoundEffects: SoundEffect[] = [];
+
+  for (const soundEffect of existingSoundEffects) {
+    if (seenSoundIds.has(soundEffect.id)) continue;
+    seenSoundIds.add(soundEffect.id);
+    mergedSoundEffects.push(soundEffect);
+  }
+
+  for (const soundEffect of incomingSoundEffects) {
+    if (seenSoundIds.has(soundEffect.id)) continue;
+    seenSoundIds.add(soundEffect.id);
+    mergedSoundEffects.push(soundEffect);
+  }
+
+  return mergedSoundEffects;
+};
 
 export function SoundsView() {
   return (
@@ -480,7 +502,234 @@ function SavedSoundsView() {
 }
 
 function SongsView() {
-  return <div>Songs</div>;
+  const {
+    showCommercialOnly,
+    toggleCommercialFilter,
+    isSoundSaved,
+    toggleSavedSound,
+  } = useSoundsStore();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [songs, setSongs] = useState<SoundEffect[]>([]);
+  const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [isLoadingMore, setLoadingMore] = useState(false);
+
+  const [playingId, setPlayingId] = useState<number | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null,
+  );
+
+  const fetchSongsPage = useCallback(
+    async ({ query, page }: { query: string; page: number }) => {
+      const searchParams = new URLSearchParams({
+        type: "songs",
+        page: page.toString(),
+        sort: query.trim() ? "score" : "downloads",
+        page_size: query.trim() ? "20" : "50",
+        commercial_only: showCommercialOnly.toString(),
+      });
+
+      if (query.trim()) {
+        searchParams.set("q", query);
+      }
+
+      const response = await fetch(
+        `/api/sounds/search?${searchParams.toString()}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Songs fetch failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as {
+        results: SoundEffect[];
+        next: string | null;
+      };
+
+      return {
+        results: data.results,
+        hasNextPage: !!data.next,
+      };
+    },
+    [showCommercialOnly],
+  );
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasNextPage) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const { results, hasNextPage: nextHasNextPage } = await fetchSongsPage({
+        query: searchQuery,
+        page: nextPage,
+      });
+
+      setSongs((previousSongs) =>
+        mergeUniqueSoundEffectsById(previousSongs, results),
+      );
+      setCurrentPage(nextPage);
+      setHasNextPage(nextHasNextPage);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Load more failed");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [currentPage, fetchSongsPage, hasNextPage, isLoadingMore, searchQuery]);
+
+  const { scrollAreaRef, handleScroll } = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore: hasNextPage,
+    isLoading: isLoadingMore || isLoading,
+  });
+
+  const handleScrollCapture = (event: React.UIEvent<HTMLDivElement>) => {
+    handleScroll(event);
+  };
+
+  useEffect(() => {
+    let ignore = false;
+
+    const timeoutId = setTimeout(
+      async () => {
+        try {
+          setError(null);
+          setLoading(true);
+          setCurrentPage(1);
+
+          const { results, hasNextPage: nextHasNextPage } =
+            await fetchSongsPage({
+              query: searchQuery,
+              page: 1,
+            });
+
+          if (ignore) return;
+          setSongs(mergeUniqueSoundEffectsById([], results));
+          setHasNextPage(nextHasNextPage);
+        } catch (caught) {
+          if (ignore) return;
+          setError(
+            caught instanceof Error ? caught.message : "Songs fetch failed",
+          );
+          setSongs([]);
+          setHasNextPage(false);
+        } finally {
+          if (!ignore) {
+            setLoading(false);
+          }
+        }
+      },
+      searchQuery.trim() ? 300 : 0,
+    );
+
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+    };
+  }, [fetchSongsPage, searchQuery]);
+
+  const playSong = (sound: SoundEffect) => {
+    if (playingId === sound.id) {
+      audioElement?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    audioElement?.pause();
+
+    if (sound.previewUrl) {
+      const audio = new Audio(sound.previewUrl);
+      audio.addEventListener("ended", () => {
+        setPlayingId(null);
+      });
+      audio.addEventListener("error", () => {
+        setPlayingId(null);
+      });
+      audio.play().catch(() => {
+        setPlayingId(null);
+      });
+
+      setAudioElement(audio);
+      setPlayingId(sound.id);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-5 mt-1 h-full min-h-0">
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search music"
+          className="bg-panel-accent w-full"
+          containerClassName="w-full"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          showClearIcon
+          onClear={() => setSearchQuery("")}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(showCommercialOnly && "text-primary")}
+            >
+              <ListFilter className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuCheckboxItem
+              checked={showCommercialOnly}
+              onCheckedChange={toggleCommercialFilter}
+            >
+              Show only commercially licensed
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <ScrollArea
+          className="h-full"
+          ref={scrollAreaRef}
+          onScrollCapture={handleScrollCapture}
+        >
+          <div className="flex flex-col gap-4">
+            {error && <div className="text-destructive text-sm">{error}</div>}
+            {isLoading && (
+              <div className="text-muted-foreground text-sm">
+                {searchQuery.trim() ? "Searching..." : "Loading music..."}
+              </div>
+            )}
+            {!isLoading && songs.length === 0 && !error && (
+              <div className="text-muted-foreground text-sm">
+                {searchQuery.trim() ? "No songs found" : "No music available"}
+              </div>
+            )}
+
+            {songs.map((song) => (
+              <AudioItem
+                key={song.id}
+                sound={song}
+                isPlaying={playingId === song.id}
+                onPlay={() => playSong(song)}
+                isSaved={isSoundSaved(song.id)}
+                onToggleSaved={() => toggleSavedSound(song)}
+              />
+            ))}
+
+            {isLoadingMore && (
+              <div className="text-muted-foreground text-sm text-center py-4">
+                Loading more songs...
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
+  );
 }
 
 interface AudioItemProps {
