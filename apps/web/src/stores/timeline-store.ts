@@ -225,6 +225,43 @@ interface TimelineStore {
         | "fontFamily"
         | "color"
         | "backgroundColor"
+        | "backgroundRadius"
+        | "backgroundPaddingX"
+        | "backgroundPaddingY"
+        | "outlineColor"
+        | "outlineWidth"
+        | "boxShadowColor"
+        | "boxShadowOffsetX"
+        | "boxShadowOffsetY"
+        | "textAlign"
+        | "fontWeight"
+        | "fontStyle"
+        | "textDecoration"
+        | "x"
+        | "y"
+        | "rotation"
+        | "opacity"
+      >
+    >
+  ) => void;
+  updateTextElements: (
+    targets: Array<{ trackId: string; elementId: string }>,
+    updates: Partial<
+      Pick<
+        TextElement,
+        | "content"
+        | "fontSize"
+        | "fontFamily"
+        | "color"
+        | "backgroundColor"
+        | "backgroundRadius"
+        | "backgroundPaddingX"
+        | "backgroundPaddingY"
+        | "outlineColor"
+        | "outlineWidth"
+        | "boxShadowColor"
+        | "boxShadowOffsetX"
+        | "boxShadowOffsetY"
         | "textAlign"
         | "fontWeight"
         | "fontStyle"
@@ -894,6 +931,37 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       );
     },
 
+    updateTextElements: (targets, updates) => {
+      if (targets.length === 0) return;
+
+      const trackIdToElementIds = new Map<string, Set<string>>();
+      for (const target of targets) {
+        const elementIds = trackIdToElementIds.get(target.trackId);
+        if (elementIds) {
+          elementIds.add(target.elementId);
+        } else {
+          trackIdToElementIds.set(target.trackId, new Set([target.elementId]));
+        }
+      }
+
+      get().pushHistory();
+      updateTracksAndSave(
+        get()._tracks.map((track) => {
+          const elementIds = trackIdToElementIds.get(track.id);
+          if (!elementIds) return track;
+
+          return {
+            ...track,
+            elements: track.elements.map((element) =>
+              element.type === "text" && elementIds.has(element.id)
+                ? { ...element, ...updates }
+                : element
+            ),
+          };
+        })
+      );
+    },
+
     replaceTrackElements: (trackId, elements, pushHistory = true) => {
       if (pushHistory) get().pushHistory();
       updateTracksAndSave(
@@ -991,11 +1059,23 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element || track?.type !== "media") return null;
+      if (element.type !== "media") return null;
+
+      const mediaItem = useMediaStore
+        .getState()
+        .mediaFiles.find((m) => m.id === element.mediaId);
+      if (!mediaItem || mediaItem.type !== "video") return null;
 
       get().pushHistory();
 
       const existingAudioTrack = _tracks.find((t) => t.type === "audio");
       const audioElementId = generateUUID();
+      const audioElement: MediaElement = {
+        ...element,
+        id: audioElementId,
+        name: getElementNameWithSuffix(element.name, "audio"),
+        muted: false,
+      };
 
       if (existingAudioTrack) {
         updateTracksAndSave(
@@ -1003,16 +1083,19 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             track.id === existingAudioTrack.id
               ? {
                   ...track,
-                  elements: [
-                    ...track.elements,
-                    {
-                      ...element,
-                      id: audioElementId,
-                      name: getElementNameWithSuffix(element.name, "audio"),
-                    },
-                  ],
+                  elements: [...track.elements, audioElement],
                 }
-              : track
+              : track.id === trackId
+                ? {
+                    ...track,
+                    elements: track.elements.map((currentElement) =>
+                      currentElement.id === elementId &&
+                      currentElement.type === "media"
+                        ? { ...currentElement, muted: true }
+                        : currentElement
+                    ),
+                  }
+                : track
           )
         );
       } else {
@@ -1020,17 +1103,25 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           id: generateUUID(),
           name: "Audio Track",
           type: "audio",
-          elements: [
-            {
-              ...element,
-              id: audioElementId,
-              name: getElementNameWithSuffix(element.name, "audio"),
-            },
-          ],
+          elements: [audioElement],
           muted: false,
         };
 
-        updateTracksAndSave([...get()._tracks, newAudioTrack]);
+        const mutedTracks = get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((currentElement) =>
+                  currentElement.id === elementId &&
+                  currentElement.type === "media"
+                    ? { ...currentElement, muted: true }
+                    : currentElement
+                ),
+              }
+            : track
+        );
+
+        updateTracksAndSave([...mutedTracks, newAudioTrack]);
       }
 
       return audioElementId;
@@ -1887,6 +1978,32 @@ function buildTextElement(
     fontFamily: t.fontFamily ?? DEFAULT_TEXT_ELEMENT.fontFamily,
     color: t.color ?? DEFAULT_TEXT_ELEMENT.color,
     backgroundColor: t.backgroundColor ?? DEFAULT_TEXT_ELEMENT.backgroundColor,
+    backgroundRadius:
+      typeof t.backgroundRadius === "number"
+        ? t.backgroundRadius
+        : DEFAULT_TEXT_ELEMENT.backgroundRadius,
+    backgroundPaddingX:
+      typeof t.backgroundPaddingX === "number"
+        ? t.backgroundPaddingX
+        : DEFAULT_TEXT_ELEMENT.backgroundPaddingX,
+    backgroundPaddingY:
+      typeof t.backgroundPaddingY === "number"
+        ? t.backgroundPaddingY
+        : DEFAULT_TEXT_ELEMENT.backgroundPaddingY,
+    outlineColor: t.outlineColor ?? DEFAULT_TEXT_ELEMENT.outlineColor,
+    outlineWidth:
+      typeof t.outlineWidth === "number"
+        ? t.outlineWidth
+        : DEFAULT_TEXT_ELEMENT.outlineWidth,
+    boxShadowColor: t.boxShadowColor ?? DEFAULT_TEXT_ELEMENT.boxShadowColor,
+    boxShadowOffsetX:
+      typeof t.boxShadowOffsetX === "number"
+        ? t.boxShadowOffsetX
+        : DEFAULT_TEXT_ELEMENT.boxShadowOffsetX,
+    boxShadowOffsetY:
+      typeof t.boxShadowOffsetY === "number"
+        ? t.boxShadowOffsetY
+        : DEFAULT_TEXT_ELEMENT.boxShadowOffsetY,
     textAlign: t.textAlign ?? DEFAULT_TEXT_ELEMENT.textAlign,
     fontWeight: t.fontWeight ?? DEFAULT_TEXT_ELEMENT.fontWeight,
     fontStyle: t.fontStyle ?? DEFAULT_TEXT_ELEMENT.fontStyle,

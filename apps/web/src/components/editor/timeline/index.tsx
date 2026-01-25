@@ -97,6 +97,17 @@ export function Timeline() {
   const rulerRef = useRef<HTMLDivElement>(null);
   const [isInTimeline, setIsInTimeline] = useState(false);
 
+  const handleSelectAllInTextTrack = useCallback(
+    (track: TimelineTrack) => {
+      if (track.type !== "text") return;
+      const selection = track.elements
+        .filter((element) => element.type === "text")
+        .map((element) => ({ trackId: track.id, elementId: element.id }));
+      setSelectedElements(selection);
+    },
+    [setSelectedElements]
+  );
+
   // Track mouse down/up for distinguishing clicks from drag/resize ends
   const mouseTrackingRef = useRef({
     isMouseDown: false,
@@ -773,19 +784,30 @@ export function Timeline() {
                   {tracks.map((track) => (
                     <div
                       key={track.id}
-                      className="flex items-center px-3 group"
+                      className={`flex items-center px-3 group ${track.type === "text" ? "cursor-pointer" : ""}`}
                       style={{ height: `${getTrackHeight(track.type)}px` }}
+                      onClick={
+                        track.type === "text"
+                          ? () => handleSelectAllInTextTrack(track)
+                          : undefined
+                      }
                     >
                       <div className="flex items-center justify-end flex-1 min-w-0 gap-2">
                         {track.muted ? (
                           <VolumeOff
                             className="h-4 w-4 text-destructive cursor-pointer"
-                            onClick={() => toggleTrackMute(track.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTrackMute(track.id);
+                            }}
                           />
                         ) : (
                           <Volume2
                             className="h-4 w-4 text-muted-foreground cursor-pointer"
-                            onClick={() => toggleTrackMute(track.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTrackMute(track.id);
+                            }}
                           />
                         )}
                         <Eye className="h-4 w-4 text-muted-foreground" />
@@ -891,6 +913,16 @@ export function Timeline() {
                           >
                             {track.muted ? "Unmute Track" : "Mute Track"}
                           </ContextMenuItem>
+                          {track.type === "text" ? (
+                            <ContextMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectAllInTextTrack(track);
+                              }}
+                            >
+                              Select all text in track
+                            </ContextMenuItem>
+                          ) : null}
                           <ContextMenuItem onClick={(e) => e.stopPropagation()}>
                             Track settings (soon)
                           </ContextMenuItem>

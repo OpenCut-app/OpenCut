@@ -85,6 +85,14 @@ function addTextElement(args: ToolArgs): ToolExecutionResult {
     fontFamily: DEFAULT_TEXT_ELEMENT.fontFamily,
     color: (args.color as string) || DEFAULT_TEXT_ELEMENT.color,
     backgroundColor: DEFAULT_TEXT_ELEMENT.backgroundColor,
+    backgroundRadius: DEFAULT_TEXT_ELEMENT.backgroundRadius,
+    backgroundPaddingX: DEFAULT_TEXT_ELEMENT.backgroundPaddingX,
+    backgroundPaddingY: DEFAULT_TEXT_ELEMENT.backgroundPaddingY,
+    outlineColor: DEFAULT_TEXT_ELEMENT.outlineColor,
+    outlineWidth: DEFAULT_TEXT_ELEMENT.outlineWidth,
+    boxShadowColor: DEFAULT_TEXT_ELEMENT.boxShadowColor,
+    boxShadowOffsetX: DEFAULT_TEXT_ELEMENT.boxShadowOffsetX,
+    boxShadowOffsetY: DEFAULT_TEXT_ELEMENT.boxShadowOffsetY,
     textAlign:
       (args.textAlign as "left" | "center" | "right") ||
       DEFAULT_TEXT_ELEMENT.textAlign,

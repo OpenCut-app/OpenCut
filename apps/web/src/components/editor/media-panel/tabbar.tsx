@@ -54,7 +54,7 @@ export function TabBar() {
                 "flex z-10 flex-col gap-0.5 items-center cursor-pointer",
                 activeTab === tabKey
                   ? "text-primary !opacity-100"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
               )}
               onClick={() => setActiveTab(tabKey)}
               key={tabKey}
@@ -63,15 +63,8 @@ export function TabBar() {
                 <TooltipTrigger asChild>
                   <tab.icon className="size-[1.1rem]! opacity-100 hover:opacity-75" />
                 </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  align="center"
-                  variant="sidebar"
-                  sideOffset={8}
-                >
-                  <div className="dark:text-base-gray-950 text-black text-sm font-medium leading-none dark:text-white">
-                    {tab.label}
-                  </div>
+                <TooltipContent side="right" align="center" sideOffset={8}>
+                  <div className="font-medium leading-none">{tab.label}</div>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -98,7 +91,7 @@ function FadeOverlay({
         "absolute left-0 right-0 h-6 pointer-events-none z-20 transition-opacity duration-200",
         direction === "top" && show
           ? "top-0 bg-gradient-to-b from-panel to-transparent"
-          : "bottom-0 bg-gradient-to-t from-panel to-transparent"
+          : "bottom-0 bg-gradient-to-t from-panel to-transparent",
       )}
     />
   );

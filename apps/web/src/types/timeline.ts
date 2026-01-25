@@ -29,6 +29,14 @@ export interface TextElement extends BaseTimelineElement {
   fontFamily: string;
   color: string;
   backgroundColor: string;
+  backgroundRadius?: number;
+  backgroundPaddingX?: number;
+  backgroundPaddingY?: number;
+  outlineColor?: string;
+  outlineWidth?: number;
+  boxShadowColor?: string;
+  boxShadowOffsetX?: number;
+  boxShadowOffsetY?: number;
   textAlign: "left" | "center" | "right";
   fontWeight: "normal" | "bold";
   fontStyle: "normal" | "italic";

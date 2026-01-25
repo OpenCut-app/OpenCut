@@ -19,6 +19,36 @@ export interface RenderContext {
 
 const imageElementCache = new Map<string, HTMLImageElement>();
 
+function fillRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  const safeWidth = Math.max(0, width);
+  const safeHeight = Math.max(0, height);
+  const clampedRadius = Math.max(
+    0,
+    Math.min(radius, safeWidth / 2, safeHeight / 2)
+  );
+
+  if (clampedRadius === 0) {
+    ctx.fillRect(x, y, safeWidth, safeHeight);
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(x + clampedRadius, y);
+  ctx.arcTo(x + safeWidth, y, x + safeWidth, y + safeHeight, clampedRadius);
+  ctx.arcTo(x + safeWidth, y + safeHeight, x, y + safeHeight, clampedRadius);
+  ctx.arcTo(x, y + safeHeight, x, y, clampedRadius);
+  ctx.arcTo(x, y, x + safeWidth, y, clampedRadius);
+  ctx.closePath();
+  ctx.fill();
+}
+
 async function getImageElement(
   mediaItem: MediaFile
 ): Promise<HTMLImageElement> {
@@ -251,20 +281,68 @@ export async function renderTimelineFrame({
         : px * 0.2;
       const textW = metrics.width;
       const textH = ascent + descent;
-      const padX = 8 * scaleX;
-      const padY = 4 * scaleX;
-      if (text.backgroundColor) {
+      const padX = Math.max(0, text.backgroundPaddingX ?? 8) * scaleX;
+      const padY = Math.max(0, text.backgroundPaddingY ?? 4) * scaleX;
+      const radius = Math.max(0, text.backgroundRadius ?? 0) * scaleX;
+      const shadowOffsetX = (text.boxShadowOffsetX ?? 0) * scaleX;
+      const shadowOffsetY = (text.boxShadowOffsetY ?? 0) * scaleX;
+      const hasBoxShadow =
+        (shadowOffsetX !== 0 || shadowOffsetY !== 0) &&
+        !!text.boxShadowColor &&
+        text.boxShadowColor !== "transparent";
+
+      let bgLeft = -textW / 2;
+      if (ctx.textAlign === "left") bgLeft = 0;
+      if (ctx.textAlign === "right") bgLeft = -textW;
+
+      const backgroundX = bgLeft - padX;
+      const backgroundY = -textH / 2 - padY;
+      const backgroundW = textW + padX * 2;
+      const backgroundH = textH + padY * 2;
+      const shouldDrawBackground =
+        !!text.backgroundColor && text.backgroundColor !== "transparent";
+
+      if (hasBoxShadow && !shouldDrawBackground) {
         ctx.save();
+        ctx.fillStyle = text.boxShadowColor ?? "#000000";
+        ctx.fillText(text.content, shadowOffsetX, shadowOffsetY);
+        ctx.restore();
+      }
+
+      if (shouldDrawBackground) {
+        ctx.save();
+        if (hasBoxShadow) {
+          ctx.fillStyle = text.boxShadowColor ?? "#000000";
+          fillRoundedRect(
+            ctx,
+            backgroundX + shadowOffsetX,
+            backgroundY + shadowOffsetY,
+            backgroundW,
+            backgroundH,
+            radius
+          );
+        }
+
         ctx.fillStyle = text.backgroundColor;
-        let bgLeft = -textW / 2;
-        if (ctx.textAlign === "left") bgLeft = 0;
-        if (ctx.textAlign === "right") bgLeft = -textW;
-        ctx.fillRect(
-          bgLeft - padX,
-          -textH / 2 - padY,
-          textW + padX * 2,
-          textH + padY * 2
+        fillRoundedRect(
+          ctx,
+          backgroundX,
+          backgroundY,
+          backgroundW,
+          backgroundH,
+          radius
         );
+        ctx.restore();
+      }
+
+      const outlineWidth = Math.max(0, text.outlineWidth ?? 0) * scaleX;
+      if (outlineWidth > 0) {
+        ctx.save();
+        ctx.lineWidth = outlineWidth;
+        ctx.lineJoin = "round";
+        ctx.miterLimit = 2;
+        ctx.strokeStyle = text.outlineColor ?? "#000000";
+        ctx.strokeText(text.content, 0, 0);
         ctx.restore();
       }
       ctx.fillText(text.content, 0, 0);

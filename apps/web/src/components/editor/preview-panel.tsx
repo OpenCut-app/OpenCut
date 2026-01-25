@@ -8,7 +8,13 @@ import { usePlaybackStore } from "@/stores/playback-store";
 import { useEditorStore } from "@/stores/editor-store";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Expand, SkipBack, SkipForward } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type RefObject,
+} from "react";
 import { renderTimelineFrame } from "@/lib/timeline-renderer";
 import { cn } from "@/lib/utils";
 import { formatTimeCode } from "@/lib/time";
@@ -581,7 +587,7 @@ export function PreviewPanel() {
       if (!graph) return;
       const { audioCtx, gain } = graph;
 
-      const tracksSnapshot = useTimelineStore.getState().tracks;
+      const tracksSnapshot = tracks;
       const mediaList = mediaFiles;
       const idToMedia = new Map(mediaList.map((m) => [m.id, m] as const));
       const playbackNow = usePlaybackStore.getState().currentTime;
@@ -700,7 +706,7 @@ export function PreviewPanel() {
       }
       playingSourcesRef.current.clear();
     };
-  }, [isPlaying, volume, muted, mediaFiles, ensureAudioBuffer]);
+  }, [isPlaying, volume, muted, tracks, mediaFiles, ensureAudioBuffer]);
 
   // Canvas: draw current frame with caching
   useEffect(() => {
@@ -987,17 +993,19 @@ export function PreviewPanel() {
               }}
             >
               {renderBlurBackground()}
-              <canvas
-                ref={canvasRef}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: previewDimensions.width,
-                  height: previewDimensions.height,
-                }}
-                aria-label="Video preview canvas"
-              />
+              {isExpanded ? null : (
+                <canvas
+                  ref={canvasRef}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: previewDimensions.width,
+                    height: previewDimensions.height,
+                  }}
+                  aria-label="Video preview canvas"
+                />
+              )}
               {activeElements.length === 0 ? (
                 <></>
               ) : (
@@ -1029,6 +1037,7 @@ export function PreviewPanel() {
           activeElements={activeElements}
           renderElement={renderElement}
           blurBackgroundElements={blurBackgroundElements}
+          canvasRef={canvasRef}
           hasAnyElements={hasAnyElements}
           toggleExpanded={toggleExpanded}
           currentTime={currentTime}
@@ -1220,6 +1229,7 @@ function FullscreenPreview({
   activeElements,
   renderElement,
   blurBackgroundElements,
+  canvasRef,
   hasAnyElements,
   toggleExpanded,
   currentTime,
@@ -1233,6 +1243,7 @@ function FullscreenPreview({
   activeElements: ActiveElement[];
   renderElement: (elementData: ActiveElement, index: number) => React.ReactNode;
   blurBackgroundElements: ActiveElement[];
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   hasAnyElements: boolean;
   toggleExpanded: () => void;
   currentTime: number;
@@ -1255,6 +1266,17 @@ function FullscreenPreview({
           }}
         >
           {renderBlurBackground()}
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: previewDimensions.width,
+              height: previewDimensions.height,
+            }}
+            aria-label="Video preview canvas"
+          />
           {activeElements.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center text-white/60">
               No elements at current time

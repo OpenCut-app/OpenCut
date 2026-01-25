@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useCallback, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Trash2, X, ArrowUp, Square } from "lucide-react";
+import { Trash2, ArrowUp, Square, ChevronDown } from "lucide-react";
+import { useStickToBottomContext } from "use-stick-to-bottom";
 import {
   PromptInput,
   PromptInputTextarea,
@@ -14,10 +16,16 @@ import {
   ChatContainerContent,
   ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
+import { PromptSuggestion } from "@/components/ui/prompt-suggestion";
 import { Markdown } from "@/components/ui/markdown";
 import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
-import { useAIChatStore, type ToolCall, type ToolResult, type ChatMessage } from "@/stores/ai-chat-store";
+import {
+  useAIChatStore,
+  type ToolCall,
+  type ToolResult,
+  type ChatMessage,
+} from "@/stores/ai-chat-store";
 import { executeToolCall } from "@/lib/ai-chat/tool-executor";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { usePlaybackStore } from "@/stores/playback-store";
@@ -44,7 +52,6 @@ export function AISidebar() {
     setLoading,
     setError,
     clearMessages,
-    setOpen,
   } = useAIChatStore();
 
   const [inputValue, setInputValue] = useState("");
@@ -224,7 +231,7 @@ export function AISidebar() {
       setError,
       buildGeminiMessages,
       getTimelineContext,
-    ]
+    ],
   );
 
   const handleSubmit = () => {
@@ -240,39 +247,36 @@ export function AISidebar() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background border-l border-border">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3">
         <h2 className="text-sm font-medium">Copilot</h2>
-        <div className="flex items-center gap-1">
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={clearMessages}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+        {messages.length > 0 && (
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => setOpen(false)}
+            onClick={clearMessages}
           >
-            <X className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </Button>
-        </div>
+        )}
       </div>
 
       {/* Messages */}
-      <ChatContainerRoot className="flex-1 min-h-0">
+      <ChatContainerRoot className="relative flex-1 min-h-0">
         <ChatContainerContent className="p-4 gap-3">
           {messages.length === 0 && !isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+              <Image
+                src="/logo.svg"
+                alt="OpenCut"
+                width={48}
+                height={48}
+                className="opacity-50"
+              />
               <p className="text-sm text-muted-foreground">
-                Ask me to help edit your video
+                Make changes across your entire video
               </p>
             </div>
           ) : (
@@ -291,6 +295,8 @@ export function AISidebar() {
           )}
           <ChatContainerScrollAnchor />
         </ChatContainerContent>
+
+        <ScrollToBottomButton />
       </ChatContainerRoot>
 
       {/* Error */}
@@ -302,22 +308,21 @@ export function AISidebar() {
 
       {/* Suggestions */}
       {messages.length === 0 && !isLoading && (
-        <div className="flex flex-wrap gap-2 px-4 pb-2">
-          {["Add a title", "Speed up 2x", "Timeline info"].map((text) => (
-            <button
-              key={text}
-              type="button"
-              onClick={() => handleSend(text)}
-              className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 transition-colors"
-            >
-              {text}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 px-4 pb-3">
+          <PromptSuggestion onClick={() => handleSend("Add a title")}>
+            Add a title
+          </PromptSuggestion>
+          <PromptSuggestion onClick={() => handleSend("Speed up 2x")}>
+            Speed up 2x
+          </PromptSuggestion>
+          <PromptSuggestion onClick={() => handleSend("What's on timeline?")}>
+            What's on timeline?
+          </PromptSuggestion>
         </div>
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4">
         <PromptInput
           value={inputValue}
           onValueChange={setInputValue}
@@ -350,6 +355,26 @@ export function AISidebar() {
   );
 }
 
+const ScrollToBottomButton = () => {
+  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
+
+  if (isAtBottom) return null;
+
+  return (
+    <Button
+      type="button"
+      size="icon"
+      variant="secondary"
+      className="absolute bottom-3 right-3 h-9 w-9 rounded-full shadow"
+      onClick={() => {
+        void scrollToBottom();
+      }}
+    >
+      <ChevronDown className="h-4 w-4" />
+    </Button>
+  );
+};
+
 function MessageItem({ message }: { message: ChatMessage }) {
   if (message.role === "tool") {
     return <ToolResultsDisplay results={message.toolResults || []} />;
@@ -362,9 +387,7 @@ function MessageItem({ message }: { message: ChatMessage }) {
       <div
         className={cn(
           "max-w-[85%] rounded-2xl px-3 py-2",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
+          isUser ? "bg-primary text-primary-foreground" : "bg-muted",
         )}
       >
         {message.content && (
@@ -410,7 +433,7 @@ function ToolResultsDisplay({ results }: { results: ToolResult[] }) {
           key={i}
           className={cn(
             "flex items-center gap-1.5 text-xs",
-            result.success ? "text-green-600" : "text-destructive"
+            result.success ? "text-green-600" : "text-destructive",
           )}
         >
           {result.success ? (

@@ -102,7 +102,7 @@ function SoundEffectsView() {
   // Audio playback state
   const [playingId, setPlayingId] = useState<number | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
-    null
+    null,
   );
 
   const { scrollAreaRef, handleScroll } = useInfiniteScroll({
@@ -125,7 +125,7 @@ function SoundEffectsView() {
           }
 
           const response = await fetch(
-            "/api/sounds/search?page_size=50&sort=downloads"
+            "/api/sounds/search?page_size=50&sort=downloads",
           );
 
           if (!ignore) {
@@ -145,7 +145,7 @@ function SoundEffectsView() {
           if (!ignore) {
             console.error("Failed to fetch top sounds:", error);
             setError(
-              error instanceof Error ? error.message : "Failed to load sounds"
+              error instanceof Error ? error.message : "Failed to load sounds",
             );
           }
         } finally {
@@ -220,7 +220,7 @@ function SoundEffectsView() {
   };
 
   return (
-    <div className="flex flex-col gap-5 mt-1 h-full">
+    <div className="flex flex-col gap-5 mt-1 h-full min-h-0">
       <div className="flex items-center gap-3">
         <Input
           placeholder="Search sound effects"
@@ -257,9 +257,9 @@ function SoundEffectsView() {
         </DropdownMenu>
       </div>
 
-      <div className="relative h-full overflow-hidden">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         <ScrollArea
-          className="flex-1 h-full"
+          className="h-full"
           ref={scrollAreaRef}
           onScrollCapture={handleScrollWithPosition}
         >
@@ -313,7 +313,7 @@ function SavedSoundsView() {
   // Audio playback state
   const [playingId, setPlayingId] = useState<number | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
-    null
+    null,
   );
 
   // Clear confirmation dialog state
@@ -413,7 +413,7 @@ function SavedSoundsView() {
   }
 
   return (
-    <div className="flex flex-col gap-5 mt-1 h-full">
+    <div className="flex flex-col gap-5 mt-1 h-full min-h-0">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {savedSounds.length} saved{" "}
@@ -455,7 +455,7 @@ function SavedSoundsView() {
         </Dialog>
       </div>
 
-      <div className="relative h-full overflow-hidden">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="flex-1 h-full">
           <div className="flex flex-col gap-4">
             {savedSounds.map((sound) => (

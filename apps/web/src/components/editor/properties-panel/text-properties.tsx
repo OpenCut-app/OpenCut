@@ -6,7 +6,7 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PanelBaseView } from "@/components/editor/panel-base-view";
 import {
   TEXT_PROPERTIES_TABS,
@@ -27,26 +27,73 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function TextProperties({
-  element,
-  trackId,
-}: {
-  element: TextElement;
+interface TextSelectionTarget {
   trackId: string;
-}) {
-  const { updateTextElement } = useTimelineStore();
+  elementId: string;
+}
+
+interface TextPropertiesProps {
+  elements: TextElement[];
+  targets: TextSelectionTarget[];
+  label?: string;
+}
+
+export function TextProperties({
+  elements,
+  targets,
+  label,
+}: TextPropertiesProps) {
+  const { updateTextElement, updateTextElements } = useTimelineStore();
   const { activeTab, setActiveTab } = useTextPropertiesStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  if (elements.length === 0 || targets.length === 0) return null;
+  const primaryElement = elements[0];
+  const isMultiSelect = targets.length > 1;
+
+  const applyTextUpdates = (
+    updates: Parameters<typeof updateTextElement>[2]
+  ) => {
+    if (!primaryElement) return;
+    if (isMultiSelect) {
+      updateTextElements(targets, updates);
+      return;
+    }
+
+    const target = targets[0];
+    if (!target) return;
+    updateTextElement(target.trackId, target.elementId, updates);
+  };
+
   // Local state for input values to allow temporary empty/invalid states
   const [fontSizeInput, setFontSizeInput] = useState(
-    element.fontSize.toString()
+    primaryElement.fontSize.toString()
   );
   const [opacityInput, setOpacityInput] = useState(
-    Math.round(element.opacity * 100).toString()
+    Math.round(primaryElement.opacity * 100).toString()
+  );
+  const boxShadowOffset = Math.max(
+    primaryElement.boxShadowOffsetX ?? 0,
+    primaryElement.boxShadowOffsetY ?? 0
   );
 
   // Track the last selected color for toggling
   const lastSelectedColor = useRef("#000000");
+
+  useEffect(() => {
+    setFontSizeInput(primaryElement.fontSize.toString());
+    setOpacityInput(Math.round(primaryElement.opacity * 100).toString());
+    if (
+      primaryElement.backgroundColor &&
+      primaryElement.backgroundColor !== "transparent"
+    ) {
+      lastSelectedColor.current = primaryElement.backgroundColor;
+    }
+  }, [
+    primaryElement.id,
+    primaryElement.fontSize,
+    primaryElement.opacity,
+    primaryElement.backgroundColor,
+  ]);
 
   const parseAndValidateNumber = (
     value: string,
@@ -63,8 +110,13 @@ export function TextProperties({
     setFontSizeInput(value);
 
     if (value.trim() !== "") {
-      const fontSize = parseAndValidateNumber(value, 8, 300, element.fontSize);
-      updateTextElement(trackId, element.id, { fontSize });
+      const fontSize = parseAndValidateNumber(
+        value,
+        8,
+        300,
+        primaryElement.fontSize
+      );
+      applyTextUpdates({ fontSize });
     }
   };
 
@@ -73,10 +125,10 @@ export function TextProperties({
       fontSizeInput,
       8,
       300,
-      element.fontSize
+      primaryElement.fontSize
     );
     setFontSizeInput(fontSize.toString());
-    updateTextElement(trackId, element.id, { fontSize });
+    applyTextUpdates({ fontSize });
   };
 
   const handleOpacityChange = (value: string) => {
@@ -87,9 +139,9 @@ export function TextProperties({
         value,
         0,
         100,
-        Math.round(element.opacity * 100)
+        Math.round(primaryElement.opacity * 100)
       );
-      updateTextElement(trackId, element.id, { opacity: opacityPercent / 100 });
+      applyTextUpdates({ opacity: opacityPercent / 100 });
     }
   };
 
@@ -98,10 +150,10 @@ export function TextProperties({
       opacityInput,
       0,
       100,
-      Math.round(element.opacity * 100)
+      Math.round(primaryElement.opacity * 100)
     );
     setOpacityInput(opacityPercent.toString());
-    updateTextElement(trackId, element.id, { opacity: opacityPercent / 100 });
+    applyTextUpdates({ opacity: opacityPercent / 100 });
   };
 
   // Update last selected color when a new color is picked
@@ -109,13 +161,13 @@ export function TextProperties({
     if (color !== "transparent") {
       lastSelectedColor.current = color;
     }
-    updateTextElement(trackId, element.id, { backgroundColor: color });
+    applyTextUpdates({ backgroundColor: color });
   };
 
   // Toggle between transparent and last selected color
   const handleTransparentToggle = (isTransparent: boolean) => {
     const newColor = isTransparent ? "transparent" : lastSelectedColor.current;
-    updateTextElement(trackId, element.id, { backgroundColor: newColor });
+    applyTextUpdates({ backgroundColor: newColor });
   };
 
   return (
@@ -131,28 +183,29 @@ export function TextProperties({
         label: t.label,
         content:
           t.value === "transform" ? (
-            <div className="space-y-6"></div>
+            <div className="space-y-6" />
           ) : (
             <div className="space-y-6">
+              {label ? (
+                <div className="text-xs text-muted-foreground">
+                  {label}
+                  {targets.length > 1 ? ` (${targets.length} selected)` : null}
+                </div>
+              ) : null}
               <Textarea
-                placeholder="Name"
-                defaultValue={element.content}
+                placeholder={isMultiSelect ? "Multiple selected" : "Name"}
+                value={isMultiSelect ? "" : primaryElement.content}
+                disabled={isMultiSelect}
                 className="min-h-18 resize-none bg-panel-accent"
-                onChange={(e) =>
-                  updateTextElement(trackId, element.id, {
-                    content: e.target.value,
-                  })
-                }
+                onChange={(e) => applyTextUpdates({ content: e.target.value })}
               />
               <PropertyItem direction="column">
                 <PropertyItemLabel>Font</PropertyItemLabel>
                 <PropertyItemValue>
                   <FontPicker
-                    defaultValue={element.fontFamily}
+                    defaultValue={primaryElement.fontFamily}
                     onValueChange={(value: FontFamily) =>
-                      updateTextElement(trackId, element.id, {
-                        fontFamily: value,
-                      })
+                      applyTextUpdates({ fontFamily: value })
                     }
                   />
                 </PropertyItemValue>
@@ -163,13 +216,17 @@ export function TextProperties({
                   <div className="flex items-center gap-2">
                     <Button
                       variant={
-                        element.fontWeight === "bold" ? "default" : "outline"
+                        primaryElement.fontWeight === "bold"
+                          ? "default"
+                          : "outline"
                       }
                       size="sm"
                       onClick={() =>
-                        updateTextElement(trackId, element.id, {
+                        applyTextUpdates({
                           fontWeight:
-                            element.fontWeight === "bold" ? "normal" : "bold",
+                            primaryElement.fontWeight === "bold"
+                              ? "normal"
+                              : "bold",
                         })
                       }
                       className="h-8 px-3 font-bold"
@@ -178,13 +235,15 @@ export function TextProperties({
                     </Button>
                     <Button
                       variant={
-                        element.fontStyle === "italic" ? "default" : "outline"
+                        primaryElement.fontStyle === "italic"
+                          ? "default"
+                          : "outline"
                       }
                       size="sm"
                       onClick={() =>
-                        updateTextElement(trackId, element.id, {
+                        applyTextUpdates({
                           fontStyle:
-                            element.fontStyle === "italic"
+                            primaryElement.fontStyle === "italic"
                               ? "normal"
                               : "italic",
                         })
@@ -195,15 +254,15 @@ export function TextProperties({
                     </Button>
                     <Button
                       variant={
-                        element.textDecoration === "underline"
+                        primaryElement.textDecoration === "underline"
                           ? "default"
                           : "outline"
                       }
                       size="sm"
                       onClick={() =>
-                        updateTextElement(trackId, element.id, {
+                        applyTextUpdates({
                           textDecoration:
-                            element.textDecoration === "underline"
+                            primaryElement.textDecoration === "underline"
                               ? "none"
                               : "underline",
                         })
@@ -214,15 +273,15 @@ export function TextProperties({
                     </Button>
                     <Button
                       variant={
-                        element.textDecoration === "line-through"
+                        primaryElement.textDecoration === "line-through"
                           ? "default"
                           : "outline"
                       }
                       size="sm"
                       onClick={() =>
-                        updateTextElement(trackId, element.id, {
+                        applyTextUpdates({
                           textDecoration:
-                            element.textDecoration === "line-through"
+                            primaryElement.textDecoration === "line-through"
                               ? "none"
                               : "line-through",
                         })
@@ -239,14 +298,12 @@ export function TextProperties({
                 <PropertyItemValue>
                   <div className="flex items-center gap-2">
                     <Slider
-                      value={[element.fontSize]}
+                      value={[primaryElement.fontSize]}
                       min={8}
                       max={300}
                       step={1}
                       onValueChange={([value]) => {
-                        updateTextElement(trackId, element.id, {
-                          fontSize: value,
-                        });
+                        applyTextUpdates({ fontSize: value });
                         setFontSizeInput(value.toString());
                       }}
                       className="w-full"
@@ -271,12 +328,10 @@ export function TextProperties({
                 <PropertyItemValue>
                   <ColorPicker
                     value={uppercase(
-                      (element.color || "FFFFFF").replace("#", "")
+                      (primaryElement.color || "FFFFFF").replace("#", "")
                     )}
                     onChange={(color) => {
-                      updateTextElement(trackId, element.id, {
-                        color: `#${color}`,
-                      });
+                      applyTextUpdates({ color: `#${color}` });
                     }}
                     containerRef={containerRef}
                   />
@@ -287,14 +342,12 @@ export function TextProperties({
                 <PropertyItemValue>
                   <div className="flex items-center gap-2">
                     <Slider
-                      value={[element.opacity * 100]}
+                      value={[primaryElement.opacity * 100]}
                       min={0}
                       max={100}
                       step={1}
                       onValueChange={([value]) => {
-                        updateTextElement(trackId, element.id, {
-                          opacity: value / 100,
-                        });
+                        applyTextUpdates({ opacity: value / 100 });
                         setOpacityInput(value.toString());
                       }}
                       className="w-full"
@@ -320,17 +373,16 @@ export function TextProperties({
                   <div className="flex items-center gap-2">
                     <ColorPicker
                       value={uppercase(
-                        element.backgroundColor === "transparent"
+                        primaryElement.backgroundColor === "transparent"
                           ? lastSelectedColor.current.replace("#", "")
-                          : (element.backgroundColor || "#000000").replace(
-                              "#",
-                              ""
-                            )
+                          : (
+                              primaryElement.backgroundColor || "#000000"
+                            ).replace("#", "")
                       )}
                       onChange={(color) => handleColorChange(`#${color}`)}
                       containerRef={containerRef}
                       className={
-                        element.backgroundColor === "transparent"
+                        primaryElement.backgroundColor === "transparent"
                           ? "opacity-50 pointer-events-none"
                           : ""
                       }
@@ -343,7 +395,7 @@ export function TextProperties({
                           size="icon"
                           onClick={() =>
                             handleTransparentToggle(
-                              element.backgroundColor !== "transparent"
+                              primaryElement.backgroundColor !== "transparent"
                             )
                           }
                           className="size-9 rounded-full bg-panel-accent p-0 overflow-hidden"
@@ -351,14 +403,108 @@ export function TextProperties({
                           <Grid2x2
                             className={cn(
                               "text-foreground",
-                              element.backgroundColor === "transparent" &&
-                                "text-primary"
+                              primaryElement.backgroundColor ===
+                                "transparent" && "text-primary"
                             )}
                           />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Transparent background</TooltipContent>
                     </Tooltip>
+                  </div>
+                </PropertyItemValue>
+              </PropertyItem>
+              <PropertyItem direction="column">
+                <PropertyItemLabel>Background radius</PropertyItemLabel>
+                <PropertyItemValue>
+                  <Slider
+                    value={[primaryElement.backgroundRadius ?? 0]}
+                    min={0}
+                    max={64}
+                    step={1}
+                    onValueChange={([value]) =>
+                      applyTextUpdates({ backgroundRadius: value })
+                    }
+                    className="w-full"
+                  />
+                </PropertyItemValue>
+              </PropertyItem>
+              <PropertyItem direction="column">
+                <PropertyItemLabel>Background padding</PropertyItemLabel>
+                <PropertyItemValue>
+                  <Slider
+                    value={[primaryElement.backgroundPaddingX ?? 8]}
+                    min={0}
+                    max={40}
+                    step={1}
+                    onValueChange={([value]) =>
+                      applyTextUpdates({
+                        backgroundPaddingX: value,
+                        backgroundPaddingY: Math.max(0, Math.round(value / 2)),
+                      })
+                    }
+                    className="w-full"
+                  />
+                </PropertyItemValue>
+              </PropertyItem>
+              <PropertyItem direction="column">
+                <PropertyItemLabel>Outline</PropertyItemLabel>
+                <PropertyItemValue>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[primaryElement.outlineWidth ?? 0]}
+                      min={0}
+                      max={20}
+                      step={1}
+                      onValueChange={([value]) =>
+                        applyTextUpdates({ outlineWidth: value })
+                      }
+                      className="w-full"
+                    />
+                    <ColorPicker
+                      value={uppercase(
+                        (primaryElement.outlineColor || "#000000").replace(
+                          "#",
+                          ""
+                        )
+                      )}
+                      onChange={(color) =>
+                        applyTextUpdates({ outlineColor: `#${color}` })
+                      }
+                      containerRef={containerRef}
+                    />
+                  </div>
+                </PropertyItemValue>
+              </PropertyItem>
+              <PropertyItem direction="column">
+                <PropertyItemLabel>Box shadow</PropertyItemLabel>
+                <PropertyItemValue>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[boxShadowOffset]}
+                      min={0}
+                      max={40}
+                      step={1}
+                      onValueChange={([value]) =>
+                        applyTextUpdates({
+                          boxShadowOffsetX: value,
+                          boxShadowOffsetY: value,
+                        })
+                      }
+                      className="w-full"
+                    />
+                    <ColorPicker
+                      value={uppercase(
+                        (primaryElement.boxShadowColor || "#000000").replace(
+                          "#",
+                          ""
+                        )
+                      )}
+                      onChange={(color) =>
+                        applyTextUpdates({ boxShadowColor: `#${color}` })
+                      }
+                      containerRef={containerRef}
+                    />
                   </div>
                 </PropertyItemValue>
               </PropertyItem>
