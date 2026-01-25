@@ -17,7 +17,8 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/providers/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/editor/onboarding";
-import { AIChatSheet } from "@/components/editor/ai-chat";
+import { AISidebar } from "@/components/editor/ai-chat";
+import { useAIChatStore } from "@/stores/ai-chat-store";
 
 export default function Editor() {
   const {
@@ -34,6 +35,21 @@ export default function Editor() {
     activePreset,
     resetCounter,
   } = usePanelStore();
+
+  const isAISidebarOpen = useAIChatStore((state) => state.isOpen);
+  const setAISidebarOpen = useAIChatStore((state) => state.setOpen);
+
+  // Keyboard shortcut for Copilot (Cmd/Ctrl + I)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "i") {
+        e.preventDefault();
+        setAISidebarOpen(!isAISidebarOpen);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAISidebarOpen, setAISidebarOpen]);
 
   const {
     activeProject,
@@ -155,7 +171,12 @@ export default function Editor() {
     <EditorProvider>
       <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
         <EditorHeader />
-        <div className="flex-1 min-h-0 min-w-0">
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="flex-1 min-h-0 min-w-0"
+        >
+          <ResizablePanel defaultSize={isAISidebarOpen ? 75 : 100} minSize={50}>
+            <div className="h-full w-full">
           {activePreset === "media" ? (
             <ResizablePanelGroup
               key={`media-${activePreset}-${resetCounter}`}
@@ -452,9 +473,19 @@ export default function Editor() {
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
-        </div>
+            </div>
+          </ResizablePanel>
+          {/* AI Sidebar */}
+          {isAISidebarOpen && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={25} minSize={18} maxSize={40}>
+                <AISidebar />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
         <Onboarding />
-        <AIChatSheet />
       </div>
     </EditorProvider>
   );
