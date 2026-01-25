@@ -2,10 +2,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { CanvasPreset } from "@/types/editor";
 
-export type PlatformLayout = "tiktok";
+export type PlatformLayout = "tiktok" | "instagram";
 
 export const PLATFORM_LAYOUTS: Record<PlatformLayout, string> = {
   tiktok: "TikTok",
+  instagram: "Instagram Reels",
 };
 
 interface LayoutGuideSettings {
@@ -86,6 +87,6 @@ export const useEditorStore = create<EditorState>()(
       partialize: (state) => ({
         layoutGuide: state.layoutGuide,
       }),
-    }
-  )
+    },
+  ),
 );

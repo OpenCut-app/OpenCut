@@ -1,13 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { PropertyGroup } from "../../properties-panel/property-item";
-import { PanelBaseView as BaseView } from "@/components/editor/panel-base-view";
-import { Language, LanguageSelect } from "@/components/language-select";
-import { useState, useRef, useEffect } from "react";
-import { extractTimelineAudio } from "@/lib/mediabunny-utils";
-import { encryptWithRandomKey, arrayBufferToBase64 } from "@/lib/zk-encryption";
-import { useTimelineStore } from "@/stores/timeline-store";
-import { DEFAULT_TEXT_ELEMENT } from "@/constants/text-constants";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Shield, Trash2, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +9,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { TextElement } from "@/types/timeline";
+import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_TEXT_ELEMENT } from "@/constants/text-constants";
+import { Language, LanguageSelect } from "@/components/language-select";
+import { PanelBaseView as BaseView } from "@/components/editor/panel-base-view";
+import { PropertyGroup } from "../../properties-panel/property-item";
+import { extractTimelineAudio } from "@/lib/mediabunny-utils";
+import {
+  applyRippleCutsToMainTrack,
+  autoStitchMainTrack,
+  buildMergedTranscript,
+  computeCutRangesForDeletedTokens,
+  computeDeletedTokenIdsFromUpdatedText,
+  DEFAULT_AUTO_STITCHING_PRESETS,
+} from "@/lib/transcript-timeline";
+import { useTimelineStore } from "@/stores/timeline-store";
+import { useTranscriptStore } from "@/stores/transcript-store";
+import type { MediaElement } from "@/types/timeline";
+import type { StitchingPresetName } from "@/types/transcript";
 
 export const languages: Language[] = [
   { code: "US", name: "English" },
@@ -30,7 +40,84 @@ export const languages: Language[] = [
   { code: "CN", name: "Chinese" },
 ];
 
+interface WhisperSegment {
+  start: number;
+  end: number;
+  text: string;
+  avg_logprob?: number;
+}
+
 const PRIVACY_DIALOG_KEY = "opencut-transcription-privacy-accepted";
+
+const getEffectiveEndTimeSeconds = (element: MediaElement) =>
+  element.startTime + (element.duration - element.trimStart - element.trimEnd);
+
+const mapTimelineSegmentsToMediaSegments = ({
+  timelineSegments,
+  mediaElements,
+}: {
+  timelineSegments: WhisperSegment[];
+  mediaElements: MediaElement[];
+}): Record<string, WhisperSegment[]> => {
+  const sortedElements = [...mediaElements].sort(
+    (left, right) => left.startTime - right.startTime,
+  );
+
+  const segmentsByMediaId: Record<string, WhisperSegment[]> = {};
+  let elementIndex = 0;
+
+  for (const segment of timelineSegments) {
+    const midpointSeconds = (segment.start + segment.end) / 2;
+
+    while (
+      elementIndex < sortedElements.length &&
+      midpointSeconds >= getEffectiveEndTimeSeconds(sortedElements[elementIndex])
+    ) {
+      elementIndex++;
+    }
+
+    const element = sortedElements[elementIndex];
+    if (!element) continue;
+
+    const elementTimelineStartSeconds = element.startTime;
+    const elementTimelineEndSeconds = getEffectiveEndTimeSeconds(element);
+    if (
+      midpointSeconds < elementTimelineStartSeconds ||
+      midpointSeconds >= elementTimelineEndSeconds
+    ) {
+      continue;
+    }
+
+    const sourceRangeStartSeconds = element.trimStart;
+    const sourceRangeEndSeconds = element.duration - element.trimEnd;
+
+    const relativeStartSeconds = segment.start - elementTimelineStartSeconds;
+    const relativeEndSeconds = segment.end - elementTimelineStartSeconds;
+
+    const sourceStartSeconds = Math.max(
+      sourceRangeStartSeconds,
+      sourceRangeStartSeconds + relativeStartSeconds,
+    );
+    const sourceEndSeconds = Math.min(
+      sourceRangeEndSeconds,
+      sourceRangeStartSeconds + relativeEndSeconds,
+    );
+
+    if (sourceEndSeconds <= sourceStartSeconds) continue;
+
+    const nextSegment: WhisperSegment = {
+      start: sourceStartSeconds,
+      end: sourceEndSeconds,
+      text: segment.text,
+      avg_logprob: segment.avg_logprob,
+    };
+
+    segmentsByMediaId[element.mediaId] ||= [];
+    segmentsByMediaId[element.mediaId].push(nextSegment);
+  }
+
+  return segmentsByMediaId;
+};
 
 export function Captions() {
   const [selectedCountry, setSelectedCountry] = useState("auto");
@@ -39,76 +126,87 @@ export function Captions() {
   const [error, setError] = useState<string | null>(null);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+  const [scriptText, setScriptText] = useState("");
+  const [isScriptDirty, setIsScriptDirty] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { insertTrackAt, addElementToTrack } = useTimelineStore();
 
-  // Check if user has already accepted privacy on mount
+  const { insertTrackAt, addElementToTrack, tracks, replaceTrackElements } =
+    useTimelineStore();
+  const { transcriptsByMediaId, setTranscriptFromWhisperSegments, clearTranscripts } =
+    useTranscriptStore();
+
+  const mergedTranscript = useMemo(
+    () => buildMergedTranscript({ tracks, transcriptsByMediaId }),
+    [tracks, transcriptsByMediaId],
+  );
+
   useEffect(() => {
     const hasAccepted = localStorage.getItem(PRIVACY_DIALOG_KEY) === "true";
     setHasAcceptedPrivacy(hasAccepted);
   }, []);
 
+  useEffect(() => {
+    if (isScriptDirty) return;
+    setScriptText(mergedTranscript.text);
+  }, [isScriptDirty, mergedTranscript.text]);
+
   const handleGenerateTranscript = async () => {
     try {
       setIsProcessing(true);
       setError(null);
-      setProcessingStep("Extracting audio...");
+      setProcessingStep("Extracting audio…");
 
       const audioBlob = await extractTimelineAudio();
 
-      setProcessingStep("Encrypting audio...");
+      setProcessingStep("Transcribing…");
 
-      // Encrypt the audio with a random key (zero-knowledge)
-      const audioBuffer = await audioBlob.arrayBuffer();
-      const encryptionResult = await encryptWithRandomKey(audioBuffer);
-
-      // Convert encrypted data to blob for upload
-      const encryptedBlob = new Blob([encryptionResult.encryptedData]);
-
-      setProcessingStep("Uploading...");
-      const uploadResponse = await fetch("/api/get-upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileExtension: "wav" }),
+      const audioFile = new File([audioBlob], "timeline_audio.wav", {
+        type: audioBlob.type || "audio/wav",
       });
 
-      if (!uploadResponse.ok) {
-        const error = await uploadResponse.json();
-        throw new Error(error.message || "Failed to get upload URL");
-      }
+      const formData = new FormData();
+      formData.append("audio", audioFile);
+      formData.append(
+        "language",
+        selectedCountry === "auto" ? "auto" : selectedCountry.toLowerCase(),
+      );
 
-      const { uploadUrl, fileName } = await uploadResponse.json();
-
-      // Upload to R2
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: encryptedBlob,
-      });
-
-      setProcessingStep("Transcribing...");
-
-      // Call Modal transcription API with encryption parameters
       const transcriptionResponse = await fetch("/api/transcribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: fileName,
-          language:
-            selectedCountry === "auto" ? "auto" : selectedCountry.toLowerCase(),
-          // Send the raw encryption key and IV (zero-knowledge)
-          decryptionKey: arrayBufferToBase64(encryptionResult.key),
-          iv: arrayBufferToBase64(encryptionResult.iv),
-        }),
+        body: formData,
       });
 
       if (!transcriptionResponse.ok) {
-        const error = await transcriptionResponse.json();
-        throw new Error(error.message || "Transcription failed");
+        const responseError = await transcriptionResponse.json().catch(() => null);
+        throw new Error(responseError?.message || "Transcription failed");
       }
 
-      const { text, segments } = await transcriptionResponse.json();
+      const { segments } = (await transcriptionResponse.json()) as {
+        segments: WhisperSegment[];
+        language?: string;
+        text?: string;
+      };
 
-      console.log("Transcription completed:", { text, segments });
+      clearTranscripts();
+
+      const mainTrack = tracks.find((track) => track.isMain);
+      const mainTrackElements = (mainTrack?.elements || [])
+        .filter((element): element is MediaElement => element.type === "media")
+        .filter((element) => !element.hidden);
+
+      const segmentsByMediaId = mapTimelineSegmentsToMediaSegments({
+        timelineSegments: segments,
+        mediaElements: mainTrackElements,
+      });
+
+      for (const [mediaId, mediaSegments] of Object.entries(segmentsByMediaId)) {
+        setTranscriptFromWhisperSegments({
+          mediaId,
+          segments: mediaSegments,
+        });
+      }
+
+      setIsScriptDirty(false);
 
       const shortCaptions: Array<{
         text: string;
@@ -116,29 +214,24 @@ export function Captions() {
         duration: number;
       }> = [];
 
-      let globalEndTime = 0; // Track the end time of the last caption globally
+      let globalEndTime = 0;
 
-      segments.forEach((segment: any) => {
+      segments.forEach((segment) => {
         const words = segment.text.trim().split(/\s+/);
         const segmentDuration = segment.end - segment.start;
-        const wordsPerSecond = words.length / segmentDuration;
+        const wordsPerSecond = words.length / Math.max(0.001, segmentDuration);
 
-        // Split into chunks of 2-4 words
         const chunks: string[] = [];
-        for (let i = 0; i < words.length; i += 3) {
-          chunks.push(words.slice(i, i + 3).join(" "));
+        for (let index = 0; index < words.length; index += 3) {
+          chunks.push(words.slice(index, index + 3).join(" "));
         }
 
-        // Calculate timing for each chunk to place them sequentially
         let chunkStartTime = segment.start;
         chunks.forEach((chunk) => {
           const chunkWords = chunk.split(/\s+/).length;
-          const chunkDuration = Math.max(0.8, chunkWords / wordsPerSecond); // Minimum 0.8s per chunk
+          const chunkDuration = Math.max(0.8, chunkWords / wordsPerSecond);
 
           let adjustedStartTime = chunkStartTime;
-
-          // Prevent overlapping: if this caption would start before the last one ends,
-          // start it right after the last one ends
           if (adjustedStartTime < globalEndTime) {
             adjustedStartTime = globalEndTime;
           }
@@ -149,18 +242,12 @@ export function Captions() {
             duration: chunkDuration,
           });
 
-          // Update global end time
           globalEndTime = adjustedStartTime + chunkDuration;
-
-          // Next chunk starts when this one ends (for within-segment timing)
           chunkStartTime += chunkDuration;
         });
       });
 
-      // Create a single track for all captions
       const captionTrackId = insertTrackAt("text", 0);
-
-      // Add all caption elements to the same track
       shortCaptions.forEach((caption, index) => {
         addElementToTrack(captionTrackId, {
           ...DEFAULT_TEXT_ELEMENT,
@@ -168,27 +255,100 @@ export function Captions() {
           content: caption.text,
           duration: caption.duration,
           startTime: caption.startTime,
-          fontSize: 65, // Larger for captions
-          fontWeight: "bold", // Bold for captions
-        } as TextElement);
+          fontSize: 65,
+          fontWeight: "bold",
+        });
       });
-
-      console.log(
-        `✅ ${shortCaptions.length} short-form caption chunks added to timeline!`
-      );
-    } catch (error) {
-      console.error("Transcription failed:", error);
-      setError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
-      );
+    } catch (caught) {
+      console.error("Transcription failed:", caught);
+      setError(caught instanceof Error ? caught.message : "Transcription failed");
     } finally {
       setIsProcessing(false);
       setProcessingStep("");
     }
   };
 
+  const handleApplyTranscriptEdits = () => {
+    setError(null);
+
+    if (mergedTranscript.tokens.length === 0) {
+      setError("Generate a transcript first.");
+      return;
+    }
+
+    const deletionResult = computeDeletedTokenIdsFromUpdatedText({
+      mergedTranscript,
+      updatedText: scriptText,
+    });
+
+    if (!deletionResult.success) {
+      setError(deletionResult.error);
+      return;
+    }
+
+    const cutRanges = computeCutRangesForDeletedTokens({
+      mergedTranscript,
+      deletedTokenIds: deletionResult.deletedTokenIds,
+      paddingSeconds: 0.04,
+    });
+
+    if (cutRanges.length === 0) {
+      setError("No deletions detected.");
+      return;
+    }
+
+    const mainTrack = tracks.find((track) => track.isMain);
+    if (!mainTrack) {
+      setError("Main track not found.");
+      return;
+    }
+
+    const stitchedElements = applyRippleCutsToMainTrack({ tracks, cutRanges });
+    const nextTracks = tracks.map((track) =>
+      track.id === mainTrack.id ? { ...track, elements: stitchedElements } : track,
+    );
+
+    const nextMergedTranscript = buildMergedTranscript({
+      tracks: nextTracks,
+      transcriptsByMediaId,
+    });
+
+    replaceTrackElements(mainTrack.id, stitchedElements);
+    setIsScriptDirty(false);
+    setScriptText(nextMergedTranscript.text);
+  };
+
+  const handleAutoStitch = (preset: StitchingPresetName) => {
+    setError(null);
+
+    const mainTrack = tracks.find((track) => track.isMain);
+    if (!mainTrack) {
+      setError("Main track not found.");
+      return;
+    }
+
+    const stitchedElements = autoStitchMainTrack({
+      tracks,
+      transcriptsByMediaId,
+      settings: DEFAULT_AUTO_STITCHING_PRESETS[preset],
+    });
+
+    const nextTracks = tracks.map((track) =>
+      track.id === mainTrack.id ? { ...track, elements: stitchedElements } : track,
+    );
+
+    const nextMergedTranscript = buildMergedTranscript({
+      tracks: nextTracks,
+      transcriptsByMediaId,
+    });
+
+    replaceTrackElements(mainTrack.id, stitchedElements);
+    setIsScriptDirty(false);
+    setScriptText(nextMergedTranscript.text);
+  };
+
   return (
-    <BaseView ref={containerRef} className="flex flex-col justify-between h-full">
+    <BaseView ref={containerRef} className="flex flex-col gap-6">
       <PropertyGroup title="Language">
         <LanguageSelect
           selectedCountry={selectedCountry}
@@ -227,52 +387,43 @@ export function Captions() {
                 <Shield className="h-5 w-5" />
                 Audio Processing Notice
               </DialogTitle>
-              <DialogDescription className="space-y-3">
-                <p>
-                  To generate captions, we need to process your timeline audio
-                  using speech-to-text technology.
-                </p>
+              <DialogDescription asChild className="space-y-3">
+                <div>
+                  <p>
+                    To generate captions, your timeline audio is sent to Gemini
+                    2.5 Flash for speech-to-text transcription.
+                  </p>
 
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-start gap-2">
-                    <Shield className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm">
-                      Zero-knowledge encryption - we cannot decrypt your files
-                      even if we wanted to
-                    </span>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-start gap-2">
+                      <Upload className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        Audio is uploaded to the transcription provider (Google
+                        Gemini) for processing
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Trash2 className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        This app processes audio in-memory and does not store it
+                        on our servers
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Shield className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        Only use audio you have permission to transcribe
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-start gap-2">
-                    <Shield className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm">
-                      Encryption keys generated randomly in your browser, never
-                      stored anywhere
-                    </span>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Upload className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm">
-                      Audio encrypted before upload - raw audio never leaves
-                      your device
-                    </span>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Trash2 className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm">
-                      Everything permanently deleted within seconds after
-                      transcription
-                    </span>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    By continuing, you agree to send your audio to the
+                    transcription provider for processing.
+                  </p>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  <strong>True zero-knowledge privacy:</strong> Encryption keys
-                  are generated randomly in your browser and never stored
-                  anywhere. It's cryptographically impossible for us, our cloud
-                  providers, or anyone else to decrypt your audio files.
-                </p>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
@@ -298,6 +449,51 @@ export function Captions() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <PropertyGroup title="Transcript-Driven Edits" defaultExpanded={false}>
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => handleAutoStitch("tight")}
+              disabled={isProcessing || mergedTranscript.tokens.length === 0}
+            >
+              Tight
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleAutoStitch("balanced")}
+              disabled={isProcessing || mergedTranscript.tokens.length === 0}
+            >
+              Balanced
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleAutoStitch("loose")}
+              disabled={isProcessing || mergedTranscript.tokens.length === 0}
+            >
+              Loose
+            </Button>
+          </div>
+
+          <Textarea
+            placeholder="Generate a transcript to edit it here…"
+            value={scriptText}
+            onChange={(event) => {
+              setIsScriptDirty(true);
+              setScriptText(event.target.value);
+            }}
+            rows={8}
+          />
+
+          <Button
+            onClick={handleApplyTranscriptEdits}
+            disabled={isProcessing || mergedTranscript.tokens.length === 0}
+          >
+            Apply Deletions To Timeline
+          </Button>
+        </div>
+      </PropertyGroup>
     </BaseView>
   );
 }

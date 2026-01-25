@@ -236,6 +236,11 @@ interface TimelineStore {
       >
     >
   ) => void;
+  replaceTrackElements: (
+    trackId: string,
+    elements: TimelineElement[],
+    pushHistory?: boolean
+  ) => void;
   checkElementOverlap: (
     trackId: string,
     startTime: number,
@@ -885,6 +890,15 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
                 ),
               }
             : track
+        )
+      );
+    },
+
+    replaceTrackElements: (trackId, elements, pushHistory = true) => {
+      if (pushHistory) get().pushHistory();
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId ? { ...track, elements } : track
         )
       );
     },

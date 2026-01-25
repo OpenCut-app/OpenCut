@@ -68,6 +68,64 @@ export function TimelineTrackContent({
     enablePlayheadSnapping: snappingEnabled,
   });
 
+  const getEffectiveDuration = (element: TimelineElementType) =>
+    Math.max(0, element.duration - element.trimStart - element.trimEnd);
+
+  const resolveOverlapsInOrder = (elements: TimelineElementType[]) => {
+    const resolvedElements: TimelineElementType[] = [];
+
+    for (const element of elements) {
+      const previous = resolvedElements.at(-1);
+      if (!previous) {
+        resolvedElements.push(element);
+        continue;
+      }
+
+      const previousEnd = previous.startTime + getEffectiveDuration(previous);
+      if (element.startTime >= previousEnd) {
+        resolvedElements.push(element);
+        continue;
+      }
+
+      resolvedElements.push({ ...element, startTime: previousEnd });
+    }
+
+    return resolvedElements;
+  };
+
+  const insertElementAtTime = (
+    elements: TimelineElementType[],
+    elementId: string,
+    startTime: number
+  ) => {
+    const movingElement = elements.find((element) => element.id === elementId);
+    if (!movingElement) return elements;
+
+    const clampedStartTime = Math.max(0, startTime);
+    const otherElements = elements.filter(
+      (element) => element.id !== elementId
+    );
+    const sortedElements = [...otherElements].sort(
+      (a, b) => a.startTime - b.startTime
+    );
+
+    const insertIndex = sortedElements.findIndex((element) => {
+      const elementEnd = element.startTime + getEffectiveDuration(element);
+      return clampedStartTime < elementEnd;
+    });
+
+    const targetIndex =
+      insertIndex === -1 ? sortedElements.length : Math.max(0, insertIndex);
+
+    const orderedElements: TimelineElementType[] = [
+      ...sortedElements.slice(0, targetIndex),
+      { ...movingElement, startTime: clampedStartTime },
+      ...sortedElements.slice(targetIndex),
+    ];
+
+    return resolveOverlapsInOrder(orderedElements);
+  };
+
   // Helper function for drop snapping that tries both edges
   const getDropSnappedTime = (
     dropTime: number,
@@ -135,23 +193,44 @@ export function TimelineTrackContent({
 
   // Set up mouse event listeners for drag
   useEffect(() => {
-    if (!dragState.isDragging) return;
+    if (!dragState.isDragging || dragState.trackId !== track.id) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!timelineRef.current) return;
       lastMouseXRef.current = e.clientX;
 
+      const {
+        dragState: currentDragState,
+        selectedElements: currentSelectedElements,
+        selectElement: selectElementAction,
+        tracks: currentTracks,
+        snappingEnabled: currentSnappingEnabled,
+        updateDragTime: updateDragTimeAction,
+      } = useTimelineStore.getState();
+
+      if (
+        !currentDragState.isDragging ||
+        !currentDragState.elementId ||
+        !currentDragState.trackId
+      ) {
+        return;
+      }
+
       // On first mouse move during drag, ensure the element is selected
-      if (dragState.elementId && dragState.trackId) {
-        const isSelected = selectedElements.some(
+      {
+        const isSelected = currentSelectedElements.some(
           (c) =>
-            c.trackId === dragState.trackId &&
-            c.elementId === dragState.elementId
+            c.trackId === currentDragState.trackId &&
+            c.elementId === currentDragState.elementId
         );
 
         if (!isSelected) {
           // Select this element (replacing other selections) since we're dragging it
-          selectElement(dragState.trackId, dragState.elementId, false);
+          selectElementAction(
+            currentDragState.trackId,
+            currentDragState.elementId,
+            false
+          );
         }
       }
 
@@ -161,7 +240,10 @@ export function TimelineTrackContent({
         0,
         mouseX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel)
       );
-      const adjustedTime = Math.max(0, mouseTime - dragState.clickOffsetTime);
+      const adjustedTime = Math.max(
+        0,
+        mouseTime - currentDragState.clickOffsetTime
+      );
 
       // Always apply frame snapping first
       const projectStore = useProjectStore.getState();
@@ -170,38 +252,42 @@ export function TimelineTrackContent({
       let snapPoint = null;
 
       // Additionally apply element snapping if enabled
-      if (snappingEnabled) {
+      if (currentSnappingEnabled) {
         // Find the element being dragged to get its duration
         let elementDuration = 5; // fallback duration
-        if (dragState.elementId && dragState.trackId) {
-          const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
+        {
+          const sourceTrack = currentTracks.find(
+            (t) => t.id === currentDragState.trackId
+          );
           const element = sourceTrack?.elements.find(
-            (e) => e.id === dragState.elementId
+            (e) => e.id === currentDragState.elementId
           );
           if (element) {
-            elementDuration =
-              element.duration - element.trimStart - element.trimEnd;
+            elementDuration = getEffectiveDuration(element);
           }
         }
+
+        const playbackStore = usePlaybackStore.getState();
+        const playheadTime = playbackStore.currentTime;
 
         // Try snapping both start and end edges
         const startSnapResult = snapElementEdge(
           adjustedTime,
           elementDuration,
-          tracks,
-          currentTime,
+          currentTracks,
+          playheadTime,
           zoomLevel,
-          dragState.elementId || undefined,
+          currentDragState.elementId,
           true // snap to start edge
         );
 
         const endSnapResult = snapElementEdge(
           adjustedTime,
           elementDuration,
-          tracks,
-          currentTime,
+          currentTracks,
+          playheadTime,
           zoomLevel,
-          dragState.elementId || undefined,
+          currentDragState.elementId,
           false // snap to end edge
         );
 
@@ -228,161 +314,85 @@ export function TimelineTrackContent({
         onSnapPointChange?.(null);
       }
 
-      updateDragTime(finalTime);
+      updateDragTimeAction(finalTime);
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (!dragState.elementId || !dragState.trackId) return;
+      const {
+        dragState: currentDragState,
+        tracks: currentTracks,
+        moveElementToTrack: moveElementToTrackAction,
+        replaceTrackElements,
+        endDrag,
+      } = useTimelineStore.getState();
 
-      // If this track initiated the drag, we should handle the mouse up regardless of where it occurs
-      const isTrackThatStartedDrag = dragState.trackId === track.id;
-
-      const timelineRect = timelineRef.current?.getBoundingClientRect();
-      if (!timelineRect) {
-        if (isTrackThatStartedDrag) {
-          if (rippleEditingEnabled) {
-            updateElementStartTimeWithRipple(
-              track.id,
-              dragState.elementId,
-              dragState.currentTime
-            );
-          } else {
-            updateElementStartTime(
-              track.id,
-              dragState.elementId,
-              dragState.currentTime
-            );
-          }
-          endDragAction();
-          // Clear snap point when drag ends
-          onSnapPointChange?.(null);
-        }
+      if (
+        !currentDragState.isDragging ||
+        !currentDragState.elementId ||
+        !currentDragState.trackId
+      ) {
         return;
       }
 
-      const isMouseOverThisTrack =
-        e.clientY >= timelineRect.top && e.clientY <= timelineRect.bottom;
+      const getTrackIdAtPoint = (clientX: number, clientY: number) => {
+        const elementsAtPoint =
+          typeof document.elementsFromPoint === "function"
+            ? document.elementsFromPoint(clientX, clientY)
+            : (() => {
+                const element = document.elementFromPoint(clientX, clientY);
+                return element ? [element] : [];
+              })();
 
-      if (!isMouseOverThisTrack && !isTrackThatStartedDrag) return;
-
-      const finalTime = dragState.currentTime;
-
-      if (isMouseOverThisTrack) {
-        const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
-        const movingElement = sourceTrack?.elements.find(
-          (c) => c.id === dragState.elementId
-        );
-
-        if (movingElement) {
-          const movingElementDuration =
-            movingElement.duration -
-            movingElement.trimStart -
-            movingElement.trimEnd;
-          const movingElementEnd = finalTime + movingElementDuration;
-
-          const targetTrack = tracks.find((t) => t.id === track.id);
-          const hasOverlap = targetTrack?.elements.some((existingElement) => {
-            if (
-              dragState.trackId === track.id &&
-              existingElement.id === dragState.elementId
-            ) {
-              return false;
-            }
-            const existingStart = existingElement.startTime;
-            const existingEnd =
-              existingElement.startTime +
-              (existingElement.duration -
-                existingElement.trimStart -
-                existingElement.trimEnd);
-            return finalTime < existingEnd && movingElementEnd > existingStart;
-          });
-
-          if (!hasOverlap) {
-            if (dragState.trackId === track.id) {
-              if (rippleEditingEnabled) {
-                updateElementStartTimeWithRipple(
-                  track.id,
-                  dragState.elementId,
-                  finalTime
-                );
-              } else {
-                updateElementStartTime(
-                  track.id,
-                  dragState.elementId,
-                  finalTime
-                );
-              }
-            } else {
-              moveElementToTrack(
-                dragState.trackId,
-                track.id,
-                dragState.elementId
-              );
-              requestAnimationFrame(() => {
-                if (rippleEditingEnabled) {
-                  updateElementStartTimeWithRipple(
-                    track.id,
-                    dragState.elementId!,
-                    finalTime
-                  );
-                } else {
-                  updateElementStartTime(
-                    track.id,
-                    dragState.elementId!,
-                    finalTime
-                  );
-                }
-              });
-            }
-          }
+        for (const element of elementsAtPoint) {
+          if (!(element instanceof HTMLElement)) continue;
+          const container = element.closest<HTMLElement>(
+            ".track-elements-container"
+          );
+          const foundTrackId = container?.dataset.trackId;
+          if (foundTrackId) return foundTrackId;
         }
-      } else if (isTrackThatStartedDrag) {
-        // Mouse is not over this track, but this track started the drag
-        // This means user released over ruler/outside - update position within same track
-        const sourceTrack = tracks.find((t) => t.id === dragState.trackId);
-        const movingElement = sourceTrack?.elements.find(
-          (c) => c.id === dragState.elementId
+
+        return null;
+      };
+
+      const targetTrackId =
+        getTrackIdAtPoint(e.clientX, e.clientY) ?? currentDragState.trackId;
+
+      const finalTime = currentDragState.currentTime;
+
+      if (targetTrackId === currentDragState.trackId) {
+        const sourceTrack = currentTracks.find(
+          (t) => t.id === currentDragState.trackId
+        );
+        if (sourceTrack) {
+          const updatedElements = insertElementAtTime(
+            sourceTrack.elements,
+            currentDragState.elementId,
+            finalTime
+          );
+          replaceTrackElements(sourceTrack.id, updatedElements);
+        }
+      } else {
+        moveElementToTrackAction(
+          currentDragState.trackId,
+          targetTrackId,
+          currentDragState.elementId
         );
 
-        if (movingElement) {
-          const movingElementDuration =
-            movingElement.duration -
-            movingElement.trimStart -
-            movingElement.trimEnd;
-          const movingElementEnd = finalTime + movingElementDuration;
-
-          const hasOverlap = track.elements.some((existingElement) => {
-            if (existingElement.id === dragState.elementId) {
-              return false;
-            }
-            const existingStart = existingElement.startTime;
-            const existingEnd =
-              existingElement.startTime +
-              (existingElement.duration -
-                existingElement.trimStart -
-                existingElement.trimEnd);
-            return finalTime < existingEnd && movingElementEnd > existingStart;
-          });
-
-          if (!hasOverlap) {
-            if (rippleEditingEnabled) {
-              updateElementStartTimeWithRipple(
-                track.id,
-                dragState.elementId,
-                finalTime
-              );
-            } else {
-              updateElementStartTime(track.id, dragState.elementId, finalTime);
-            }
-          }
+        const nextTracks = useTimelineStore.getState().tracks;
+        const targetTrack = nextTracks.find((t) => t.id === targetTrackId);
+        if (targetTrack) {
+          const updatedElements = insertElementAtTime(
+            targetTrack.elements,
+            currentDragState.elementId,
+            finalTime
+          );
+          replaceTrackElements(targetTrackId, updatedElements, false);
         }
       }
 
-      if (isTrackThatStartedDrag) {
-        endDragAction();
-        // Clear snap point when drag ends
-        onSnapPointChange?.(null);
-      }
+      endDrag();
+      onSnapPointChange?.(null);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -397,17 +407,10 @@ export function TimelineTrackContent({
     dragState.clickOffsetTime,
     dragState.elementId,
     dragState.trackId,
-    dragState.currentTime,
     zoomLevel,
-    tracks,
     track.id,
-    updateDragTime,
-    updateElementStartTime,
-    moveElementToTrack,
-    endDragAction,
-    selectedElements,
-    selectElement,
     onSnapPointChange,
+    snapElementEdge,
   ]);
 
   useEdgeAutoScroll({
@@ -1121,6 +1124,7 @@ export function TimelineTrackContent({
       <div
         ref={timelineRef}
         className="h-full relative track-elements-container min-w-full"
+        data-track-id={track.id}
       >
         {track.elements.length === 0 ? (
           <div
