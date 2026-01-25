@@ -40,12 +40,26 @@ interface ActiveElement {
 
 interface WebAudioWindow extends Window {
   webkitAudioContext?: typeof AudioContext;
+  webkitOfflineAudioContext?: typeof OfflineAudioContext;
+}
+
+interface IdleDeadline {
+  timeRemaining: () => number;
+  didTimeout: boolean;
+}
+
+interface WindowWithIdleCallback extends Window {
+  requestIdleCallback?: (
+    callback: (deadline: IdleDeadline) => void,
+    options?: { timeout?: number }
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
 }
 
 export function PreviewPanel() {
   const { tracks, getTotalDuration, updateTextElement } = useTimelineStore();
   const { mediaFiles } = useMediaStore();
-  const { currentTime, toggle, setCurrentTime } = usePlaybackStore();
+  const { currentTime, setCurrentTime } = usePlaybackStore();
   const { isPlaying, volume, muted } = usePlaybackStore();
   const { activeProject } = useProjectStore();
   const { currentScene } = useSceneStore();
@@ -67,9 +81,14 @@ export function PreviewPanel() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioGainRef = useRef<GainNode | null>(null);
   const audioBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
+  const audioDecodePromisesRef = useRef<
+    Map<string, Promise<AudioBuffer | null>>
+  >(new Map());
   const audioDecodeFailuresRef = useRef<Set<string>>(new Set());
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const audioScheduleSeqRef = useRef(0);
+  const playRequestSeqRef = useRef(0);
+  const offlineAudioContextRef = useRef<OfflineAudioContext | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [previewDimensions, setPreviewDimensions] = useState({
     width: 0,
@@ -336,10 +355,102 @@ export function PreviewPanel() {
     }
   }, []);
 
+  const getDecodeContext = useCallback((): BaseAudioContext | null => {
+    if (offlineAudioContextRef.current) return offlineAudioContextRef.current;
+
+    const win = window as WebAudioWindow;
+    const OfflineCtx = win.OfflineAudioContext ?? win.webkitOfflineAudioContext;
+    if (OfflineCtx) {
+      offlineAudioContextRef.current = new OfflineCtx(2, 1, 48_000);
+      return offlineAudioContextRef.current;
+    }
+
+    return audioContextRef.current;
+  }, []);
+
+  const ensureAudioBuffer = useCallback(
+    async (mediaItem: MediaFile): Promise<AudioBuffer | null> => {
+      const cached = audioBuffersRef.current.get(mediaItem.id);
+      if (cached) return cached;
+      if (audioDecodeFailuresRef.current.has(mediaItem.id)) return null;
+
+      const existing = audioDecodePromisesRef.current.get(mediaItem.id);
+      if (existing) return existing;
+
+      const decodeContext = getDecodeContext();
+      if (!decodeContext) return null;
+
+      const promise = (async () => {
+        try {
+          const arr = await mediaItem.file.arrayBuffer();
+          const buf = await decodeContext.decodeAudioData(arr.slice(0));
+          audioBuffersRef.current.set(mediaItem.id, buf);
+          return buf;
+        } catch (error) {
+          audioDecodeFailuresRef.current.add(mediaItem.id);
+          console.warn(`Failed to decode audio for ${mediaItem.name}:`, error);
+          return null;
+        } finally {
+          audioDecodePromisesRef.current.delete(mediaItem.id);
+        }
+      })();
+
+      audioDecodePromisesRef.current.set(mediaItem.id, promise);
+      return promise;
+    },
+    [getDecodeContext]
+  );
+
   const toggleWithAudio = useCallback(() => {
     ensureAudioContextRunning();
-    toggle();
-  }, [ensureAudioContextRunning, toggle]);
+    const playback = usePlaybackStore.getState();
+    if (playback.isPlaying) {
+      playback.pause();
+      return;
+    }
+
+    const requestSeq = playRequestSeqRef.current + 1;
+    playRequestSeqRef.current = requestSeq;
+
+    const warmup = async () => {
+      const playbackNow = usePlaybackStore.getState().currentTime;
+      const tracksSnapshot = useTimelineStore.getState().tracks;
+      const mediaList = useMediaStore.getState().mediaFiles;
+      const idToMedia = new Map(mediaList.map((m) => [m.id, m] as const));
+
+      const warmupIds = new Set<string>();
+      for (const track of tracksSnapshot) {
+        for (const element of track.elements) {
+          if (element.type !== "media") continue;
+          const media = idToMedia.get(element.mediaId);
+          if (!media || (media.type !== "audio" && media.type !== "video"))
+            continue;
+          const visibleDuration =
+            element.duration - element.trimStart - element.trimEnd;
+          if (visibleDuration <= 0) continue;
+          const elementEnd = element.startTime + visibleDuration;
+          if (elementEnd <= playbackNow) continue;
+          if (element.startTime > playbackNow + 0.1) continue;
+          warmupIds.add(media.id);
+        }
+      }
+
+      const warmups: Array<Promise<AudioBuffer | null>> = [];
+      for (const id of warmupIds) {
+        const media = idToMedia.get(id);
+        if (!media) continue;
+        warmups.push(ensureAudioBuffer(media));
+      }
+      await Promise.all(warmups);
+
+      if (requestSeq !== playRequestSeqRef.current) return;
+      usePlaybackStore.getState().play();
+    };
+
+    warmup().catch(() => {
+      usePlaybackStore.getState().play();
+    });
+  }, [ensureAudioContextRunning, ensureAudioBuffer]);
 
   const requestDraw = useCallback(() => {
     renderQueuedRef.current = true;
@@ -384,6 +495,11 @@ export function PreviewPanel() {
         audioBuffersRef.current.delete(cachedId);
       }
     }
+    for (const cachedId of audioDecodePromisesRef.current.keys()) {
+      if (!mediaIds.has(cachedId)) {
+        audioDecodePromisesRef.current.delete(cachedId);
+      }
+    }
     for (const cachedId of audioDecodeFailuresRef.current) {
       if (!mediaIds.has(cachedId)) {
         audioDecodeFailuresRef.current.delete(cachedId);
@@ -399,33 +515,71 @@ export function PreviewPanel() {
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    const win = window as WindowWithIdleCallback;
+
+    const decodeUsedMedia = () => {
+      const idToMedia = new Map(mediaFiles.map((m) => [m.id, m] as const));
+      const usedIds = new Set<string>();
+      for (const track of tracks) {
+        for (const element of track.elements) {
+          if (element.type !== "media") continue;
+          const media = idToMedia.get(element.mediaId);
+          if (!media || (media.type !== "audio" && media.type !== "video"))
+            continue;
+          usedIds.add(media.id);
+        }
+      }
+
+      for (const id of usedIds) {
+        const media = idToMedia.get(id);
+        if (!media) continue;
+        if (audioBuffersRef.current.has(id)) continue;
+        if (audioDecodeFailuresRef.current.has(id)) continue;
+        if (audioDecodePromisesRef.current.has(id)) continue;
+        ensureAudioBuffer(media).catch(() => {});
+      }
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const handle = win.requestIdleCallback(() => decodeUsedMedia(), {
+        timeout: 1000,
+      });
+      return () => {
+        win.cancelIdleCallback?.(handle);
+      };
+    }
+
+    const timeout = window.setTimeout(() => decodeUsedMedia(), 0);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [tracks, mediaFiles, ensureAudioBuffer]);
+
   // Web Audio: schedule only on play/pause/seek/volume/mute changes
   useEffect(() => {
-    const ensureAudioGraph = async () => {
-      if (!audioContextRef.current) {
-        const win = window as WebAudioWindow;
-        const Ctx = win.AudioContext ?? win.webkitAudioContext;
-        if (!Ctx) return;
-        audioContextRef.current = new Ctx();
-      }
+    const ensureAudioGraph = async (): Promise<{
+      audioCtx: AudioContext;
+      gain: GainNode;
+    } | null> => {
+      const audioCtx = audioContextRef.current;
+      if (!audioCtx) return null;
       if (!audioGainRef.current) {
-        audioGainRef.current = audioContextRef.current!.createGain();
-        audioGainRef.current.connect(audioContextRef.current!.destination);
+        audioGainRef.current = audioCtx.createGain();
+        audioGainRef.current.connect(audioCtx.destination);
       }
       const gainValue = muted ? 0 : Math.max(0, Math.min(1, volume));
-      audioGainRef.current!.gain.setValueAtTime(
-        gainValue,
-        audioContextRef.current!.currentTime
-      );
+      audioGainRef.current.gain.setValueAtTime(gainValue, audioCtx.currentTime);
+      return { audioCtx, gain: audioGainRef.current };
     };
 
     const scheduleNow = async () => {
       const scheduleSeq = audioScheduleSeqRef.current + 1;
       audioScheduleSeqRef.current = scheduleSeq;
 
-      await ensureAudioGraph();
-      const audioCtx = audioContextRef.current!;
-      const gain = audioGainRef.current!;
+      const graph = await ensureAudioGraph();
+      if (!graph) return;
+      const { audioCtx, gain } = graph;
 
       const tracksSnapshot = useTimelineStore.getState().tracks;
       const mediaList = mediaFiles;
@@ -440,7 +594,6 @@ export function PreviewPanel() {
         muted: boolean;
         trackMuted: boolean;
       }> = [];
-      const uniqueIds = new Set<string>();
       for (const track of tracksSnapshot) {
         for (const element of track.elements) {
           if (element.type !== "media") continue;
@@ -466,63 +619,49 @@ export function PreviewPanel() {
             muted: !!element.muted,
             trackMuted: !!track.muted,
           });
-          uniqueIds.add(media.id);
         }
       }
 
       if (audible.length === 0) return;
 
-      // Decode buffers as needed
-      const decodePromises: Array<Promise<void>> = [];
-      for (const id of uniqueIds) {
-        if (audioDecodeFailuresRef.current.has(id)) continue;
-        if (!audioBuffersRef.current.has(id)) {
-          const mediaItem = idToMedia.get(id);
-          if (!mediaItem) continue;
-          const p = (async () => {
-            try {
-              const arr = await mediaItem.file.arrayBuffer();
-              const buf = await audioCtx.decodeAudioData(arr.slice(0));
-              audioBuffersRef.current.set(id, buf);
-            } catch (error) {
-              audioDecodeFailuresRef.current.add(id);
-              console.warn(
-                `Failed to decode audio for ${mediaItem.name}:`,
-                error
-              );
-            }
-          })();
-          decodePromises.push(p);
-        }
-      }
-      await Promise.all(decodePromises);
-
-      if (scheduleSeq !== audioScheduleSeqRef.current) return;
-
       const startAt = audioCtx.currentTime + 0.02;
-      for (const entry of audible) {
-        if (entry.muted || entry.trackMuted) continue;
-        const buffer = audioBuffersRef.current.get(entry.id);
-        if (!buffer) continue;
-        if (entry.playDuration <= 0) continue;
-        if (entry.localTime >= buffer.duration) continue;
-        const remainingInBuffer = Math.max(
-          0,
-          buffer.duration - entry.localTime
-        );
-        const clampedDuration = Math.min(entry.playDuration, remainingInBuffer);
-        if (clampedDuration <= 0) continue;
+      const scheduleEntry = async (entry: (typeof audible)[number]) => {
+        if (entry.muted || entry.trackMuted) return;
+        const mediaItem = idToMedia.get(entry.id);
+        if (!mediaItem) return;
+        const buffer = await ensureAudioBuffer(mediaItem);
+        if (scheduleSeq !== audioScheduleSeqRef.current) return;
+        if (!buffer) return;
+        if (entry.playDuration <= 0) return;
+
+        let startTime = startAt + entry.startDelay;
+        let offset = entry.localTime;
+        let playDuration = entry.playDuration;
+
+        const now = audioCtx.currentTime;
+        if (startTime < now) {
+          const lateBy = now - startTime;
+          offset += lateBy;
+          playDuration = Math.max(0, playDuration - lateBy);
+          startTime = now + 0.02;
+        }
+
+        if (offset >= buffer.duration) return;
+        const remainingInBuffer = Math.max(0, buffer.duration - offset);
+        const clampedDuration = Math.min(playDuration, remainingInBuffer);
+        if (clampedDuration <= 0) return;
+
         const src = audioCtx.createBufferSource();
         src.buffer = buffer;
         src.connect(gain);
         try {
-          src.start(
-            startAt + entry.startDelay,
-            entry.localTime,
-            clampedDuration
-          );
+          src.start(startTime, offset, clampedDuration);
           playingSourcesRef.current.add(src);
         } catch {}
+      };
+
+      for (const entry of audible) {
+        scheduleEntry(entry).catch(() => {});
       }
     };
 
@@ -561,7 +700,7 @@ export function PreviewPanel() {
       }
       playingSourcesRef.current.clear();
     };
-  }, [isPlaying, volume, muted, mediaFiles]);
+  }, [isPlaying, volume, muted, mediaFiles, ensureAudioBuffer]);
 
   // Canvas: draw current frame with caching
   useEffect(() => {
