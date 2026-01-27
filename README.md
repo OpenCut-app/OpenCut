@@ -13,7 +13,7 @@
 ## Why?
 
 - **Privacy**: Your videos stay on your device
-- **Free features**: Every basic feature of CapCut is paywalled now
+- **Free features**: Most basic CapCut features are now paywalled 
 - **Simple**: People want editors that are easy to use - CapCut proved that
 
 ## Features
