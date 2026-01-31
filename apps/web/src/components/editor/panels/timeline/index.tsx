@@ -539,20 +539,15 @@ function TrackToggleIcon({
 	onClick: () => void;
 }) {
 	return (
-		<>
-			{isOff ? (
-				<HugeiconsIcon
-					icon={icons.off}
-					className="text-destructive size-4 cursor-pointer"
-					onClick={onClick}
-				/>
-			) : (
-				<HugeiconsIcon
-					icon={icons.on}
-					className="text-muted-foreground size-4 cursor-pointer"
-					onClick={onClick}
-				/>
-			)}
-		</>
+		<button
+			type="button"
+			onClick={onClick}
+			className="flex items-center justify-center"
+		>
+			<HugeiconsIcon
+				icon={isOff ? icons.off : icons.on}
+				className={`size-4 ${isOff ? "text-destructive" : "text-muted-foreground"}`}
+			/>
+		</button>
 	);
 }
