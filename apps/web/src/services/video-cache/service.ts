@@ -7,6 +7,7 @@ import {
 } from "mediabunny";
 
 interface VideoSinkData {
+	input: Input;
 	sink: CanvasSink;
 	iterator: AsyncGenerator<WrappedCanvas, void, unknown> | null;
 	currentFrame: WrappedCanvas | null;
@@ -246,19 +247,21 @@ export class VideoCache {
 		mediaId: string;
 		file: File;
 	}): Promise<void> {
-		try {
-			const input = new Input({
-				source: new BlobSource(file),
-				formats: ALL_FORMATS,
-			});
+		const input = new Input({
+			source: new BlobSource(file),
+			formats: ALL_FORMATS,
+		});
 
+		try {
 			const videoTrack = await input.getPrimaryVideoTrack();
 			if (!videoTrack) {
+				input.dispose();
 				throw new Error("No video track found");
 			}
 
 			const canDecode = await videoTrack.canDecode();
 			if (!canDecode) {
+				input.dispose();
 				throw new Error("Video codec not supported for decoding");
 			}
 
@@ -268,6 +271,7 @@ export class VideoCache {
 			});
 
 			this.sinks.set(mediaId, {
+				input,
 				sink,
 				iterator: null,
 				currentFrame: null,
@@ -277,6 +281,7 @@ export class VideoCache {
 				prefetchPromise: null,
 			});
 		} catch (error) {
+			input.dispose();
 			console.error(`Failed to initialize video sink for ${mediaId}:`, error);
 			throw error;
 		}
@@ -288,6 +293,13 @@ export class VideoCache {
 			if (sinkData.iterator) {
 				void sinkData.iterator.return();
 			}
+
+			// Clear frame references
+			sinkData.currentFrame = null;
+			sinkData.nextFrame = null;
+
+			// Dispose the input to release WebCodecs resources
+			sinkData.input.dispose();
 
 			this.sinks.delete(mediaId);
 		}
