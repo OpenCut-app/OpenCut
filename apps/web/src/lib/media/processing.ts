@@ -195,6 +195,13 @@ export async function processMediaAssets({
 					});
 				} catch (error) {
 					console.warn("Video processing failed", error);
+					const errorMessage =
+						error instanceof Error ? error.message : String(error);
+					if (errorMessage.includes("codec not supported")) {
+						toast.error(
+							`${file.name}: Video codec not supported. Try converting to H.264/MP4 format.`,
+						);
+					}
 				}
 			} else if (fileType === "audio") {
 				// For audio, we don't set width/height/fps (they'll be undefined)
