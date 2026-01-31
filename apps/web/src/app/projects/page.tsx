@@ -43,6 +43,7 @@ import {
 	Edit03Icon,
 	ArrowDown02Icon,
 	InformationCircleIcon,
+	LinkSquare02Icon,
 } from "@hugeicons/core-free-icons";
 import { OcVideoIcon } from "@opencut/ui/icons";
 import { Label } from "@/components/ui/label";
@@ -580,9 +581,23 @@ function ProjectItem({
 			</div>
 
 			<CardContent className="flex flex-col gap-2 px-0 pt-4">
-				<h3 className="group-hover:text-foreground/90 line-clamp-2 text-sm leading-snug font-medium">
-					{project.name}
-				</h3>
+				<div className="flex items-center gap-1.5">
+					<h3 className="group-hover:text-foreground/90 line-clamp-2 text-sm leading-snug font-medium">
+						{project.name}
+					</h3>
+					<button
+						type="button"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							window.open(`/editor/${project.id}`, "_blank");
+						}}
+						className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-accent rounded shrink-0"
+						title="Open in new tab"
+					>
+						<HugeiconsIcon icon={LinkSquare02Icon} className="size-3.5 text-muted-foreground" />
+					</button>
+				</div>
 				<div className="text-muted-foreground flex items-center gap-1.5 text-sm">
 					<HugeiconsIcon icon={Calendar04Icon} className="size-4" />
 					<span>Created {formatDate({ date: project.createdAt })}</span>
@@ -608,9 +623,23 @@ function ProjectItem({
 				)}
 			</div>
 
-			<h3 className="group-hover:text-foreground/90 text-sm font-medium truncate flex-1 min-w-0">
-				{project.name}
-			</h3>
+			<div className="flex items-center gap-1.5 flex-1 min-w-0">
+				<h3 className="group-hover:text-foreground/90 text-sm font-medium truncate">
+					{project.name}
+				</h3>
+				<button
+					type="button"
+					onClick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						window.open(`/editor/${project.id}`, "_blank");
+					}}
+					className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-accent rounded shrink-0"
+					title="Open in new tab"
+				>
+					<HugeiconsIcon icon={LinkSquare02Icon} className="size-3.5 text-muted-foreground" />
+				</button>
+			</div>
 
 			<span className="text-muted-foreground text-sm shrink-0 hidden sm:block">
 				{durationLabel ?? "—"}
