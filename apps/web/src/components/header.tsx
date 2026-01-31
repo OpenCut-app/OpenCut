@@ -46,11 +46,11 @@ export function Header() {
 					</Link>
 					<nav className="hidden items-center gap-4 md:flex">
 						{links.map((link) => (
-							<Link key={link.href} href={link.href}>
-								<Button variant="text" className="p-0 text-sm">
+							<Button key={link.href} variant="text" className="p-0 text-sm" asChild>
+								<Link href={link.href}>
 									{link.label}
-								</Button>
-							</Link>
+								</Link>
+							</Button>
 						))}
 					</nav>
 				</div>
@@ -67,18 +67,18 @@ export function Header() {
 						</Button>
 					</div>
 					<div className="hidden items-center gap-3 md:flex">
-						<Link href={SOCIAL_LINKS.github}>
-							<Button className="bg-background text-sm" variant="outline">
+						<Button className="bg-background text-sm" variant="outline" asChild>
+							<Link href={SOCIAL_LINKS.github}>
 								<HugeiconsIcon icon={GithubIcon} className="size-4" />
 								40k+
-							</Button>
-						</Link>
-						<Link href="/projects">
-							<Button variant="foreground" className="text-sm">
+							</Link>
+						</Button>
+						<Button variant="foreground" className="text-sm" asChild>
+							<Link href="/projects">
 								Projects
 								<ArrowRight className="size-4" />
-							</Button>
-						</Link>
+							</Link>
+						</Button>
 						<ThemeToggle />
 					</div>
 				</div>
