@@ -275,6 +275,33 @@ export function useEditorActions() {
 	);
 
 	useActionHandler(
+		"cut-selected",
+		() => {
+			if (selectedElements.length === 0) return;
+
+			// Copy elements to clipboard
+			const results = editor.timeline.getElementsWithTracks({
+				elements: selectedElements,
+			});
+			const items = results.map(({ track, element }) => {
+				const { ...elementWithoutId } = element;
+				return {
+					trackId: track.id,
+					trackType: track.type,
+					element: elementWithoutId,
+				};
+			});
+			setClipboard({ items });
+
+			// Delete the selected elements
+			editor.timeline.deleteElements({
+				elements: selectedElements,
+			});
+		},
+		undefined,
+	);
+
+	useActionHandler(
 		"paste-copied",
 		() => {
 			if (!clipboard?.items.length) return;

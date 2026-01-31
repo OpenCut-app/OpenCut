@@ -95,6 +95,11 @@ export const ACTIONS = {
 		category: "editing",
 		defaultShortcuts: ["ctrl+c"],
 	},
+	"cut-selected": {
+		description: "Cut selected elements",
+		category: "editing",
+		defaultShortcuts: ["ctrl+x"],
+	},
 	"paste-copied": {
 		description: "Paste elements at playhead",
 		category: "editing",
