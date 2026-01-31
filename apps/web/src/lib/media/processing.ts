@@ -75,34 +75,38 @@ export async function generateThumbnail({
 		formats: ALL_FORMATS,
 	});
 
-	const videoTrack = await input.getPrimaryVideoTrack();
-	if (!videoTrack) {
-		throw new Error("No video track found in the file");
-	}
-
-	const canDecode = await videoTrack.canDecode();
-	if (!canDecode) {
-		throw new Error("Video codec not supported for decoding");
-	}
-
-	const sink = new VideoSampleSink(videoTrack);
-
-	const frame = await sink.getSample(timeInSeconds);
-
-	if (!frame) {
-		throw new Error("Could not get frame at specified time");
-	}
-
 	try {
-		return renderToThumbnailDataUrl({
-			width: videoTrack.displayWidth,
-			height: videoTrack.displayHeight,
-			draw: ({ context, width, height }) => {
-				frame.draw(context, 0, 0, width, height);
-			},
-		});
+		const videoTrack = await input.getPrimaryVideoTrack();
+		if (!videoTrack) {
+			throw new Error("No video track found in the file");
+		}
+
+		const canDecode = await videoTrack.canDecode();
+		if (!canDecode) {
+			throw new Error("Video codec not supported for decoding");
+		}
+
+		const sink = new VideoSampleSink(videoTrack);
+
+		const frame = await sink.getSample(timeInSeconds);
+
+		if (!frame) {
+			throw new Error("Could not get frame at specified time");
+		}
+
+		try {
+			return renderToThumbnailDataUrl({
+				width: videoTrack.displayWidth,
+				height: videoTrack.displayHeight,
+				draw: ({ context, width, height }) => {
+					frame.draw(context, 0, 0, width, height);
+				},
+			});
+		} finally {
+			frame.close();
+		}
 	} finally {
-		frame.close();
+		input.dispose();
 	}
 }
 
