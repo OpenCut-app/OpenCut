@@ -2,19 +2,19 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { BackendAuthError, backendAuthApi } from "./api-client";
 
 const originalFetch = globalThis.fetch;
-const originalBaseUrl = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL;
+const originalBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
 describe("backend auth api client", () => {
 	beforeEach(() => {
-		process.env.NEXT_PUBLIC_AUTH_API_BASE_URL = "http://localhost:3001/api";
+		process.env.NEXT_PUBLIC_API_URL = "http://localhost:3001/api";
 	});
 
 	afterEach(() => {
 		globalThis.fetch = originalFetch;
 		if (typeof originalBaseUrl === "string") {
-			process.env.NEXT_PUBLIC_AUTH_API_BASE_URL = originalBaseUrl;
+			process.env.NEXT_PUBLIC_API_URL = originalBaseUrl;
 		} else {
-			delete process.env.NEXT_PUBLIC_AUTH_API_BASE_URL;
+			delete process.env.NEXT_PUBLIC_API_URL;
 		}
 	});
 

@@ -1,5 +1,5 @@
 export const getBackendApiBaseUrl = () => {
-	const configuredBase = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL;
+	const configuredBase = process.env.NEXT_PUBLIC_API_URL;
 	return (configuredBase && configuredBase.length > 0 ? configuredBase : "/api").replace(
 		/\/$/,
 		"",
