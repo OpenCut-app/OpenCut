@@ -1,6 +1,7 @@
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build image
+    dir: apps/web
     args:
       - build
       - -f
@@ -15,12 +16,14 @@ steps:
 
   - name: gcr.io/cloud-builders/docker
     id: Push latest
+    dir: apps/web
     args:
       - push
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:latest
 
   - name: gcr.io/cloud-builders/docker
     id: Push commit tag
+    dir: apps/web
     args:
       - push
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${SHORT_SHA}
