@@ -25,7 +25,6 @@
   "dependencies": {
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
-    "better-auth": "^1.4.15",
     "next": "^16.1.3"
   },
   "devDependencies": {

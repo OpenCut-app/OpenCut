@@ -43,8 +43,6 @@
     "@upstash/ratelimit": "^2.0.6",
     "@upstash/redis": "^1.35.4",
     "@vercel/analytics": "^1.4.1",
-    "aws4fetch": "^1.0.20",
-    "better-auth": "^1.2.7",
     "botid": "^1.4.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
