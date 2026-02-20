@@ -4,14 +4,14 @@ steps:
     args:
       - build
       - -f
-      - Dockerfile
+      - apps/web/Dockerfile
       - --build-arg
       - NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}
       - -t
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:latest
       - -t
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${SHORT_SHA}
-      - .
+      - apps/web
 
   - name: gcr.io/cloud-builders/docker
     id: Push latest
