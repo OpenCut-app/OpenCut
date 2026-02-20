@@ -2,12 +2,15 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
       "env": [
         "NODE_ENV",
-        "NEXT_PUBLIC_SITE_URL",
-        "NEXT_PUBLIC_MARBLE_API_URL",
         "DATABASE_URL",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
@@ -18,30 +21,44 @@
       ]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ]
     },
     "dev": {
       "persistent": true,
       "cache": false
     },
     "lint": {
-      "dependsOn": ["^lint"],
+      "dependsOn": [
+        "^lint"
+      ],
       "cache": false
     },
     "lint:fix": {
-      "dependsOn": ["^lint:fix"],
+      "dependsOn": [
+        "^lint:fix"
+      ],
       "cache": false
     },
     "format": {
-      "dependsOn": ["^format"]
+      "dependsOn": [
+        "^format"
+      ]
     },
     "test": {
-      "dependsOn": ["^test"],
+      "dependsOn": [
+        "^test"
+      ],
       "cache": false
     },
     "test:coverage": {
-      "dependsOn": ["^test:coverage"],
-      "outputs": ["coverage/**"],
+      "dependsOn": [
+        "^test:coverage"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
       "cache": false
     }
   }
