@@ -1,7 +1,0 @@
-{
-  "compilerOptions": {
-    "strictNullChecks": true,
-    "moduleResolution": "bundler",
-    "module": "esnext"
-  }
-}

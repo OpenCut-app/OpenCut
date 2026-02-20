@@ -44,7 +44,7 @@ import {
 	ArrowDown02Icon,
 	InformationCircleIcon,
 } from "@hugeicons/core-free-icons";
-import { OcVideoIcon } from "@vibecut/ui/icons";
+import { OcVideoIcon } from "@/ui/icons";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/auth-store";
 import { backendAuthApi } from "@/lib/auth/api-client";

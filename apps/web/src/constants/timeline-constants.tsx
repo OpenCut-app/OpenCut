@@ -6,7 +6,7 @@ import {
 	TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { OcVideoIcon } from "@vibecut/ui/icons";
+import { OcVideoIcon } from "@/ui/icons";
 
 export const TRACK_COLORS: Record<TrackType, { background: string }> = {
 	video: {

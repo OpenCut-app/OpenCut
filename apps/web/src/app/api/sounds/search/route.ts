@@ -1,4 +1,4 @@
-import { webEnv } from "@vibecut/env/web";
+import { webEnv } from "@/env/web";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";

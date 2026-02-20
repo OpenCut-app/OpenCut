@@ -1,6 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { webEnv } from "@vibecut/env/web";
+import { webEnv } from "@/env/web";
 
 const redis = new Redis({
 	url: webEnv.UPSTASH_REDIS_REST_URL,

@@ -5,10 +5,10 @@ import { Toaster } from "../components/ui/sonner";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { baseMetaData } from "./metadata";
 import { BotIdClient } from "botid/client";
-import { webEnv } from "@vibecut/env/web";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { webEnv } from "@/env/web";
 
 const siteFont = Inter({ subsets: ["latin"] });
 

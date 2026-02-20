@@ -1,4 +1,4 @@
-import { OcDataBuddyIcon, OcMarbleIcon, } from "@vibecut/ui/icons";
+import { OcDataBuddyIcon, OcMarbleIcon } from "@/ui/icons";
 
 export const SITE_URL = "https://vibecut.app";
 

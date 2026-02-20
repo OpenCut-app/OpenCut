@@ -33,8 +33,6 @@
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.4",
     "@huggingface/transformers": "^3.8.1",
-    "@vibecut/env": "workspace:*",
-    "@vibecut/ui": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.8",
