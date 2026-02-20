@@ -1,10 +1,10 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { webEnv } from "@/env/web";
+// import { webEnv } from "@/env/web";
 
 const redis = new Redis({
-	url: webEnv.UPSTASH_REDIS_REST_URL,
-	token: webEnv.UPSTASH_REDIS_REST_TOKEN,
+	url: '',
+	token: '',
 });
 
 export const baseRateLimit = new Ratelimit({

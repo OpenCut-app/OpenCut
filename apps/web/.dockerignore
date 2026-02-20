@@ -1,0 +1,12 @@
+node_modules
+.next
+coverage
+storybook-static
+playwright-report
+test-results
+.git
+.gitignore
+Dockerfile*
+*.log
+.env
+.env.local

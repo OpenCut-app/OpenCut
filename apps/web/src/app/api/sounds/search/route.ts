@@ -1,7 +1,6 @@
-import { webEnv } from "@/env/web";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit } from "@/lib/rate-limit";
 
 const searchParamsSchema = z.object({
 	q: z.string().max(500, "Query too long").optional(),
@@ -202,7 +201,7 @@ export async function GET(request: NextRequest) {
 
 		const params = new URLSearchParams({
 			query: query || "",
-			token: webEnv.FREESOUND_API_KEY,
+			token: '',
 			page: page.toString(),
 			page_size: pageSize.toString(),
 			sort: sortParam,
