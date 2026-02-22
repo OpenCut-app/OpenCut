@@ -184,10 +184,11 @@ export class TextNode extends BaseNode<TextNodeParams> {
 		});
 
 		const prevAlpha = renderer.context.globalAlpha;
-		renderer.context.globalCompositeOperation =
+		renderer.context.globalCompositeOperation = (
 			this.params.blendMode && this.params.blendMode !== "normal"
 				? this.params.blendMode
-				: "source-over";
+				: "source-over"
+		) as GlobalCompositeOperation;
 		renderer.context.globalAlpha = this.params.opacity;
 
 		if (this.params.backgroundColor && lineCount > 0) {
