@@ -27,6 +27,7 @@
 		"@opencut/env": "workspace:*",
 		"@opencut/ui": "workspace:*",
 		"@radix-ui/react-dialog": "^1.1.15",
+		"@radix-ui/react-primitive": "^2.1.4",
 		"@radix-ui/react-select": "^2.2.6",
 		"@radix-ui/react-separator": "^1.1.8",
 		"@radix-ui/react-slot": "^1.2.4",
