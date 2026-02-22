@@ -6,8 +6,6 @@ import {
 	ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { usePreviewStore } from "@/stores/preview-store";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FullScreenIcon } from "@hugeicons/core-free-icons";
 
 export function PreviewContextMenu({
 	onToggleFullscreen,

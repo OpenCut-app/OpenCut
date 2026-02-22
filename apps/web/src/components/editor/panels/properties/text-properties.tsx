@@ -127,7 +127,7 @@ function FontSection({
 							})
 						}
 					/>
-					<Select value={element.fontWeight} onValueChange={(value) => {}}>
+					<Select value={element.fontWeight}>
 						<SelectTrigger className="w-full" icon={<OcFontWeightIcon />}>
 							<SelectValue placeholder="Select weight" />
 						</SelectTrigger>

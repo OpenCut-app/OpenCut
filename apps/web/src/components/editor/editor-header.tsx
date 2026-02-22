@@ -19,19 +19,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { DEFAULT_LOGO_URL, SOCIAL_LINKS } from "@/constants/site-constants";
 import { toast } from "sonner";
 import { useEditor } from "@/hooks/use-editor";
-import {
-	ArrowLeft01Icon,
-	ArrowLeft02Icon,
-	ArrowTurnBackwardIcon,
-	Cancel01Icon,
-	CancelSquareIcon,
-	CircleArrowLeft01Icon,
-	CommandIcon,
-	Door01Icon,
-	Logout05Icon,
-	LogoutSquare01Icon,
-	LogoutSquare02Icon,
-} from "@hugeicons/core-free-icons";
+import { CommandIcon, Logout05Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ShortcutsDialog } from "./dialogs/shortcuts-dialog";
 import Image from "next/image";

@@ -154,7 +154,6 @@ export function TimelineElement({
 						element={element}
 						track={track}
 						isSelected={isSelected}
-						isBeingDragged={isBeingDragged}
 						hasAudio={hasAudio}
 						isMuted={isMuted}
 						mediaAssets={mediaAssets}
@@ -226,7 +225,6 @@ function ElementInner({
 	element,
 	track,
 	isSelected,
-	isBeingDragged,
 	hasAudio,
 	isMuted,
 	mediaAssets,
@@ -237,7 +235,6 @@ function ElementInner({
 	element: TimelineElementType;
 	track: TimelineTrack;
 	isSelected: boolean;
-	isBeingDragged: boolean;
 	hasAudio: boolean;
 	isMuted: boolean;
 	mediaAssets: MediaAsset[];
