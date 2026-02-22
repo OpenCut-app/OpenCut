@@ -27,6 +27,8 @@ import {
 	type MigrationProgress,
 } from "@/services/storage/migrations";
 import { DEFAULT_TIMELINE_VIEW_STATE } from "@/constants/timeline-constants";
+import { loadFonts } from "@/lib/fonts/google-fonts";
+import { collectFontFamilies } from "@/lib/timeline/element-utils";
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -145,6 +147,9 @@ export class ProjectManager {
 			}
 
 			await this.editor.media.loadProjectMedia({ projectId: id });
+
+			const allTracks = (project.scenes ?? []).flatMap((scene) => scene.tracks);
+			await loadFonts({ families: collectFontFamilies({ tracks: allTracks }) });
 
 			if (!project.metadata.thumbnail) {
 				const didUpdateThumbnail = await this.updateThumbnailFromTimeline();

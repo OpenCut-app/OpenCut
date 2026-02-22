@@ -1,10 +1,11 @@
 import { useCallback } from "react";
-import type { TimelineTrack } from "@/types/timeline";
+import type { Bookmark, TimelineTrack } from "@/types/timeline";
 import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+import { BOOKMARK_TIME_EPSILON } from "@/lib/timeline/bookmarks";
 
 export interface SnapPoint {
 	time: number;
-	type: "element-start" | "element-end" | "playhead";
+	type: "element-start" | "element-end" | "playhead" | "bookmark";
 	elementId?: string;
 	trackId?: string;
 }
@@ -19,22 +20,28 @@ export interface UseTimelineSnappingOptions {
 	snapThreshold?: number;
 	enableElementSnapping?: boolean;
 	enablePlayheadSnapping?: boolean;
+	enableBookmarkSnapping?: boolean;
 }
 
 export function useTimelineSnapping({
 	snapThreshold = 10,
 	enableElementSnapping = true,
 	enablePlayheadSnapping = true,
+	enableBookmarkSnapping = true,
 }: UseTimelineSnappingOptions = {}) {
 	const findSnapPoints = useCallback(
 		({
 			tracks,
 			playheadTime,
 			excludeElementId,
+			bookmarks = [],
+			excludeBookmarkTime,
 		}: {
 			tracks: Array<TimelineTrack>;
 			playheadTime: number;
 			excludeElementId?: string;
+			bookmarks?: Array<Bookmark>;
+			excludeBookmarkTime?: number;
 		}): SnapPoint[] => {
 			const snapPoints: SnapPoint[] = [];
 
@@ -71,9 +78,24 @@ export function useTimelineSnapping({
 				});
 			}
 
+			if (enableBookmarkSnapping) {
+				for (const bookmark of bookmarks) {
+					if (
+						excludeBookmarkTime != null &&
+						Math.abs(bookmark.time - excludeBookmarkTime) < BOOKMARK_TIME_EPSILON
+					) {
+						continue;
+					}
+					snapPoints.push({
+						time: bookmark.time,
+						type: "bookmark",
+					});
+				}
+			}
+
 			return snapPoints;
 		},
-		[enableElementSnapping, enablePlayheadSnapping],
+		[enableElementSnapping, enablePlayheadSnapping, enableBookmarkSnapping],
 	);
 
 	const snapToNearestPoint = useCallback(
@@ -118,6 +140,7 @@ export function useTimelineSnapping({
 			zoomLevel,
 			excludeElementId,
 			snapToStart = true,
+			bookmarks = [],
 		}: {
 			targetTime: number;
 			elementDuration: number;
@@ -126,11 +149,13 @@ export function useTimelineSnapping({
 			zoomLevel: number;
 			excludeElementId?: string;
 			snapToStart?: boolean;
+			bookmarks?: Array<Bookmark>;
 		}): SnapResult => {
 			const snapPoints = findSnapPoints({
 				tracks,
 				playheadTime,
 				excludeElementId,
+				bookmarks,
 			});
 
 			const effectiveTargetTime = snapToStart

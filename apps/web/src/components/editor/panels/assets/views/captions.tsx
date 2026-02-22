@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { PanelBaseView as BaseView } from "@/components/editor/panels/panel-base-view";
+import { PanelView } from "@/components/editor/panels/assets/views/base-view";
 import {
 	Select,
 	SelectContent,
@@ -108,10 +108,7 @@ export function Captions() {
 	};
 
 	return (
-		<BaseView
-			ref={containerRef}
-			className="flex h-full flex-col justify-between"
-		>
+		<PanelView title="Captions" ref={containerRef}>
 			<div className="flex flex-col gap-3">
 				<Label>Language</Label>
 				<Select
@@ -148,6 +145,6 @@ export function Captions() {
 					{isProcessing ? processingStep : "Generate transcript"}
 				</Button>
 			</div>
-		</BaseView>
+		</PanelView>
 	);
 }

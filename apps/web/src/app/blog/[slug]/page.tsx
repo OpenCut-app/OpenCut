@@ -120,7 +120,9 @@ function PostMeta({ date, publishedAt }: { date: string; publishedAt: Date }) {
 
 function PostTitle({ title }: { title: string }) {
 	return (
-		<h1 className="text-5xl font-bold tracking-tight md:text-4xl text-center">{title}</h1>
+		<h1 className="text-5xl font-bold tracking-tight md:text-4xl text-center">
+			{title}
+		</h1>
 	);
 }
 

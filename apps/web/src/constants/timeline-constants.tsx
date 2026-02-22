@@ -1,5 +1,6 @@
 import type { TTimelineViewState } from "@/types/project";
-import type { TrackType } from "@/types/timeline";
+import type { BlendMode } from "@/types/rendering";
+import type { TrackType, Transform } from "@/types/timeline";
 import {
 	Happy01Icon,
 	MusicNote03Icon,
@@ -7,6 +8,16 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { OcVideoIcon } from "@opencut/ui/icons";
+
+export const DEFAULT_TRANSFORM: Transform = {
+	scale: 1,
+	position: { x: 0, y: 0 },
+	rotate: 0,
+};
+
+export const DEFAULT_OPACITY = 1;
+export const DEFAULT_BLEND_MODE: BlendMode = "normal";
+export const DEFAULT_BOOKMARK_COLOR = "#009dff";
 
 export const TRACK_COLORS: Record<TrackType, { background: string }> = {
 	video: {
@@ -31,6 +42,8 @@ export const TRACK_HEIGHTS: Record<TrackType, number> = {
 } as const;
 
 export const TRACK_GAP = 4;
+
+export const DRAG_THRESHOLD_PX = 5;
 
 export const TIMELINE_CONSTANTS = {
 	PIXELS_PER_SECOND: 50,

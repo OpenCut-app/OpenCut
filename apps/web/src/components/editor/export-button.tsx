@@ -23,7 +23,11 @@ import {
 	type ExportQuality,
 	type ExportResult,
 } from "@/types/export";
-import { PropertyGroup } from "@/components/editor/panels/properties/property-item";
+import {
+	Section,
+	SectionContent,
+	SectionHeader,
+} from "@/components/editor/panels/properties/section";
 import { useEditor } from "@/hooks/use-editor";
 import { DEFAULT_EXPORT_OPTIONS } from "@/constants/export-constants";
 
@@ -162,78 +166,83 @@ function ExportPopover({
 						{!isExporting && (
 							<>
 								<div className="flex flex-col">
-									<PropertyGroup
-										title="Format"
-										defaultExpanded={false}
-										hasBorderTop={false}
-									>
-										<RadioGroup
-											value={format}
-											onValueChange={(value) => {
-												if (isExportFormat(value)) {
-													setFormat(value);
-												}
-											}}
-										>
-											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="mp4" id="mp4" />
-												<Label htmlFor="mp4">
-													MP4 (H.264) - Better compatibility
-												</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="webm" id="webm" />
-												<Label htmlFor="webm">
-													WebM (VP9) - Smaller file size
-												</Label>
-											</div>
-										</RadioGroup>
-									</PropertyGroup>
+									<Section collapsible defaultOpen={false} hasBorderTop={false}>
+										<SectionHeader title="Format" />
+										<SectionContent>
+											<RadioGroup
+												value={format}
+												onValueChange={(value) => {
+													if (isExportFormat(value)) {
+														setFormat(value);
+													}
+												}}
+											>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="mp4" id="mp4" />
+													<Label htmlFor="mp4">
+														MP4 (H.264) - Better compatibility
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="webm" id="webm" />
+													<Label htmlFor="webm">
+														WebM (VP9) - Smaller file size
+													</Label>
+												</div>
+											</RadioGroup>
+										</SectionContent>
+									</Section>
 
-									<PropertyGroup title="Quality" defaultExpanded={false}>
-										<RadioGroup
-											value={quality}
-											onValueChange={(value) => {
-												if (isExportQuality(value)) {
-													setQuality(value);
-												}
-											}}
-										>
+									<Section collapsible defaultOpen={false}>
+										<SectionHeader title="Quality" />
+										<SectionContent>
+											<RadioGroup
+												value={quality}
+												onValueChange={(value) => {
+													if (isExportQuality(value)) {
+														setQuality(value);
+													}
+												}}
+											>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="low" id="low" />
+													<Label htmlFor="low">Low - Smallest file size</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="medium" id="medium" />
+													<Label htmlFor="medium">Medium - Balanced</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="high" id="high" />
+													<Label htmlFor="high">High - Recommended</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="very_high" id="very_high" />
+													<Label htmlFor="very_high">
+														Very High - Largest file size
+													</Label>
+												</div>
+											</RadioGroup>
+										</SectionContent>
+									</Section>
+
+									<Section collapsible defaultOpen={false}>
+										<SectionHeader title="Audio" />
+										<SectionContent>
 											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="low" id="low" />
-												<Label htmlFor="low">Low - Smallest file size</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="medium" id="medium" />
-												<Label htmlFor="medium">Medium - Balanced</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="high" id="high" />
-												<Label htmlFor="high">High - Recommended</Label>
-											</div>
-											<div className="flex items-center space-x-2">
-												<RadioGroupItem value="very_high" id="very_high" />
-												<Label htmlFor="very_high">
-													Very High - Largest file size
+												<Checkbox
+													id="include-audio"
+													checked={includeAudio}
+													onCheckedChange={(checked) =>
+														setIncludeAudio(!!checked)
+													}
+												/>
+												<Label htmlFor="include-audio">
+													Include audio in export
 												</Label>
 											</div>
-										</RadioGroup>
-									</PropertyGroup>
-
-									<PropertyGroup title="Audio" defaultExpanded={false}>
-										<div className="flex items-center space-x-2">
-											<Checkbox
-												id="include-audio"
-												checked={includeAudio}
-												onCheckedChange={(checked) =>
-													setIncludeAudio(!!checked)
-												}
-											/>
-											<Label htmlFor="include-audio">
-												Include audio in export
-											</Label>
-										</div>
-									</PropertyGroup>
+										</SectionContent>
+									</Section>
 								</div>
 
 								<div className="p-3 pt-0">

@@ -15,7 +15,7 @@ export interface TextDragData extends BaseDragData {
 
 export interface StickerDragData extends BaseDragData {
 	type: "sticker";
-	iconName: string;
+	stickerId: string;
 }
 
 export type TimelineDragData = MediaDragData | TextDragData | StickerDragData;

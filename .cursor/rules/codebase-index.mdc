@@ -19,7 +19,6 @@ When implementing new features:
 ## apps/web/src/constants
 
 editor-constants.ts
-  export const PLATFORM_LAYOUTS: Record<TPlatformLayout, string>
   export const PANEL_CONFIG
 
 export-constants.ts
@@ -27,19 +26,8 @@ export-constants.ts
   export const EXPORT_MIME_TYPES
 
 font-constants.ts
-  export interface FontOption {
-    value: string
-    label: string
-    category: "system" | "google" | "custom"
-    weights?: number[]
-    hasClassName?: boolean
-  }
-  export const FONT_OPTIONS: FontOption[]
   export const DEFAULT_FONT
-  export type FontFamily = (typeof FONT_OPTIONS)[number]["value"]
-  export const getFontByValue = (value: string): FontOption | undefined => ...
-  export const getGoogleFonts = (): FontOption[] => ...
-  export const getSystemFonts = (): FontOption[] => ...
+  export const SYSTEM_FONTS
 
 language-constants.ts
   export const LANGUAGES
@@ -56,37 +44,43 @@ project-constants.ts
 site-constants.ts
   export const SITE_URL
   export const SITE_INFO
-  export type ExternalTool = {
-  	name: string;
-  	description: string;
-  	url: string;
-  	icon: React.ElementType;
+  export type ExternalTool = {
+  	name: string;
+  	description: string;
+  	url: string;
+  	icon: React.ElementType;
   }
   export const EXTERNAL_TOOLS: ExternalTool[]
   export const DEFAULT_LOGO_URL
   export const SOCIAL_LINKS
-  export type Sponsor = {
-  	name: string;
-  	url: string;
-  	logo: string;
-  	description: string;
+  export type Sponsor = {
+  	name: string;
+  	url: string;
+  	logo: string;
+  	description: string;
   }
   export const SPONSORS: Sponsor[]
 
-stickers-constants.ts
+sticker-constants.ts
   export const STICKER_CATEGORIES
-  export const STICKER_CATEGORY_CONFIG: Record<
-  	(typeof STICKER_CATEGORIES)[number],
-  	string | undefined
-  >
 
 text-constants.ts
+  export const MIN_FONT_SIZE
+  export const MAX_FONT_SIZE
+  export const FONT_SIZE_SCALE_REFERENCE
+  export const DEFAULT_LETTER_SPACING
+  export const DEFAULT_LINE_HEIGHT
   export const DEFAULT_TEXT_ELEMENT: Omit<TextElement, "id">
 
 timeline-constants.tsx
+  export const DEFAULT_TRANSFORM: Transform
+  export const DEFAULT_OPACITY
+  export const DEFAULT_BLEND_MODE: BlendMode
+  export const DEFAULT_BOOKMARK_COLOR
   export const TRACK_COLORS: Record<TrackType, { background: string }>
   export const TRACK_HEIGHTS: Record<TrackType, number>
   export const TRACK_GAP
+  export const DRAG_THRESHOLD_PX
   export const TIMELINE_CONSTANTS
   export const DEFAULT_TIMELINE_VIEW_STATE: TTimelineViewState
   export const TRACK_ICONS: Record<TrackType, React.ReactNode>
@@ -121,23 +115,50 @@ index.ts
 
 ## apps/web/src/hooks
 
+use-container-size.ts
+  export function useContainerSize({
+  	containerRef,
+  }: {
+  	containerRef: React.RefObject<HTMLElement | null>;
+  })
+
 use-editor.ts
   export function useEditor(): EditorCore
 
 use-file-upload.ts
-  export function useFileUpload({
-  	accept,
-  	multiple,
-  	onFilesSelected,
+  export function useFileUpload({
+  	accept,
+  	multiple,
+  	onFilesSelected,
   }: UseFileUploadOptions = {})
 
+use-focus-lock.ts
+  export function useFocusLock({
+  	isActive,
+  	onDismiss,
+  	cursor = "default",
+  	allowSelector,
+  }: {
+  	isActive: boolean;
+  	onDismiss: () => void;
+  	cursor?: FocusLockCursor;
+  	allowSelector?: string;
+  })
+
+use-fullscreen.ts
+  export function useFullscreen({
+  	containerRef,
+  }: {
+  	containerRef: React.RefObject<HTMLElement | null>;
+  })
+
 use-infinite-scroll.ts
-  export function useInfiniteScroll({
-  	onLoadMore,
-  	hasMore,
-  	isLoading,
-  	threshold = 200,
-  	enabled = true,
+  export function useInfiniteScroll({
+  	onLoadMore,
+  	hasMore,
+  	isLoading,
+  	threshold = 200,
+  	enabled = true,
   }: UseInfiniteScrollOptions)
 
 use-keybindings.ts
@@ -158,32 +179,52 @@ use-keyboard-shortcuts-help.ts
 use-mobile.ts
   export function useIsMobile()
 
+use-paste-media.ts
+  export function usePasteMedia()
+
+use-preview-interaction.ts
+  export function usePreviewInteraction({
+  	canvasRef,
+  }: {
+  	canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  })
+
 use-raf-loop.ts
   export function useRafLoop(callback: ({ time }: { time: number }) => void)
 
 use-reveal-item.ts
-  export function useRevealItem(
-  	highlightId: string | null,
-  	onClearHighlight: () => void,
-  	highlightDuration = 1000,
+  export function useRevealItem(
+  	highlightId: string | null,
+  	onClearHighlight: () => void,
+  	highlightDuration = 1000,
   )
 
+use-shift-key.ts
+  export function useShiftKey(): RefObject<boolean>
+
 use-sound-search.ts
-  export function useSoundSearch({
-  	query,
-  	commercialOnly,
+  export function useSoundSearch({
+  	query,
+  	commercialOnly,
+  }: {
+  	query: string;
+  	commercialOnly: boolean;
+  })
+
+use-transform-handles.ts
+  export function useTransformHandles({
+  	canvasRef,
   }: {
-  	query: string;
-  	commercialOnly: boolean;
+  	canvasRef: React.RefObject<HTMLCanvasElement | null>;
   })
 
 ## apps/web/src/hooks/actions
 
 use-action-handler.ts
-  export function useActionHandler(
-  	action: A,
-  	handler: TActionFunc<A>,
-  	isActive: TActionHandlerOptions,
+  export function useActionHandler(
+  	action: A,
+  	handler: TActionFunc<A>,
+  	isActive: TActionHandlerOptions,
   )
 
 use-editor-actions.ts
@@ -192,91 +233,111 @@ use-editor-actions.ts
 ## apps/web/src/hooks/storage
 
 use-local-storage.ts
-  export function useLocalStorage({
-  	key,
-  	defaultValue,
-  }: {
-  	key: string;
-  	defaultValue: T;
-  }): [
-  	T,
-  	({ value }: { value: T | ((previousValue: T) => T) }) => void,
-  	boolean,
+  export function useLocalStorage({
+  	key,
+  	defaultValue,
+  }: {
+  	key: string;
+  	defaultValue: T;
+  }): [
+  	T,
+  	({ value }: { value: T | ((previousValue: T) => T) }) => void,
+  	boolean,
   ]
 
 ## apps/web/src/hooks/timeline
 
+use-bookmark-drag.ts
+  export interface BookmarkDragState {
+    isDragging: boolean
+    bookmarkTime: number | null
+    currentTime: number
+  }
+  export function useBookmarkDrag({
+  	zoomLevel,
+  	scrollRef,
+  	snappingEnabled,
+  	onSnapPointChange,
+  }: UseBookmarkDragProps)
+
 use-edge-auto-scroll.ts
-  export function useEdgeAutoScroll({
-  	isActive,
-  	getMouseClientX,
-  	rulerScrollRef,
-  	tracksScrollRef,
-  	contentWidth,
-  	edgeThreshold = 100,
-  	maxScrollSpeed = 15,
+  export function useEdgeAutoScroll({
+  	isActive,
+  	getMouseClientX,
+  	rulerScrollRef,
+  	tracksScrollRef,
+  	contentWidth,
+  	edgeThreshold = 100,
+  	maxScrollSpeed = 15,
   }: UseEdgeAutoScrollParams): void
 
+use-scroll-position.ts
+  export function useScrollPosition({
+  	scrollRef,
+  }: {
+  	scrollRef: React.RefObject<HTMLElement | null>;
+  }): UseScrollPositionReturn
+
 use-scroll-sync.ts
-  export function useScrollSync({
-  	tracksScrollRef,
-  	rulerScrollRef,
-  	trackLabelsScrollRef,
-  	bookmarksScrollRef,
+  export function useScrollSync({
+  	tracksScrollRef,
+  	rulerScrollRef,
+  	trackLabelsScrollRef,
+  	bookmarksScrollRef,
   }: UseScrollSyncProps)
 
 use-selection-box.ts
-  export function useSelectionBox({
-  	containerRef,
-  	onSelectionComplete,
-  	isEnabled = true,
-  	tracksScrollRef,
-  	zoomLevel,
+  export function useSelectionBox({
+  	containerRef,
+  	onSelectionComplete,
+  	isEnabled = true,
+  	tracksScrollRef,
+  	zoomLevel,
   }: UseSelectionBoxProps)
 
 use-snap-indicator-position.ts
-  export function useSnapIndicatorPosition({
-  	snapPoint,
-  	zoomLevel,
-  	tracks,
-  	timelineRef,
-  	trackLabelsRef,
-  	tracksScrollRef,
+  export function useSnapIndicatorPosition({
+  	snapPoint,
+  	zoomLevel,
+  	tracks,
+  	timelineRef,
+  	trackLabelsRef,
+  	tracksScrollRef,
   }: UseSnapIndicatorPositionParams): SnapIndicatorPosition
 
 use-timeline-drag-drop.ts
-  export function useTimelineDragDrop({
-  	containerRef,
-  	headerRef,
-  	zoomLevel,
+  export function useTimelineDragDrop({
+  	containerRef,
+  	headerRef,
+  	zoomLevel,
   }: UseTimelineDragDropProps)
 
 use-timeline-playhead.ts
-  export function useTimelinePlayhead({
-  	zoomLevel,
-  	rulerRef,
-  	rulerScrollRef,
-  	tracksScrollRef,
-  	playheadRef,
+  export function useTimelinePlayhead({
+  	zoomLevel,
+  	rulerRef,
+  	rulerScrollRef,
+  	tracksScrollRef,
+  	playheadRef,
   }: UseTimelinePlayheadProps)
 
 use-timeline-seek.ts
-  export function useTimelineSeek({
-  	playheadRef,
-  	trackLabelsRef,
-  	rulerScrollRef,
-  	tracksScrollRef,
-  	zoomLevel,
-  	duration,
-  	isSelecting,
-  	clearSelectedElements,
-  	seek,
+  export function useTimelineSeek({
+  	playheadRef,
+  	trackLabelsRef,
+  	rulerScrollRef,
+  	tracksScrollRef,
+  	zoomLevel,
+  	duration,
+  	isSelecting,
+  	clearSelectedElements,
+  	seek,
   }: UseTimelineSeekProps)
 
 use-timeline-snapping.ts
   export interface SnapPoint {
     time: number
-    type: "element-start" | "element-end" | "playhead"
+    type: "element-start" | "element-end" | "playhead" | "bookmark"
     elementId?: string
     trackId?: string
   }
@@ -289,35 +350,37 @@ use-timeline-snapping.ts
     snapThreshold?: number
     enableElementSnapping?: boolean
     enablePlayheadSnapping?: boolean
+    enableBookmarkSnapping?: boolean
   }
-  export function useTimelineSnapping({
-  	snapThreshold = 10,
-  	enableElementSnapping = true,
-  	enablePlayheadSnapping = true,
+  export function useTimelineSnapping({
+  	snapThreshold = 10,
+  	enableElementSnapping = true,
+  	enablePlayheadSnapping = true,
+  	enableBookmarkSnapping = true,
   }: UseTimelineSnappingOptions = {})
 
 use-timeline-zoom.ts
-  export function useTimelineZoom({
-  	containerRef,
-  	minZoom = TIMELINE_CONSTANTS.ZOOM_MIN,
-  	initialZoom,
-  	initialScrollLeft,
-  	initialPlayheadTime,
-  	tracksScrollRef,
-  	rulerScrollRef,
+  export function useTimelineZoom({
+  	containerRef,
+  	minZoom = TIMELINE_CONSTANTS.ZOOM_MIN,
+  	initialZoom,
+  	initialScrollLeft,
+  	initialPlayheadTime,
+  	tracksScrollRef,
+  	rulerScrollRef,
   }: UseTimelineZoomProps): UseTimelineZoomReturn
 
 ## apps/web/src/hooks/timeline/element
 
 use-element-interaction.ts
-  export function useElementInteraction({
-  	zoomLevel,
-  	timelineRef,
-  	tracksContainerRef,
-  	tracksScrollRef,
-  	headerRef,
-  	snappingEnabled,
-  	onSnapPointChange,
+  export function useElementInteraction({
+  	zoomLevel,
+  	timelineRef,
+  	tracksContainerRef,
+  	tracksScrollRef,
+  	headerRef,
+  	snappingEnabled,
+  	onSnapPointChange,
   }: UseElementInteractionProps)
 
 use-element-resize.ts
@@ -330,12 +393,12 @@ use-element-resize.ts
     initialStartTime: number
     initialDuration: number
   }
-  export function useTimelineElementResize({
-  	element,
-  	track,
-  	zoomLevel,
-  	onSnapPointChange,
-  	onResizeStateChange,
+  export function useTimelineElementResize({
+  	element,
+  	track,
+  	zoomLevel,
+  	onSnapPointChange,
+  	onResizeStateChange,
   }: UseTimelineElementResizeProps)
 
 use-element-selection.ts
@@ -344,35 +407,35 @@ use-element-selection.ts
 ## apps/web/src/lib
 
 drag-data.ts
-  export function setDragData({
-  	dataTransfer,
-  	dragData,
-  }: {
-  	dataTransfer: DataTransfer;
-  	dragData: TimelineDragData;
+  export function setDragData({
+  	dataTransfer,
+  	dragData,
+  }: {
+  	dataTransfer: DataTransfer;
+  	dragData: TimelineDragData;
   }): void
-  export function getDragData({
-  	dataTransfer,
-  }: {
-  	dataTransfer: DataTransfer;
+  export function getDragData({
+  	dataTransfer,
+  }: {
+  	dataTransfer: DataTransfer;
   }): TimelineDragData | null
-  export function hasDragData({
-  	dataTransfer,
-  }: {
-  	dataTransfer: DataTransfer;
+  export function hasDragData({
+  	dataTransfer,
+  }: {
+  	dataTransfer: DataTransfer;
   }): boolean
   export function clearDragData(): void
 
 export.ts
-  export function getExportMimeType({
-  	format,
-  }: {
-  	format: ExportFormat;
+  export function getExportMimeType({
+  	format,
+  }: {
+  	format: ExportFormat;
   }): string
-  export function getExportFileExtension({
-  	format,
-  }: {
-  	format: ExportFormat;
+  export function getExportFileExtension({
+  	format,
+  }: {
+  	format: ExportFormat;
   }): string
 
 iconify-api.ts
@@ -381,14 +444,14 @@ iconify-api.ts
     prefix: string
     name: string
     total: number
-    author?: {
-  		name: string;
-  		url?: string;
+    author?: {
+  		name: string;
+  		url?: string;
   	}
-    license?: {
-  		title: string;
-  		spdx?: string;
-  		url?: string;
+    license?: {
+  		title: string;
+  		spdx?: string;
+  		url?: string;
   	}
     samples?: string[]
     category?: string
@@ -410,41 +473,41 @@ iconify-api.ts
     hidden?: string[]
     aliases?: Record<string, string>
   }
-  export function getCollections(
-  	category?: string,
+  export function getCollections(
+  	category?: string,
   ): Promise<Record<string, IconSet>>
-  export function getCollection(
-  	prefix: string,
+  export function getCollection(
+  	prefix: string,
   ): Promise<CollectionInfo | null>
-  export function searchIcons(
-  	query: string,
-  	limit: number = 64,
-  	prefixes?: string[],
-  	category?: string,
+  export function searchIcons(
+  	query: string,
+  	limit: number = 64,
+  	prefixes?: string[],
+  	category?: string,
   ): Promise<IconSearchResult>
-  export function buildIconSvgUrl(
-  	host: string,
-  	iconName: string,
-  	params?: {
-  		color?: string;
-  		width?: number;
-  		height?: number;
-  		flip?: "horizontal" | "vertical" | "horizontal,vertical";
-  		rotate?: number | string;
-  	},
+  export function buildIconSvgUrl(
+  	host: string,
+  	iconName: string,
+  	params?: {
+  		color?: string;
+  		width?: number;
+  		height?: number;
+  		flip?: "horizontal" | "vertical" | "horizontal,vertical";
+  		rotate?: number | string;
+  	},
   ): string
-  export function getIconSvgUrl(
-  	iconName: string,
-  	params?: Parameters<typeof buildIconSvgUrl>[2],
+  export function getIconSvgUrl(
+  	iconName: string,
+  	params?: Parameters<typeof buildIconSvgUrl>[2],
   ): string
-  export function downloadSvgAsText(
-  	iconName: string,
-  	params?: Parameters<typeof getIconSvgUrl>[1],
+  export function downloadSvgAsText(
+  	iconName: string,
+  	params?: Parameters<typeof getIconSvgUrl>[1],
   ): Promise<string>
   export function svgToFile(svgText: string, fileName: string): File
   export const POPULAR_COLLECTIONS
-  export function getCategoriesFromCollections(
-  	collections: Record<string, IconSet>,
+  export function getCategoriesFromCollections(
+  	collections: Record<string, IconSet>,
   ): string[]
 
 rate-limit.ts
@@ -454,127 +517,127 @@ rate-limit.ts
 scenes.ts
   export function getMainScene({ scenes }: { scenes: TScene[] }): TScene | null
   export function ensureMainScene({ scenes }: { scenes: TScene[] }): TScene[]
-  export function buildDefaultScene({
-  	name,
-  	isMain,
-  }: {
-  	name: string;
-  	isMain: boolean;
+  export function buildDefaultScene({
+  	name,
+  	isMain,
+  }: {
+  	name: string;
+  	isMain: boolean;
   }): TScene
-  export function canDeleteScene({ scene }: { scene: TScene }): {
-  	canDelete: boolean;
-  	reason?: string;
+  export function canDeleteScene({ scene }: { scene: TScene }): {
+  	canDelete: boolean;
+  	reason?: string;
   }
-  export function getFallbackSceneAfterDelete({
-  	scenes,
-  	deletedSceneId,
-  	currentSceneId,
-  }: {
-  	scenes: TScene[];
-  	deletedSceneId: string;
-  	currentSceneId: string | null;
+  export function getFallbackSceneAfterDelete({
+  	scenes,
+  	deletedSceneId,
+  	currentSceneId,
+  }: {
+  	scenes: TScene[];
+  	deletedSceneId: string;
+  	currentSceneId: string | null;
   }): TScene | null
-  export function findCurrentScene({
-  	scenes,
-  	currentSceneId,
-  }: {
-  	scenes: TScene[];
-  	currentSceneId: string;
+  export function findCurrentScene({
+  	scenes,
+  	currentSceneId,
+  }: {
+  	scenes: TScene[];
+  	currentSceneId: string;
   }): TScene | null
-  export function getProjectDurationFromScenes({
-  	scenes,
-  }: {
-  	scenes: TScene[];
+  export function getProjectDurationFromScenes({
+  	scenes,
+  }: {
+  	scenes: TScene[];
   }): number
-  export function updateSceneInArray({
-  	scenes,
-  	sceneId,
-  	updates,
-  }: {
-  	scenes: TScene[];
-  	sceneId: string;
-  	updates: Partial<TScene>;
+  export function updateSceneInArray({
+  	scenes,
+  	sceneId,
+  	updates,
+  }: {
+  	scenes: TScene[];
+  	sceneId: string;
+  	updates: Partial<TScene>;
   }): TScene[]
 
 time.ts
-  export function roundToFrame({
-  	time,
-  	fps,
-  }: {
-  	time: number;
-  	fps: number;
+  export function roundToFrame({
+  	time,
+  	fps,
+  }: {
+  	time: number;
+  	fps: number;
   }): number
-  export function formatTimeCode({
-  	timeInSeconds,
-  	format = "HH:MM:SS:CS",
-  	fps,
-  }: {
-  	timeInSeconds: number;
-  	format?: TTimeCode;
-  	fps?: number;
+  export function formatTimeCode({
+  	timeInSeconds,
+  	format = "HH:MM:SS:CS",
+  	fps,
+  }: {
+  	timeInSeconds: number;
+  	format?: TTimeCode;
+  	fps?: number;
   }): string
-  export function parseTimeCode({
-  	timeCode,
-  	format = "HH:MM:SS:CS",
-  	fps,
-  }: {
-  	timeCode: string;
-  	format?: TTimeCode;
-  	fps: number;
+  export function parseTimeCode({
+  	timeCode,
+  	format = "HH:MM:SS:CS",
+  	fps,
+  }: {
+  	timeCode: string;
+  	format?: TTimeCode;
+  	fps: number;
   }): number | null
-  export function guessTimeCodeFormat({
-  	timeCode,
-  }: {
-  	timeCode: string;
+  export function guessTimeCodeFormat({
+  	timeCode,
+  }: {
+  	timeCode: string;
   }): TTimeCode | null
-  export function timeToFrame({
-  	time,
-  	fps,
-  }: {
-  	time: number;
-  	fps: number;
+  export function timeToFrame({
+  	time,
+  	fps,
+  }: {
+  	time: number;
+  	fps: number;
   }): number
-  export function frameToTime({
-  	frame,
-  	fps,
-  }: {
-  	frame: number;
-  	fps: number;
+  export function frameToTime({
+  	frame,
+  	fps,
+  }: {
+  	frame: number;
+  	fps: number;
   }): number
-  export function snapTimeToFrame({
-  	time,
-  	fps,
-  }: {
-  	time: number;
-  	fps: number;
+  export function snapTimeToFrame({
+  	time,
+  	fps,
+  }: {
+  	time: number;
+  	fps: number;
   }): number
-  export function getSnappedSeekTime({
-  	rawTime,
-  	duration,
-  	fps,
-  }: {
-  	rawTime: number;
-  	duration: number;
-  	fps: number;
+  export function getSnappedSeekTime({
+  	rawTime,
+  	duration,
+  	fps,
+  }: {
+  	rawTime: number;
+  	duration: number;
+  	fps: number;
   }): number
-  export function getLastFrameTime({
-  	duration,
-  	fps,
-  }: {
-  	duration: number;
-  	fps: number;
+  export function getLastFrameTime({
+  	duration,
+  	fps,
+  }: {
+  	duration: number;
+  	fps: number;
   }): number
 
 ## apps/web/src/lib/actions
 
 definitions.ts
-  export type TActionCategory = | "playback"
-  	| "navigation"
-  	| "editing"
-  	| "selection"
-  	| "history"
-  	| "timeline"
-  	| "con...
+  export type TActionCategory = | "playback"
+  	| "navigation"
+  	| "editing"
+  	| "selection"
+  	| "history"
+  	| "timeline"
+  	| "controls"
   export interface TActionDefinition {
     description: string
     category: TActionCategory
@@ -587,40 +650,40 @@ definitions.ts
   export function getDefaultShortcuts(): Record<ShortcutKey, TAction>
 
 registry.ts
-  export function bindAction(
-  	action: A,
-  	handler: TActionFunc<A>,
+  export function bindAction(
+  	action: A,
+  	handler: TActionFunc<A>,
   )
-  export function unbindAction(
-  	action: A,
-  	handler: TActionFunc<A>,
+  export function unbindAction(
+  	action: A,
+  	handler: TActionFunc<A>,
   )
-  export const invokeAction = (
-  	action: A,
-  	args?: TArgOfAction<A>,
-  	trigger?: TInvocationTrigger,
+  export const invokeAction = (
+  	action: A,
+  	args?: TArgOfAction<A>,
+  	trigger?: TInvocationTrigger,
   ) => ...
 
 types.ts
-  export type TActionArgsMap = {
-  	"seek-forward": { seconds: number } | undefined;
-  	"seek-backward": { seconds: number } | und...
+  export type TActionArgsMap = {
+  	"seek-forward": { seconds: number } | undefined;
+  	"seek-backward": { seconds: number } | undef...
   export type TActionWithArgs = keyof TActionArgsMap
-  export type TActionWithOptionalArgs = | TActionWithNoArgs
+  export type TActionWithOptionalArgs = | TActionWithNoArgs
   	| TKeysWithValueUndefined<TActionArgsMap>
   export type TActionWithNoArgs = Exclude<TAction, TActionWithArgs>
-  export type TArgOfAction<A extends TAction> = A extends TActionWithArgs
-  	? TActionArgsMap[A]
+  export type TArgOfAction<A extends TAction> = A extends TActionWithArgs
+  	? TActionArgsMap[A]
   	: undefined
-  export type TActionFunc<A extends TAction> = A extends TActionWithArgs
-  	? (arg: TArgOfAction<A>, trigger?: TInvocationTrigger) => void
-  	: (_...
+  export type TActionFunc<A extends TAction> = A extends TActionWithArgs
+  	? (arg: TArgOfAction<A>, trigger?: TInvocationTrigger) => void
+  	: (_?:...
   export type TInvocationTrigger = "keypress" | "mouseclick"
-  export type TBoundActionList = {
-  	[A in TAction]?: Array<TActionFunc<A>>;
+  export type TBoundActionList = {
+  	[A in TAction]?: Array<TActionFunc<A>>;
   }
-  export type TActionHandlerOptions = | MutableRefObject<boolean>
-  	| boolean
+  export type TActionHandlerOptions = | MutableRefObject<boolean>
+  	| boolean
   	| undefined
 
 ## apps/web/src/lib/auth
@@ -637,10 +700,10 @@ query.ts
   export function getSinglePost({ slug }: { slug: string })
   export function getCategories()
   export function getAuthors()
-  export function processHtmlContent({
-  	html,
-  }: {
-  	html: string;
+  export function processHtmlContent({
+  	html,
+  }: {
+  	html: string;
   }): Promise<string>
 
 ## apps/web/src/lib/db
@@ -654,62 +717,82 @@ schema.ts
   export const accounts
   export const verifications
 
+## apps/web/src/lib/fonts
+
+google-fonts.ts
+  export function getCachedFontAtlas(): FontAtlas | null
+  export function clearFontAtlasCache(): void
+  export function prefetchFontAtlas(): Promise<FontAtlas | null>
+  export function loadFullFont({
+  	family,
+  	weights = [400, 700],
+  }: {
+  	family: string;
+  	weights?: number[];
+  }): Promise<void>
+  export function loadFonts({
+  	families,
+  }: {
+  	families: string[];
+  }): Promise<void>
+
 ## apps/web/src/lib/gradients
 
 canvas.ts
-  export function drawCssBackground({
-  	ctx,
-  	width,
-  	height,
-  	css,
-  }: {
-  	ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-  	width: number;
-  	height: number;
-  	css: string;
+  export function drawCssBackground({
+  	ctx,
+  	width,
+  	height,
+  	css,
+  }: {
+  	ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  	width: number;
+  	height: number;
+  	css: string;
   }): void
 
 parser.ts
   export type GradientOrientation = LinearOrientation | Array<RadialOrientation>
-  export type Color = | { type: "hex"; value: string }
-  	| { type: "literal"; value: string }
-  	| { type: "rgb"; value:...
+  export type Color = | { type: "hex"; value: string }
+  	| { type: "literal"; value: string }
+  	| { type: "rgb"; value: A...
   export type ColorStop = Color & { length?: Distance }
-  export type GradientAst = {
-  	type: GradientType;
-  	orientation: GradientOrientation | undefined;
-  	colorStops: Array<Color...
-  export const parseGradient = ({
-  	code,
-  }: {
-  	code: string;
+  export type GradientAst = {
+  	type: GradientType;
+  	orientation: GradientOrientation | undefined;
+  	colorStops: Array<ColorSto...
+  export const parseGradient = ({
+  	code,
+  }: {
+  	code: string;
   }): Array<GradientAst> => ...
   export const GradientParser
 
 ## apps/web/src/lib/media
 
 audio.ts
-  export type CollectedAudioElement = Omit<
-  	AudioElement,
-  	"type" | "mediaId" | "volume" | "id" | "name" | "sourceType" | "sourceUrl...
+  export type CollectedAudioElement = Omit<
+  	AudioElement,
+  	"type" | "mediaId" | "volume" | "id" | "name" | "sourceType" | "sourceUrl"
+  ...
   export function createAudioContext(): AudioContext
   export interface DecodedAudio {
     samples: Float32Array
     sampleRate: number
   }
-  export function decodeAudioToFloat32({
-  	audioBlob,
-  }: {
-  	audioBlob: Blob;
+  export function decodeAudioToFloat32({
+  	audioBlob,
+  }: {
+  	audioBlob: Blob;
   }): Promise<DecodedAudio>
-  export function collectAudioElements({
-  	tracks,
-  	mediaAssets,
-  	audioContext,
-  }: {
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
-  	audioContext: AudioContext;
+  export function collectAudioElements({
+  	tracks,
+  	mediaAssets,
+  	audioContext,
+  }: {
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
+  	audioContext: AudioContext;
   }): Promise<CollectedAudioElement[]>
   export interface AudioClipSource {
     id: string
@@ -721,265 +804,553 @@ audio.ts
     trimEnd: number
     muted: boolean
   }
-  export function collectAudioMixSources({
-  	tracks,
-  	mediaAssets,
-  }: {
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
+  export function collectAudioMixSources({
+  	tracks,
+  	mediaAssets,
+  }: {
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
   }): Promise<AudioMixSource[]>
-  export function collectAudioClips({
-  	tracks,
-  	mediaAssets,
-  }: {
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
+  export function collectAudioClips({
+  	tracks,
+  	mediaAssets,
+  }: {
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
   }): Promise<AudioClipSource[]>
-  export function createTimelineAudioBuffer({
-  	tracks,
-  	mediaAssets,
-  	duration,
-  	sampleRate = 44100,
-  	audioContext,
-  }: {
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
-  	duration: number;
-  	sampleRate?: number;
-  	audioContext?: AudioContext;
+  export function createTimelineAudioBuffer({
+  	tracks,
+  	mediaAssets,
+  	duration,
+  	sampleRate = 44100,
+  	audioContext,
+  }: {
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
+  	duration: number;
+  	sampleRate?: number;
+  	audioContext?: AudioContext;
   }): Promise<AudioBuffer | null>
 
 media-utils.ts
   export const SUPPORTS_AUDIO: readonly MediaType[]
-  export function mediaSupportsAudio({
-  	media,
-  }: {
-  	media: MediaAsset | null | undefined;
+  export function mediaSupportsAudio({
+  	media,
+  }: {
+  	media: MediaAsset | null | undefined;
   }): boolean
-  export const getMediaTypeFromFile = ({
-  	file,
-  }: {
-  	file: File;
+  export const getMediaTypeFromFile = ({
+  	file,
+  }: {
+  	file: File;
   }): MediaType | null => ...
 
 mediabunny.ts
-  export function getVideoInfo({
-  	videoFile,
-  }: {
-  	videoFile: File;
-  }): Promise<{
-  	duration: number;
-  	width: number;
-  	height: number;
-  	fps: number;
+  export function getVideoInfo({
+  	videoFile,
+  }: {
+  	videoFile: File;
+  }): Promise<{
+  	duration: number;
+  	width: number;
+  	height: number;
+  	fps: number;
   }>
-  export const extractTimelineAudio = ({
-  	tracks,
-  	mediaAssets,
-  	totalDuration,
-  	onProgress,
-  }: {
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
-  	totalDuration: number;
-  	onProgress?: (progress: number) => void;
+  export const extractTimelineAudio = ({
+  	tracks,
+  	mediaAssets,
+  	totalDuration,
+  	onProgress,
+  }: {
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
+  	totalDuration: number;
+  	onProgress?: (progress: number) => void;
   }): Promise<Blob> => ...
 
 processing.ts
   export interface ProcessedMediaAsset extends Omit<MediaAsset, "id">
-  export function generateThumbnail({
-  	videoFile,
-  	timeInSeconds,
-  }: {
-  	videoFile: File;
-  	timeInSeconds: number;
+  export function generateThumbnail({
+  	videoFile,
+  	timeInSeconds,
+  }: {
+  	videoFile: File;
+  	timeInSeconds: number;
   }): Promise<string>
-  export function generateImageThumbnail({
-  	imageFile,
-  }: {
-  	imageFile: File;
+  export function generateImageThumbnail({
+  	imageFile,
+  }: {
+  	imageFile: File;
   }): Promise<string>
-  export function processMediaAssets({
-  	files,
-  	onProgress,
-  }: {
-  	files: FileList | File[];
-  	onProgress?: ({ progress }: { progress: number }) => void;
+  export function processMediaAssets({
+  	files,
+  	onProgress,
+  }: {
+  	files: FileList | File[];
+  	onProgress?: ({ progress }: { progress: number }) => void;
   }): Promise<ProcessedMediaAsset[]>
+
+## apps/web/src/lib/preview
+
+element-bounds.ts
+  export interface ElementBounds {
+    cx: number
+    cy: number
+    width: number
+    height: number
+    rotation: number
+  }
+  export interface ElementWithBounds {
+    trackId: string
+    elementId: string
+    element: TimelineElement
+    bounds: ElementBounds
+  }
+  export function getElementBounds({
+  	element,
+  	canvasSize,
+  	mediaAsset,
+  }: {
+  	element: TimelineElement;
+  	canvasSize: { width: number; height: number };
+  	mediaAsset?: MediaAsset | null;
+  }): ElementBounds | null
+  export function getVisibleElementsWithBounds({
+  	tracks,
+  	currentTime,
+  	canvasSize,
+  	mediaAssets,
+  }: {
+  	tracks: TimelineTrack[];
+  	currentTime: number;
+  	canvasSize: { width: number; height: number };
+  	mediaAssets: MediaAsset[];
+  }): ElementWithBounds[]
+
+hit-test.ts
+  export function hitTest({
+  	canvasX,
+  	canvasY,
+  	elementsWithBounds,
+  }: {
+  	canvasX: number;
+  	canvasY: number;
+  	elementsWithBounds: ElementWithBounds[];
+  }): ElementWithBounds | null
+
+preview-coords.ts
+  export function screenToCanvas({
+  	clientX,
+  	clientY,
+  	canvas,
+  }: {
+  	clientX: number;
+  	clientY: number;
+  	canvas: HTMLCanvasElement;
+  }): { x: number; y: number }
+  export function canvasToOverlay({
+  	canvasX,
+  	canvasY,
+  	canvasRect,
+  	containerRect,
+  	canvasSize,
+  }: {
+  	canvasX: number;
+  	canvasY: number;
+  	canvasRect: DOMRect;
+  	containerRect: DOMRect;
+  	canvasSize: { width: number; height: number };
+  }): { x: number; y: number }
+  export function positionToOverlay({
+  	positionX,
+  	positionY,
+  	canvasRect,
+  	containerRect,
+  	canvasSize,
+  }: {
+  	positionX: number;
+  	positionY: number;
+  	canvasRect: DOMRect;
+  	containerRect: DOMRect;
+  	canvasSize: { width: number; height: number };
+  }): { x: number; y: number }
+  export function getDisplayScale({
+  	canvasRect,
+  	canvasSize,
+  }: {
+  	canvasRect: DOMRect;
+  	canvasSize: { width: number; height: number };
+  }): { x: number; y: number }
+
+preview-snap.ts
+  export interface SnapLine {
+    type: "horizontal" | "vertical"
+    position: number
+  }
+  export const MIN_SCALE
+  export interface SnapResult {
+    snappedPosition: { x: number; y: number }
+    activeLines: SnapLine[]
+  }
+  export function snapPosition({
+  	proposedPosition,
+  	canvasSize,
+  	elementSize,
+  }: {
+  	proposedPosition: { x: number; y: number };
+  	canvasSize: { width: number; height: number };
+  	elementSize: { width: number; height: number };
+  }): SnapResult
+  export interface ScaleSnapResult {
+    snappedScale: number
+    activeLines: SnapLine[]
+  }
+  export function snapScale({
+  	proposedScale,
+  	position,
+  	baseWidth,
+  	baseHeight,
+  	canvasSize,
+  }: {
+  	proposedScale: number;
+  	position: { x: number; y: number };
+  	baseWidth: number;
+  	baseHeight: number;
+  	canvasSize: { width: number; height: number };
+  }): ScaleSnapResult
+  export interface RotationSnapResult {
+    snappedRotation: number
+    isSnapped: boolean
+  }
+  export function snapRotation({
+  	proposedRotation,
+  }: {
+  	proposedRotation: number;
+  }): RotationSnapResult
+
+## apps/web/src/lib/stickers
+
+index.ts
+  export function searchStickers({
+  	query,
+  	category,
+  	limit = DEFAULT_SEARCH_LIMIT,
+  }: {
+  	query: string;
+  	category: StickerCategory;
+  	limit?: number;
+  }): Promise<StickerSearchResult>
+  export function browseStickers({
+  	category,
+  	page = 1,
+  	limit = DEFAULT_SEARCH_LIMIT,
+  }: {
+  	category: StickerCategory;
+  	page?: number;
+  	limit?: number;
+  }): Promise<StickerSearchResult>
+
+registry.ts
+  export function registerProvider({
+  	provider,
+  }: {
+  	provider: StickerProvider;
+  }): void
+  export function hasProvider({ providerId }: { providerId: string }): boolean
+  export function getProvider({
+  	providerId,
+  }: {
+  	providerId: string;
+  }): StickerProvider
+  export function getAllProviders(): StickerProvider[]
+
+resolver.ts
+  export function resolveStickerId({
+  	stickerId,
+  	options,
+  }: {
+  	stickerId: string;
+  	options?: StickerResolveOptions;
+  }): string
+
+sticker-id.ts
+  export function parseStickerId({ stickerId }: { stickerId: string }): {
+  	providerId: string;
+  	providerValue: string;
+  }
+  export function buildStickerId({
+  	providerId,
+  	providerValue,
+  }: {
+  	providerId: string;
+  	providerValue: string;
+  }): string
+
+## apps/web/src/lib/stickers/providers
+
+emoji.ts
+  export const emojiProvider: StickerProvider
+
+flags.ts
+  export const flagsProvider: StickerProvider
+
+icons.ts
+  export const iconsProvider: StickerProvider
+
+index.ts
+  export function registerDefaultStickerProviders({
+  	providersToRegister = defaultProviders,
+  }: {
+  	providersToRegister?: StickerProvider[];
+  } = {}): void
+
+shapes.ts
+  export const shapesProvider: StickerProvider
 
 ## apps/web/src/lib/timeline
 
 bookmarks.ts
-  export function findBookmarkIndex({
-  	bookmarks,
-  	frameTime,
-  }: {
-  	bookmarks: number[];
-  	frameTime: number;
+  export const BOOKMARK_TIME_EPSILON
+  export function findBookmarkIndex({
+  	bookmarks,
+  	frameTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
   }): number
-  export function isBookmarkAtTime({
-  	bookmarks,
-  	frameTime,
-  }: {
-  	bookmarks: number[];
-  	frameTime: number;
+  export function isBookmarkAtTime({
+  	bookmarks,
+  	frameTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
   }): boolean
-  export function toggleBookmarkInArray({
-  	bookmarks,
-  	frameTime,
+  export function toggleBookmarkInArray({
+  	bookmarks,
+  	frameTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
+  }): Bookmark[]
+  export function removeBookmarkFromArray({
+  	bookmarks,
+  	frameTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
+  }): Bookmark[]
+  export function updateBookmarkInArray({
+  	bookmarks,
+  	frameTime,
+  	updates,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
+  	updates: Partial<Omit<Bookmark, "time">>;
+  }): Bookmark[]
+  export function moveBookmarkInArray({
+  	bookmarks,
+  	fromTime,
+  	toTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	fromTime: number;
+  	toTime: number;
+  }): Bookmark[]
+  export function getFrameTime({
+  	time,
+  	fps,
+  }: {
+  	time: number;
+  	fps: number;
+  }): number
+  export function getBookmarkAtTime({
+  	bookmarks,
+  	frameTime,
+  }: {
+  	bookmarks: Bookmark[];
+  	frameTime: number;
+  }): Bookmark | null
+  export function getBookmarksActiveAtTime({
+  	bookmarks,
+  	time,
+  }: {
+  	bookmarks: Bookmark[];
+  	time: number;
+  }): Bookmark[]
+
+drag-utils.ts
+  export function getMouseTimeFromClientX({
+  	clientX,
+  	containerRect,
+  	zoomLevel,
+  	scrollLeft,
   }: {
-  	bookmarks: number[];
-  	frameTime: number;
-  }): number[]
-  export function removeBookmarkFromArray({
-  	bookmarks,
-  	frameTime,
-  }: {
-  	bookmarks: number[];
-  	frameTime: number;
-  }): number[]
-  export function getFrameTime({
-  	time,
-  	fps,
-  }: {
-  	time: number;
-  	fps: number;
+  	clientX: number;
+  	containerRect: DOMRect;
+  	zoomLevel: number;
+  	scrollLeft: number;
   }): number
 
 drop-utils.ts
-  export function computeDropTarget({
-  	elementType,
-  	mouseX,
-  	mouseY,
-  	tracks,
-  	playheadTime,
-  	isExternalDrop,
-  	elementDuration,
-  	pixelsPerSecond,
-  	zoomLevel,
-  	verticalDragDirection,
-  	startTimeOverride,
-  	excludeElementId,
+  export function computeDropTarget({
+  	elementType,
+  	mouseX,
+  	mouseY,
+  	tracks,
+  	playheadTime,
+  	isExternalDrop,
+  	elementDuration,
+  	pixelsPerSecond,
+  	zoomLevel,
+  	verticalDragDirection,
+  	startTimeOverride,
+  	excludeElementId,
   }: ComputeDropTargetParams): DropTarget
-  export function getDropLineY({
-  	dropTarget,
-  	tracks,
-  }: {
-  	dropTarget: DropTarget;
-  	tracks: TimelineTrack[];
+  export function getDropLineY({
+  	dropTarget,
+  	tracks,
+  }: {
+  	dropTarget: DropTarget;
+  	tracks: TimelineTrack[];
   }): number
 
 element-utils.ts
-  export function canElementHaveAudio(
-  	element: TimelineElement,
+  export function canElementHaveAudio(
+  	element: TimelineElement,
   )
-  export function canElementBeHidden(
-  	element: TimelineElement,
+  export function isVisualElement(
+  	element: TimelineElement,
   )
-  export function hasMediaId(
-  	element: TimelineElement,
+  export function canElementBeHidden(
+  	element: TimelineElement,
   )
-  export function requiresMediaId({
-  	element,
-  }: {
-  	element: CreateTimelineElement;
+  export function hasMediaId(
+  	element: TimelineElement,
+  )
+  export function requiresMediaId({
+  	element,
+  }: {
+  	element: CreateTimelineElement;
   }): boolean
-  export function checkElementOverlaps({
-  	elements,
-  }: {
-  	elements: TimelineElement[];
+  export function checkElementOverlaps({
+  	elements,
+  }: {
+  	elements: TimelineElement[];
   }): boolean
-  export function resolveElementOverlaps({
-  	elements,
-  }: {
-  	elements: TimelineElement[];
+  export function resolveElementOverlaps({
+  	elements,
+  }: {
+  	elements: TimelineElement[];
   }): TimelineElement[]
-  export function wouldElementOverlap({
-  	elements,
-  	startTime,
-  	endTime,
-  	excludeElementId,
-  }: {
-  	elements: TimelineElement[];
-  	startTime: number;
-  	endTime: number;
-  	excludeElementId?: string;
+  export function wouldElementOverlap({
+  	elements,
+  	startTime,
+  	endTime,
+  	excludeElementId,
+  }: {
+  	elements: TimelineElement[];
+  	startTime: number;
+  	endTime: number;
+  	excludeElementId?: string;
   }): boolean
-  export function buildTextElement({
-  	raw,
-  	startTime,
-  }: {
-  	raw: Partial<Omit<TextElement, "type" | "id">>;
-  	startTime: number;
+  export function buildTextElement({
+  	raw,
+  	startTime,
+  }: {
+  	raw: Partial<Omit<TextElement, "type" | "id">>;
+  	startTime: number;
   }): CreateTimelineElement
-  export function buildStickerElement({
-  	iconName,
-  	startTime,
-  }: {
-  	iconName: string;
-  	startTime: number;
+  export function buildStickerElement({
+  	stickerId,
+  	name,
+  	startTime,
+  }: {
+  	stickerId: string;
+  	name?: string;
+  	startTime: number;
   }): CreateStickerElement
-  export function buildVideoElement({
-  	mediaId,
-  	name,
-  	duration,
-  	startTime,
-  }: {
-  	mediaId: string;
-  	name: string;
-  	duration: number;
-  	startTime: number;
+  export function buildVideoElement({
+  	mediaId,
+  	name,
+  	duration,
+  	startTime,
+  }: {
+  	mediaId: string;
+  	name: string;
+  	duration: number;
+  	startTime: number;
   }): CreateVideoElement
-  export function buildImageElement({
-  	mediaId,
-  	name,
-  	duration,
-  	startTime,
-  }: {
-  	mediaId: string;
-  	name: string;
-  	duration: number;
-  	startTime: number;
+  export function buildImageElement({
+  	mediaId,
+  	name,
+  	duration,
+  	startTime,
+  }: {
+  	mediaId: string;
+  	name: string;
+  	duration: number;
+  	startTime: number;
   }): CreateImageElement
-  export function buildUploadAudioElement({
-  	mediaId,
-  	name,
-  	duration,
-  	startTime,
-  	buffer,
-  }: {
-  	mediaId: string;
-  	name: string;
-  	duration: number;
-  	startTime: number;
-  	buffer?: AudioBuffer;
+  export function buildUploadAudioElement({
+  	mediaId,
+  	name,
+  	duration,
+  	startTime,
+  	buffer,
+  }: {
+  	mediaId: string;
+  	name: string;
+  	duration: number;
+  	startTime: number;
+  	buffer?: AudioBuffer;
   }): CreateUploadAudioElement
-  export function buildLibraryAudioElement({
-  	sourceUrl,
-  	name,
-  	duration,
-  	startTime,
-  	buffer,
-  }: {
-  	sourceUrl: string;
-  	name: string;
-  	duration: number;
-  	startTime: number;
-  	buffer?: AudioBuffer;
+  export function buildElementFromMedia({
+  	mediaId,
+  	mediaType,
+  	name,
+  	duration,
+  	startTime,
+  	buffer,
+  }: {
+  	mediaId: string;
+  	mediaType: MediaType;
+  	name: string;
+  	duration: number;
+  	startTime: number;
+  	buffer?: AudioBuffer;
+  }): CreateTimelineElement
+  export function buildLibraryAudioElement({
+  	sourceUrl,
+  	name,
+  	duration,
+  	startTime,
+  	buffer,
+  }: {
+  	sourceUrl: string;
+  	name: string;
+  	duration: number;
+  	startTime: number;
+  	buffer?: AudioBuffer;
   }): CreateLibraryAudioElement
-  export function getElementsAtTime({
-  	tracks,
-  	time,
-  }: {
-  	tracks: TimelineTrack[];
-  	time: number;
+  export function getElementsAtTime({
+  	tracks,
+  	time,
+  }: {
+  	tracks: TimelineTrack[];
+  	time: number;
   }): { trackId: string; elementId: string }[]
+  export function collectFontFamilies({
+  	tracks,
+  }: {
+  	tracks: TimelineTrack[];
+  }): string[]
 
 index.ts
-  export function calculateTotalDuration({
-  	tracks,
-  }: {
-  	tracks: TimelineTrack[];
+  export function calculateTotalDuration({
+  	tracks,
+  }: {
+  	tracks: TimelineTrack[];
   }): number
 
 ruler-utils.ts
@@ -987,162 +1358,180 @@ ruler-utils.ts
     labelIntervalSeconds: number
     tickIntervalSeconds: number
   }
-  export function getRulerConfig({
-  	zoomLevel,
-  	fps,
-  }: {
-  	zoomLevel: number;
-  	fps: number;
+  export function getRulerConfig({
+  	zoomLevel,
+  	fps,
+  }: {
+  	zoomLevel: number;
+  	fps: number;
   }): RulerConfig
-  export function shouldShowLabel({
-  	time,
-  	labelIntervalSeconds,
-  }: {
-  	time: number;
-  	labelIntervalSeconds: number;
+  export function shouldShowLabel({
+  	time,
+  	labelIntervalSeconds,
+  }: {
+  	time: number;
+  	labelIntervalSeconds: number;
   }): boolean
-  export function formatRulerLabel({
-  	timeInSeconds,
-  	fps,
-  }: {
-  	timeInSeconds: number;
-  	fps: number;
+  export function formatRulerLabel({
+  	timeInSeconds,
+  	fps,
+  }: {
+  	timeInSeconds: number;
+  	fps: number;
   }): string
 
 track-utils.ts
-  export function canTracktHaveAudio(
-  	track: TimelineTrack,
+  export function canTracktHaveAudio(
+  	track: TimelineTrack,
   )
-  export function canTrackBeHidden(
-  	track: TimelineTrack,
+  export function canTrackBeHidden(
+  	track: TimelineTrack,
   )
   export function getTrackColor({ type }: { type: TrackType })
   export function getTrackClasses({ type }: { type: TrackType })
   export function getTrackHeight({ type }: { type: TrackType }): number
-  export function getCumulativeHeightBefore({
-  	tracks,
-  	trackIndex,
-  }: {
-  	tracks: Array<{ type: TrackType }>;
-  	trackIndex: number;
+  export function getCumulativeHeightBefore({
+  	tracks,
+  	trackIndex,
+  }: {
+  	tracks: Array<{ type: TrackType }>;
+  	trackIndex: number;
   }): number
-  export function getTotalTracksHeight({
-  	tracks,
-  }: {
-  	tracks: Array<{ type: TrackType }>;
+  export function getTotalTracksHeight({
+  	tracks,
+  }: {
+  	tracks: Array<{ type: TrackType }>;
   }): number
-  export function buildEmptyTrack({
-  	id,
-  	type,
-  	name,
-  }: {
-  	id: string;
-  	type: TrackType;
-  	name?: string;
+  export function buildEmptyTrack({
+  	id,
+  	type,
+  	name,
+  }: {
+  	id: string;
+  	type: TrackType;
+  	name?: string;
   }): TimelineTrack
-  export function getDefaultInsertIndexForTrack({
-  	tracks,
-  	trackType,
-  }: {
-  	tracks: TimelineTrack[];
-  	trackType: TrackType;
+  export function getDefaultInsertIndexForTrack({
+  	tracks,
+  	trackType,
+  }: {
+  	tracks: TimelineTrack[];
+  	trackType: TrackType;
   }): number
-  export function getHighestInsertIndexForTrack({
-  	tracks,
-  	trackType,
-  }: {
-  	tracks: TimelineTrack[];
-  	trackType: TrackType;
+  export function getHighestInsertIndexForTrack({
+  	tracks,
+  	trackType,
+  }: {
+  	tracks: TimelineTrack[];
+  	trackType: TrackType;
   }): number
   export function isMainTrack(track: TimelineTrack)
-  export function getMainTrack({
-  	tracks,
-  }: {
-  	tracks: TimelineTrack[];
+  export function getMainTrack({
+  	tracks,
+  }: {
+  	tracks: TimelineTrack[];
   }): TimelineTrack | null
-  export function ensureMainTrack({
-  	tracks,
-  }: {
-  	tracks: TimelineTrack[];
+  export function ensureMainTrack({
+  	tracks,
+  }: {
+  	tracks: TimelineTrack[];
   }): TimelineTrack[]
-  export function canElementGoOnTrack({
-  	elementType,
-  	trackType,
-  }: {
-  	elementType: ElementType;
-  	trackType: TrackType;
+  export function canElementGoOnTrack({
+  	elementType,
+  	trackType,
+  }: {
+  	elementType: ElementType;
+  	trackType: TrackType;
   }): boolean
-  export function validateElementTrackCompatibility({
-  	element,
-  	track,
-  }: {
-  	element: { type: ElementType };
-  	track: { type: TrackType };
+  export function validateElementTrackCompatibility({
+  	element,
+  	track,
+  }: {
+  	element: { type: ElementType };
+  	track: { type: TrackType };
   }): { isValid: boolean; errorMessage?: string }
+  export function getEarliestMainTrackElement({
+  	tracks,
+  	excludeElementId,
+  }: {
+  	tracks: TimelineTrack[];
+  	excludeElementId?: string;
+  }): TimelineElement | null
+  export function enforceMainTrackStart({
+  	tracks,
+  	targetTrackId,
+  	requestedStartTime,
+  	excludeElementId,
+  }: {
+  	tracks: TimelineTrack[];
+  	targetTrackId: string;
+  	requestedStartTime: number;
+  	excludeElementId?: string;
+  }): number
 
 zoom-utils.ts
-  export function getTimelineZoomMin({
-  	duration,
-  	containerWidth,
-  }: {
-  	duration: number;
-  	containerWidth: number | null | undefined;
+  export function getTimelineZoomMin({
+  	duration,
+  	containerWidth,
+  }: {
+  	duration: number;
+  	containerWidth: number | null | undefined;
   }): number
-  export function getTimelinePaddingPx({
-  	containerWidth,
-  	zoomLevel,
-  	minZoom,
-  }: {
-  	containerWidth: number;
-  	zoomLevel: number;
-  	minZoom: number;
+  export function getTimelinePaddingPx({
+  	containerWidth,
+  	zoomLevel,
+  	minZoom,
+  }: {
+  	containerWidth: number;
+  	zoomLevel: number;
+  	minZoom: number;
   }): number
-  export function getZoomPercent({
-  	zoomLevel,
-  	minZoom,
-  }: {
-  	zoomLevel: number;
-  	minZoom: number;
+  export function getZoomPercent({
+  	zoomLevel,
+  	minZoom,
+  }: {
+  	zoomLevel: number;
+  	minZoom: number;
   }): number
-  export function sliderToZoom({
-  	sliderPosition,
-  	minZoom,
-  	maxZoom = TIMELINE_CONSTANTS.ZOOM_MAX,
-  }: {
-  	sliderPosition: number;
-  	minZoom: number;
-  	maxZoom?: number;
+  export function sliderToZoom({
+  	sliderPosition,
+  	minZoom,
+  	maxZoom = TIMELINE_CONSTANTS.ZOOM_MAX,
+  }: {
+  	sliderPosition: number;
+  	minZoom: number;
+  	maxZoom?: number;
   }): number
-  export function zoomToSlider({
-  	zoomLevel,
-  	minZoom,
-  	maxZoom = TIMELINE_CONSTANTS.ZOOM_MAX,
-  }: {
-  	zoomLevel: number;
-  	minZoom: number;
-  	maxZoom?: number;
+  export function zoomToSlider({
+  	zoomLevel,
+  	minZoom,
+  	maxZoom = TIMELINE_CONSTANTS.ZOOM_MAX,
+  }: {
+  	zoomLevel: number;
+  	minZoom: number;
+  	maxZoom?: number;
   }): number
 
 ## apps/web/src/lib/transcription
 
 caption.ts
-  export function buildCaptionChunks({
-  	segments,
-  	wordsPerChunk = DEFAULT_WORDS_PER_CAPTION,
-  	minDuration = MIN_CAPTION_DURATION_SECONDS,
-  }: {
-  	segments: TranscriptionSegment[];
-  	wordsPerChunk?: number;
-  	minDuration?: number;
+  export function buildCaptionChunks({
+  	segments,
+  	wordsPerChunk = DEFAULT_WORDS_PER_CAPTION,
+  	minDuration = MIN_CAPTION_DURATION_SECONDS,
+  }: {
+  	segments: TranscriptionSegment[];
+  	wordsPerChunk?: number;
+  	minDuration?: number;
   }): CaptionChunk[]
 
 ## apps/web/src/services/renderer
 
 canvas-renderer.ts
-  export type CanvasRendererParams = {
-  	width: number;
-  	height: number;
-  	fps: number;
+  export type CanvasRendererParams = {
+  	width: number;
+  	height: number;
+  	fps: number;
   }
   export class CanvasRenderer {
     canvas: OffscreenCanvas | HTMLCanvasElement
@@ -1153,33 +1542,33 @@ canvas-renderer.ts
     constructor({ width, height, fps }: CanvasRendererParams)
     setSize({ width, height }: { width: number; height: number })
     async render({ node, time }: { node: BaseNode; time: number })
-    async renderToCanvas({
-  		node,
-  		time,
-  		targetCanvas,
-  	}: {
-  		node: BaseNode;
-  		time: number;
-  		targetCanvas: HTMLCanvasElement;
+    async renderToCanvas({
+  		node,
+  		time,
+  		targetCanvas,
+  	}: {
+  		node: BaseNode;
+  		time: number;
+  		targetCanvas: HTMLCanvasElement;
   	})
   }
 
 scene-builder.ts
-  export type BuildSceneParams = {
-  	canvasSize: TCanvasSize;
-  	tracks: TimelineTrack[];
-  	mediaAssets: MediaAsset[];
-  	duration: ...
+  export type BuildSceneParams = {
+  	canvasSize: TCanvasSize;
+  	tracks: TimelineTrack[];
+  	mediaAssets: MediaAsset[];
+  	duration: numb...
   export function buildScene(params: BuildSceneParams)
 
 scene-exporter.ts
   export type ExportFormat = "mp4" | "webm"
   export type ExportQuality = "low" | "medium" | "high" | "very_high"
-  export type SceneExporterEvents = {
-  	progress: [progress: number];
-  	complete: [buffer: ArrayBuffer];
-  	error: [error: Error];
-  	c...
+  export type SceneExporterEvents = {
+  	progress: [progress: number];
+  	complete: [buffer: ArrayBuffer];
+  	error: [error: Error];
+  	cance...
   export class SceneExporter extends EventEmitter<SceneExporterEvents> {
     renderer: CanvasRenderer
     format: ExportFormat
@@ -1187,20 +1576,20 @@ scene-exporter.ts
     shouldIncludeAudio: boolean
     audioBuffer: AudioBuffer
     isCancelled
-    constructor({
-  		width,
-  		height,
-  		fps,
-  		format,
-  		quality,
-  		shouldIncludeAudio,
-  		audioBuffer,
+    constructor({
+  		width,
+  		height,
+  		fps,
+  		format,
+  		quality,
+  		shouldIncludeAudio,
+  		audioBuffer,
   	}: ExportParams)
     cancel(): void
-    async export({
-  		rootNode,
-  	}: {
-  		rootNode: RootNode;
+    async export({
+  		rootNode,
+  	}: {
+  		rootNode: RootNode;
   	}): Promise<ArrayBuffer | null>
   }
 
@@ -1219,10 +1608,10 @@ indexeddb-adapter.ts
     async getAll(): Promise<T[]>
     async clear(): Promise<void>
   }
-  export function deleteDatabase({
-  	dbName,
-  }: {
-  	dbName: string;
+  export function deleteDatabase({
+  	dbName,
+  }: {
+  	dbName: string;
   }): Promise<void>
 
 opfs-adapter.ts
@@ -1261,19 +1650,20 @@ types.ts
     ephemeral?: boolean
     thumbnailUrl?: string
   }
-  export type SerializedScene = Omit<TScene, "createdAt" | "updatedAt"> & {
-  	createdAt: string;
-  	updatedAt: string;
+  export type SerializedScene = Omit<TScene, "createdAt" | "updatedAt"> & {
+  	createdAt: string;
+  	updatedAt: string;
   }
-  export type SerializedProjectMetadata = Omit<
-  	TProjectMetadata,
-  	"createdAt" | "updatedAt"
-  > & {
-  	createdAt: string;
-  	updatedAt: st...
-  export type SerializedProject = Omit<TProject, "metadata" | "scenes"> & {
-  	metadata: SerializedProjectMetadata;
-  	scenes: Serial...
+  export type SerializedProjectMetadata = Omit<
+  	TProjectMetadata,
+  	"createdAt" | "updatedAt"
+  > & {
+  	createdAt: string;
+  	updatedAt: string;
+  }
+  export type SerializedProject = Omit<TProject, "metadata" | "scenes"> & {
+  	metadata: SerializedProjectMetadata;
+  	scenes: Serializ...
   export interface StorageConfig {
     projectsDb: string
     mediaDb: string
@@ -1287,11 +1677,11 @@ service.ts
   export const transcriptionService
 
 worker.ts
-  export type WorkerMessage = | { type: "init"; modelId: string }
-  	| { type: "transcribe"; audio: Float32Array; language: stri...
-  export type WorkerResponse = | { type: "init-progress"; progress: number }
-  	| { type: "init-complete" }
-  	| { type: "init-err...
+  export type WorkerMessage = | { type: "init"; modelId: string }
+  	| { type: "transcribe"; audio: Float32Array; language: strin...
+  export type WorkerResponse = | { type: "init-progress"; progress: number }
+  	| { type: "init-complete" }
+  	| { type: "init-error...
 
 ## apps/web/src/services/video-cache
 
@@ -1299,14 +1689,14 @@ service.ts
   export class VideoCache {
     sinks
     initPromises
-    async getFrameAt({
-  		mediaId,
-  		file,
-  		time,
-  	}: {
-  		mediaId: string;
-  		file: File;
-  		time: number;
+    async getFrameAt({
+  		mediaId,
+  		file,
+  		time,
+  	}: {
+  		mediaId: string;
+  		file: File;
+  		time: number;
   	}): Promise<WrappedCanvas | null>
     clearVideo({ mediaId }: { mediaId: string }): void
     clearAll(): void
@@ -1345,21 +1735,14 @@ panel-store.ts
   export type PanelId = keyof PanelSizes
   export const usePanelStore
 
+preview-store.ts
+  export const usePreviewStore
+
 sounds-store.ts
   export const useSoundsStore
 
 stickers-store.ts
   export const useStickersStore
-
-text-properties-store.ts
-  export type TextPropertiesTab = "text" | "transform"
-  export interface TextPropertiesTabMeta {
-    value: TextPropertiesTab
-    label: string
-  }
-  export const TEXT_PROPERTIES_TABS: ReadonlyArray<TextPropertiesTabMeta>
-  export function isTextPropertiesTab(value: string)
-  export const useTextPropertiesStore
 
 timeline-store.ts
   export const useTimelineStore
@@ -1374,61 +1757,61 @@ assets.ts
   }
 
 blog.ts
-  export type Post = {
-  	id: string;
-  	slug: string;
-  	title: string;
-  	content: string;
-  	description: string;
-  	cove...
-  export type Pagination = {
-  	limit: number;
-  	currpage: number;
-  	nextPage: number | null;
-  	prevPage: number | null;
-  	to...
-  export type MarblePostList = {
-  	posts: Post[];
-  	pagination: Pagination;
+  export type Post = {
+  	id: string;
+  	slug: string;
+  	title: string;
+  	content: string;
+  	description: string;
+  	coverImage...
+  export type Pagination = {
+  	limit: number;
+  	currpage: number;
+  	nextPage: number | null;
+  	prevPage: number | null;
+  	totalIt...
+  export type MarblePostList = {
+  	posts: Post[];
+  	pagination: Pagination;
   }
-  export type MarblePost = {
-  	post: Post;
+  export type MarblePost = {
+  	post: Post;
   }
-  export type Tag = {
-  	id: string;
-  	name: string;
-  	slug: string;
+  export type Tag = {
+  	id: string;
+  	name: string;
+  	slug: string;
   }
-  export type MarbleTag = {
-  	tag: Tag;
+  export type MarbleTag = {
+  	tag: Tag;
   }
-  export type MarbleTagList = {
-  	tags: Tag[];
-  	pagination: Pagination;
+  export type MarbleTagList = {
+  	tags: Tag[];
+  	pagination: Pagination;
   }
-  export type Category = {
-  	id: string;
-  	name: string;
-  	slug: string;
+  export type Category = {
+  	id: string;
+  	name: string;
+  	slug: string;
   }
-  export type MarbleCategory = {
-  	category: Category;
+  export type MarbleCategory = {
+  	category: Category;
   }
-  export type MarbleCategoryList = {
-  	categories: Category[];
-  	pagination: Pagination;
+  export type MarbleCategoryList = {
+  	categories: Category[];
+  	pagination: Pagination;
   }
-  export type Author = {
-  	id: string;
-  	name: string;
-  	image: string;
+  export type Author = {
+  	id: string;
+  	name: string;
+  	image: string;
   }
-  export type MarbleAuthor = {
-  	author: Author;
+  export type MarbleAuthor = {
+  	author: Author;
   }
-  export type MarbleAuthorList = {
-  	authors: Author[];
-  	pagination: Pagination;
+  export type MarbleAuthorList = {
+  	authors: Author[];
+  	pagination: Pagination;
   }
 
 drag.ts
@@ -1442,7 +1825,7 @@ drag.ts
   }
   export interface StickerDragData extends BaseDragData {
     type: "sticker"
-    iconName: string
+    stickerId: string
   }
   export type TimelineDragData = MediaDragData | TextDragData | StickerDragData
 
@@ -1469,32 +1852,57 @@ export.ts
     cancelled?: boolean
   }
 
+fonts.ts
+  export interface FontOption {
+    value: string
+    label: string
+    category: "system" | "google" | "custom"
+    weights?: number[]
+    hasClassName?: boolean
+  }
+  export interface GoogleFontMeta {
+    family: string
+    category: string
+  }
+  export interface FontAtlasEntry {
+    x: number
+    y: number
+    w: number
+    ch: number
+    s: string[]
+  }
+  export interface FontAtlas {
+    fonts: Record<string, FontAtlasEntry>
+  }
+
 keybinding.ts
-  export type ModifierKeys = | "ctrl"
-  	| "alt"
-  	| "shift"
-  	| "ctrl+shift"
-  	| "alt+shift"
-  	| "ctrl+alt"
+  export type ModifierKeys = | "ctrl"
+  	| "alt"
+  	| "shift"
+  	| "ctrl+shift"
+  	| "alt+shift"
+  	| "ctrl+alt"
   	| "ctrl+alt+shift"
-  export type Key = | "a"
-  	| "b"
-  	| "c"
-  	| "d"
-  	| "e"
-  	| "f"
-  	| "g"
-  	| "h"
-  	| "i"
-  	| "j"
-  	| "k"
-  	| "l"
-  	|...
+  export type Key = | "a"
+  	| "b"
+  	| "c"
+  	| "d"
+  	| "e"
+  	| "f"
+  	| "g"
+  	| "h"
+  	| "i"
+  	| "j"
+  	| "k"
+  	| "l"
+  	| "m"
+  	| "n"
+  ...
   export type ModifierBasedShortcutKey = `${ModifierKeys}+${Key}`
   export type SingleCharacterShortcutKey = `${Key}`
   export type ShortcutKey = ModifierBasedShortcutKey | SingleCharacterShortcutKey
-  export type KeybindingConfig = {
-  	[key in ShortcutKey]?: TActionWithOptionalArgs;
+  export type KeybindingConfig = {
+  	[key in ShortcutKey]?: TActionWithOptionalArgs;
   }
 
 language.ts
@@ -1502,13 +1910,14 @@ language.ts
   export type LanguageCode = Language["code"]
 
 project.ts
-  export type TBackground = | {
-  			type: "color";
-  			color: string;
-  	  }
-  	| {
-  			type: "blur";
-  			blurIntensity: number...
+  export type TBackground = | {
+  			type: "color";
+  			color: string;
+  	  }
+  	| {
+  			type: "blur";
+  			blurIntensity: number;
+  	  }
   export interface TCanvasSize {
     width: number
     height: number
@@ -1543,6 +1952,15 @@ project.ts
   export type TProjectSortKey = "createdAt" | "updatedAt" | "name" | "duration"
   export type TSortOrder = "asc" | "desc"
   export type TProjectSortOption = `${TProjectSortKey}-${TSortOrder}`
+
+rendering.ts
+  export type BlendMode = | "normal"
+  	| "darken"
+  	| "multiply"
+  	| "color-burn"
+  	| "lighten"
+  	| "screen"
+  	| "plus-ligh...
 
 sounds.ts
   export interface SoundEffect {
@@ -1584,18 +2002,69 @@ sounds.ts
   }
 
 stickers.ts
-  export type StickerCategory = (typeof STICKER_CATEGORIES)[number]
+  export type StickerCategory = keyof typeof STICKER_CATEGORIES
+  export interface StickerItem {
+    id: string
+    provider: string
+    name: string
+    previewUrl: string
+    metadata: Record<string, unknown>
+  }
+  export interface StickerSearchResult {
+    items: StickerItem[]
+    total: number
+    hasMore: boolean
+  }
+  export interface StickerProviderSearchOptions {
+    limit?: number
+  }
+  export interface StickerProviderBrowseOptions {
+    page?: number
+    limit?: number
+  }
+  export interface StickerResolveOptions {
+    width?: number
+    height?: number
+  }
+  export interface StickerProvider {
+    id: string
+    search({
+  		query,
+  		options,
+  	}: {
+  		query: string;
+  		options?: StickerProviderSearchOptions;
+  	}): Promise<StickerSearchResult>
+    browse({
+  		options,
+  	}: {
+  		options?: StickerProviderBrowseOptions;
+  	}): Promise<StickerSearchResult>
+    resolveUrl({
+  		stickerId,
+  		options,
+  	}: {
+  		stickerId: string;
+  		options?: StickerResolveOptions;
+  	}): string
+  }
 
 time.ts
   export type TTimeCode = "MM:SS" | "HH:MM:SS" | "HH:MM:SS:CS" | "HH:MM:SS:FF"
 
 timeline.ts
+  export interface Bookmark {
+    time: number
+    note?: string
+    color?: string
+    duration?: number
+  }
   export interface TScene {
     id: string
     name: string
     isMain: boolean
     tracks: TimelineTrack[]
-    bookmarks: number[]
+    bookmarks: Bookmark[]
     createdAt: Date
     updatedAt: Date
   }
@@ -1625,9 +2094,9 @@ timeline.ts
   export type TimelineTrack = VideoTrack | TextTrack | AudioTrack | StickerTrack
   export interface Transform {
     scale: number
-    position: {
-  		x: number;
-  		y: number;
+    position: {
+  		x: number;
+  		y: number;
   	}
     rotate: number
   }
@@ -1647,6 +2116,7 @@ timeline.ts
     hidden?: boolean
     transform: Transform
     opacity: number
+    blendMode?: BlendMode
   }
   export interface ImageElement extends BaseTimelineElement {
     type: "image"
@@ -1654,6 +2124,7 @@ timeline.ts
     hidden?: boolean
     transform: Transform
     opacity: number
+    blendMode?: BlendMode
   }
   export interface TextElement extends BaseTimelineElement {
     type: "text"
@@ -1666,37 +2137,40 @@ timeline.ts
     fontWeight: "normal" | "bold"
     fontStyle: "normal" | "italic"
     textDecoration: "none" | "underline" | "line-through"
+    letterSpacing?: number
+    lineHeight?: number
     hidden?: boolean
     transform: Transform
     opacity: number
+    blendMode?: BlendMode
   }
   export interface StickerElement extends BaseTimelineElement {
     type: "sticker"
-    iconName: string
+    stickerId: string
     hidden?: boolean
     transform: Transform
     opacity: number
-    color?: string
+    blendMode?: BlendMode
   }
-  export type TimelineElement = | AudioElement
-  	| VideoElement
-  	| ImageElement
-  	| TextElement
+  export type TimelineElement = | AudioElement
+  	| VideoElement
+  	| ImageElement
+  	| TextElement
   	| StickerElement
   export type ElementType = TimelineElement["type"]
   export type CreateUploadAudioElement = Omit<UploadAudioElement, "id">
   export type CreateLibraryAudioElement = Omit<LibraryAudioElement, "id">
-  export type CreateAudioElement = | CreateUploadAudioElement
+  export type CreateAudioElement = | CreateUploadAudioElement
   	| CreateLibraryAudioElement
   export type CreateVideoElement = Omit<VideoElement, "id">
   export type CreateImageElement = Omit<ImageElement, "id">
   export type CreateTextElement = Omit<TextElement, "id">
   export type CreateStickerElement = Omit<StickerElement, "id">
-  export type CreateTimelineElement = | CreateAudioElement
-  	| CreateVideoElement
-  	| CreateImageElement
-  	| CreateTextElement
-  	| Crea...
+  export type CreateTimelineElement = | CreateAudioElement
+  	| CreateVideoElement
+  	| CreateImageElement
+  	| CreateTextElement
+  	| CreateSt...
   export interface ElementDragState {
     isDragging: boolean
     elementId: string | null
@@ -1746,19 +2220,19 @@ transcription.ts
     segments: TranscriptionSegment[]
     language: string
   }
-  export type TranscriptionStatus = | "idle"
-  	| "loading-model"
-  	| "transcribing"
-  	| "complete"
+  export type TranscriptionStatus = | "idle"
+  	| "loading-model"
+  	| "transcribing"
+  	| "complete"
   	| "error"
   export interface TranscriptionProgress {
     status: TranscriptionStatus
     progress: number
     message?: string
   }
-  export type TranscriptionModelId = | "whisper-tiny"
-  	| "whisper-small"
-  	| "whisper-medium"
+  export type TranscriptionModelId = | "whisper-tiny"
+  	| "whisper-small"
+  	| "whisper-medium"
   	| "whisper-large-v3-turbo"
   export interface TranscriptionModel {
     id: TranscriptionModelId
@@ -1775,37 +2249,76 @@ transcription.ts
 ## apps/web/src/utils
 
 browser.ts
-  export function isTypableDOMElement({
-  	element,
-  }: {
-  	element: HTMLElement;
+  export function isTypableDOMElement({
+  	element,
+  }: {
+  	element: HTMLElement;
   }): boolean
+
+color.ts
+  export type ColorFormat = "hex" | "rgb" | "hsl" | "hsv"
+  export function hexToHsv({ hex }: { hex: string }): [number, number, number]
+  export function hsvToHex({
+  	h,
+  	s,
+  	v,
+  }: { h: number; s: number; v: number }): string
+  export function parseHexAlpha({ hex }: { hex: string }): {
+  	rgb: string;
+  	alpha: number;
+  }
+  export function appendAlpha({
+  	rgbHex,
+  	alpha,
+  }: { rgbHex: string; alpha: number }): string
+  export function extractColorFromText({
+  	text,
+  }: { text: string }): string | null
+  export function formatColorValue({
+  	hex,
+  	format,
+  }: {
+  	hex: string;
+  	format: ColorFormat;
+  }): string
+  export function parseColorInput({
+  	input,
+  	format,
+  }: {
+  	input: string;
+  	format: ColorFormat;
+  }): string | null
 
 date.ts
   export function formatDate({ date }: { date: Date }): string
 
 geometry.ts
-  export function dimensionToAspectRatio({
-  	width,
-  	height,
-  }: {
-  	width: number;
-  	height: number;
+  export function dimensionToAspectRatio({
+  	width,
+  	height,
+  }: {
+  	width: number;
+  	height: number;
   }): string
 
 id.ts
   export function generateUUID(): string
 
 math.ts
-  export function clamp({
-  	value,
-  	min,
-  	max,
-  }: {
-  	value: number;
-  	min: number;
-  	max: number;
+  export function clamp({
+  	value,
+  	min,
+  	max,
+  }: {
+  	value: number;
+  	min: number;
+  	max: number;
   }): number
+  export function evaluateMathExpression({
+  	input,
+  }: {
+  	input: string;
+  }): number | null
 
 platform.ts
   export function getPlatformSpecialKey(): string
@@ -1823,28 +2336,56 @@ ui.ts
 
 brand.tsx
   export function OcVercelIcon({ className }: { className?: string })
-  export function OcMarbleIcon({
-  	className = "",
-  	size = 32,
-  }: {
-  	className?: string;
-  	size?: number;
+  export function OcMarbleIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
   })
-  export function OcDataBuddyIcon({
-  	className = "",
-  	size = 32,
-  }: {
-  	className?: string;
-  	size?: number;
+  export function OcDataBuddyIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
   })
 
 ui.tsx
-  export function OcVideoIcon({
-  	className = "",
-  	size = 32,
-  }: {
-  	className?: string;
-  	size?: number;
+  export function OcVideoIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
+  })
+  export function OcCheckerboardIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
+  })
+  export function OcFontWeightIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
+  })
+  export function OcSlidersVerticalIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
+  })
+  export function OcSocialIcon({
+  	className = "",
+  	size = 32,
+  }: {
+  	className?: string;
+  	size?: number;
   })
 
 ```

@@ -1,176 +1,219 @@
 import { create } from "zustand";
-import {
-	getCollections,
-	getCollection,
-	searchIcons,
-	type IconSet,
-	type CollectionInfo,
-	type IconSearchResult,
-} from "@/lib/iconify-api";
+import { persist } from "zustand/middleware";
 import { EditorCore } from "@/core";
+import { searchStickers as searchStickersFromProviders } from "@/lib/stickers";
+import type { StickerSearchResult } from "@/lib/stickers";
 import { buildStickerElement } from "@/lib/timeline/element-utils";
-import { STICKER_CATEGORY_CONFIG } from "@/constants/stickers-constants";
+import { STICKER_CATEGORIES } from "@/constants/sticker-constants";
 import type { StickerCategory } from "@/types/stickers";
+import { registerDefaultStickerProviders } from "@/lib/stickers/providers";
+import { hasProvider } from "@/lib/stickers/registry";
+import { parseStickerId } from "@/lib/stickers/sticker-id";
 
-type ViewMode = "search" | "browse" | "collection";
+const MAX_RECENT_STICKERS = 50;
+
+function isValidStickerId(value: unknown): value is string {
+	if (typeof value !== "string") {
+		return false;
+	}
+
+	try {
+		const parsed = parseStickerId({ stickerId: value });
+		return hasProvider({ providerId: parsed.providerId });
+	} catch {
+		return false;
+	}
+}
+
+function sanitizeRecentStickers({
+	recentStickers,
+}: {
+	recentStickers: unknown;
+}): string[] {
+	registerDefaultStickerProviders({});
+
+	if (!Array.isArray(recentStickers)) {
+		return [];
+	}
+
+	const sanitized: string[] = [];
+	for (const stickerId of recentStickers) {
+		if (!isValidStickerId(stickerId)) {
+			continue;
+		}
+		if (sanitized.includes(stickerId)) {
+			continue;
+		}
+		sanitized.push(stickerId);
+		if (sanitized.length >= MAX_RECENT_STICKERS) {
+			break;
+		}
+	}
+
+	return sanitized;
+}
+
+type ViewMode = "search" | "browse";
 
 interface StickersStore {
 	searchQuery: string;
 	selectedCategory: StickerCategory;
-	selectedCollection: string | null;
 	viewMode: ViewMode;
-	collections: Record<string, IconSet>;
-	currentCollection: CollectionInfo | null;
-	searchResults: IconSearchResult | null;
+	searchResults: StickerSearchResult | null;
 	recentStickers: string[];
-	isLoadingCollections: boolean;
-	isLoadingCollection: boolean;
 	isSearching: boolean;
 	addingSticker: string | null;
 
 	setSearchQuery: ({ query }: { query: string }) => void;
 	setSelectedCategory: ({ category }: { category: StickerCategory }) => void;
-	setSelectedCollection: ({
-		collection,
-	}: {
-		collection: string | null;
-	}) => void;
-	setViewMode: ({ mode }: { mode: ViewMode }) => void;
-	loadCollections: () => Promise<void>;
-	loadCollection: ({ prefix }: { prefix: string }) => Promise<void>;
 	searchStickers: ({ query }: { query: string }) => Promise<void>;
-	addStickerToTimeline: ({ iconName }: { iconName: string }) => void;
-	addToRecentStickers: ({ iconName }: { iconName: string }) => void;
+	addStickerToTimeline: ({
+		stickerId,
+		name,
+	}: {
+		stickerId: string;
+		name?: string;
+	}) => void;
+	addToRecentStickers: ({ stickerId }: { stickerId: string }) => void;
 	clearRecentStickers: () => void;
 }
 
-const MAX_RECENT_STICKERS = 50;
-
-export const useStickersStore = create<StickersStore>((set, get) => ({
-	searchQuery: "",
-	selectedCategory: "all",
-	selectedCollection: null,
-	viewMode: "browse",
-
-	collections: {},
-	currentCollection: null,
-	searchResults: null,
-	recentStickers: [],
-
-	isLoadingCollections: false,
-	isLoadingCollection: false,
-	isSearching: false,
-	addingSticker: null,
-
-	setSearchQuery: ({ query }) => set({ searchQuery: query }),
-
-	setSelectedCategory: ({ category }) =>
-		set({
-			selectedCategory: category,
+export const useStickersStore = create<StickersStore>()(
+	persist(
+		(set, get) => ({
+			searchQuery: "",
+			selectedCategory: "all",
 			viewMode: "browse",
-			selectedCollection: null,
-			currentCollection: null,
+
+			searchResults: null,
+			recentStickers: [],
+
+			isSearching: false,
+			addingSticker: null,
+
+			setSearchQuery: ({ query }) => set({ searchQuery: query }),
+
+			setSelectedCategory: ({ category }) =>
+				set({
+					selectedCategory: category in STICKER_CATEGORIES ? category : "all",
+					viewMode: "browse",
+				}),
+
+			searchStickers: async ({ query }: { query: string }) => {
+				if (!query.trim()) {
+					set({ searchResults: null, viewMode: "browse" });
+					return;
+				}
+
+				const category = get().selectedCategory;
+				const selectedCategory =
+					category in STICKER_CATEGORIES ? category : "all";
+
+				set({ isSearching: true, viewMode: "search" });
+				try {
+					const results = await searchStickersFromProviders({
+						query,
+						category: selectedCategory,
+						limit: 100,
+					});
+					set({ searchResults: results });
+				} catch (error) {
+					console.error("Search failed:", error);
+					set({ searchResults: null });
+				} finally {
+					set({ isSearching: false });
+				}
+			},
+
+			addStickerToTimeline: ({
+				stickerId,
+				name,
+			}: {
+				stickerId: string;
+				name?: string;
+			}) => {
+				set({ addingSticker: stickerId });
+				try {
+					const editor = EditorCore.getInstance();
+					const currentTime = editor.playback.getCurrentTime();
+					const tracks = editor.timeline.getTracks();
+
+					const stickerTrack = tracks.find((t) => t.type === "sticker");
+					let trackId: string;
+
+					if (stickerTrack) {
+						trackId = stickerTrack.id;
+					} else {
+						trackId = editor.timeline.addTrack({ type: "sticker" });
+					}
+
+					const element = buildStickerElement({
+						stickerId,
+						name,
+						startTime: currentTime,
+					});
+					editor.timeline.insertElement({
+						placement: { mode: "explicit", trackId },
+						element,
+					});
+
+					get().addToRecentStickers({ stickerId });
+				} finally {
+					set({ addingSticker: null });
+				}
+			},
+
+			addToRecentStickers: ({ stickerId }: { stickerId: string }) => {
+				const sanitizedStickerIds = sanitizeRecentStickers({
+					recentStickers: [stickerId],
+				});
+				if (sanitizedStickerIds.length === 0) {
+					return;
+				}
+
+				set((state) => {
+					const recent = [
+						sanitizedStickerIds[0],
+						...state.recentStickers.filter((s) => s !== sanitizedStickerIds[0]),
+					];
+					return {
+						recentStickers: recent.slice(0, MAX_RECENT_STICKERS),
+					};
+				});
+			},
+
+			clearRecentStickers: () => set({ recentStickers: [] }),
 		}),
-
-	setSelectedCollection: ({ collection }) => {
-		set({
-			selectedCollection: collection,
-			viewMode: collection ? "collection" : "browse",
-			currentCollection: null,
-		});
-
-		if (collection) {
-			get().loadCollection({ prefix: collection });
-		}
-	},
-
-	setViewMode: ({ mode }) => set({ viewMode: mode }),
-
-	loadCollections: async () => {
-		set({ isLoadingCollections: true });
-		try {
-			const collections = await getCollections();
-			set({ collections });
-		} catch (error) {
-			console.error("Failed to load collections:", error);
-		} finally {
-			set({ isLoadingCollections: false });
-		}
-	},
-
-	loadCollection: async ({ prefix }: { prefix: string }) => {
-		set({ isLoadingCollection: true });
-		try {
-			const collection = await getCollection(prefix);
-			set({ currentCollection: collection });
-		} catch (error) {
-			console.error(`Failed to load collection ${prefix}:`, error);
-			set({ currentCollection: null });
-		} finally {
-			set({ isLoadingCollection: false });
-		}
-	},
-
-	searchStickers: async ({ query }: { query: string }) => {
-		if (!query.trim()) {
-			set({ searchResults: null, viewMode: "browse" });
-			return;
-		}
-
-		const { selectedCategory } = get();
-
-		set({ isSearching: true, viewMode: "search" });
-		try {
-			const category = STICKER_CATEGORY_CONFIG[selectedCategory];
-			const results = await searchIcons(query, 100, undefined, category);
-			set({ searchResults: results });
-		} catch (error) {
-			console.error("Search failed:", error);
-			set({ searchResults: null });
-		} finally {
-			set({ isSearching: false });
-		}
-	},
-
-	addStickerToTimeline: ({ iconName }: { iconName: string }) => {
-		set({ addingSticker: iconName });
-		try {
-			const editor = EditorCore.getInstance();
-			const currentTime = editor.playback.getCurrentTime();
-			const tracks = editor.timeline.getTracks();
-
-			const stickerTrack = tracks.find((t) => t.type === "sticker");
-			let trackId: string;
-
-			if (stickerTrack) {
-				trackId = stickerTrack.id;
-			} else {
-				trackId = editor.timeline.addTrack({ type: "sticker" });
-			}
-
-			const element = buildStickerElement({ iconName, startTime: currentTime });
-			editor.timeline.insertElement({
-				placement: { mode: "explicit", trackId },
-				element,
-			});
-
-			get().addToRecentStickers({ iconName });
-		} finally {
-			set({ addingSticker: null });
-		}
-	},
-
-	addToRecentStickers: ({ iconName }: { iconName: string }) => {
-		set((state) => {
-			const recent = [
-				iconName,
-				...state.recentStickers.filter((s) => s !== iconName),
-			];
-			return {
-				recentStickers: recent.slice(0, MAX_RECENT_STICKERS),
-			};
-		});
-	},
-
-	clearRecentStickers: () => set({ recentStickers: [] }),
-}));
+		{
+			name: "stickers-settings",
+			migrate: (persistedState) => {
+				if (
+					typeof persistedState === "object" &&
+					persistedState !== null &&
+					"selectedCategory" in persistedState
+				) {
+					const typedState = persistedState as {
+						selectedCategory?: string;
+						recentStickers?: string[];
+					};
+					const category = typedState.selectedCategory ?? "all";
+					return {
+						...typedState,
+						selectedCategory:
+							category in STICKER_CATEGORIES
+								? (category as StickerCategory)
+								: "all",
+						recentStickers: sanitizeRecentStickers({
+							recentStickers: typedState.recentStickers ?? [],
+						}),
+					};
+				}
+				return persistedState;
+			},
+			partialize: (state) => ({
+				selectedCategory: state.selectedCategory,
+				recentStickers: state.recentStickers,
+			}),
+		},
+	),
+);

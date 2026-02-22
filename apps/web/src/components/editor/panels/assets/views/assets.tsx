@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PanelView } from "@/components/editor/panels/assets/views/base-view";
 import { MediaDragOverlay } from "@/components/editor/panels/assets/drag-overlay";
 import { DraggableItem } from "@/components/editor/panels/assets/draggable-item";
 import { Button } from "@/components/ui/button";
@@ -29,14 +30,9 @@ import { useEditor } from "@/hooks/use-editor";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useRevealItem } from "@/hooks/use-reveal-item";
 import { processMediaAssets } from "@/lib/media/processing";
-import {
-	buildImageElement,
-	buildUploadAudioElement,
-	buildVideoElement,
-} from "@/lib/timeline/element-utils";
+import { buildElementFromMedia } from "@/lib/timeline/element-utils";
 import { useAssetsPanelStore } from "@/stores/assets-panel-store";
 import type { MediaAsset } from "@/types/assets";
-import type { CreateTimelineElement } from "@/types/timeline";
 import { cn } from "@/utils/ui";
 import {
 	CloudUploadIcon,
@@ -132,7 +128,15 @@ export function MediaView() {
 		asset: MediaAsset;
 		startTime: number;
 	}): boolean => {
-		const element = createElementFromMedia({ asset, startTime });
+		const duration =
+			asset.duration ?? TIMELINE_CONSTANTS.DEFAULT_ELEMENT_DURATION;
+		const element = buildElementFromMedia({
+			mediaId: asset.id,
+			mediaType: asset.type,
+			name: asset.name,
+			duration,
+			startTime,
+		});
 		editor.timeline.insertElement({
 			element,
 			placement: { mode: "auto" },
@@ -194,171 +198,166 @@ export function MediaView() {
 	const renderCompactPreview = (item: MediaAsset) =>
 		previewComponents.get(`compact-${item.id}`);
 
+	const mediaActions = (
+		<div>
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							size="icon"
+							variant="ghost"
+							onClick={() =>
+								setMediaViewMode(mediaViewMode === "grid" ? "list" : "grid")
+							}
+							disabled={isProcessing}
+							className="items-center justify-center"
+						>
+							{mediaViewMode === "grid" ? (
+								<HugeiconsIcon icon={LeftToRightListDashIcon} />
+							) : (
+								<HugeiconsIcon icon={GridViewIcon} />
+							)}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>
+						<p>
+							{mediaViewMode === "grid"
+								? "Switch to list view"
+								: "Switch to grid view"}
+						</p>
+					</TooltipContent>
+					<Tooltip>
+						<DropdownMenu>
+							<TooltipTrigger asChild>
+								<DropdownMenuTrigger asChild>
+									<Button
+										size="icon"
+										variant="ghost"
+										disabled={isProcessing}
+										className="items-center justify-center"
+									>
+										<HugeiconsIcon icon={SortingOneNineIcon} />
+									</Button>
+								</DropdownMenuTrigger>
+							</TooltipTrigger>
+							<DropdownMenuContent align="end">
+								<SortMenuItem
+									label="Name"
+									sortKey="name"
+									currentSortBy={sortBy}
+									currentSortOrder={sortOrder}
+									onSort={({ key }) => {
+										if (sortBy === key) {
+											setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+										} else {
+											setSortBy(key);
+											setSortOrder("asc");
+										}
+									}}
+								/>
+								<SortMenuItem
+									label="Type"
+									sortKey="type"
+									currentSortBy={sortBy}
+									currentSortOrder={sortOrder}
+									onSort={({ key }) => {
+										if (sortBy === key) {
+											setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+										} else {
+											setSortBy(key);
+											setSortOrder("asc");
+										}
+									}}
+								/>
+								<SortMenuItem
+									label="Duration"
+									sortKey="duration"
+									currentSortBy={sortBy}
+									currentSortOrder={sortOrder}
+									onSort={({ key }) => {
+										if (sortBy === key) {
+											setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+										} else {
+											setSortBy(key);
+											setSortOrder("asc");
+										}
+									}}
+								/>
+								<SortMenuItem
+									label="File size"
+									sortKey="size"
+									currentSortBy={sortBy}
+									currentSortOrder={sortOrder}
+									onSort={({ key }) => {
+										if (sortBy === key) {
+											setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+										} else {
+											setSortBy(key);
+											setSortOrder("asc");
+										}
+									}}
+								/>
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<TooltipContent>
+							<p>
+								Sort by {sortBy} (
+								{sortOrder === "asc" ? "ascending" : "descending"})
+							</p>
+						</TooltipContent>
+					</Tooltip>
+				</Tooltip>
+			</TooltipProvider>
+			<Button
+				variant="outline"
+				onClick={openFilePicker}
+				disabled={isProcessing}
+				size="sm"
+				className="items-center justify-center gap-1.5 ml-1.5"
+			>
+				<HugeiconsIcon icon={CloudUploadIcon} />
+				Import
+			</Button>
+		</div>
+	);
+
 	return (
 		<>
 			<input {...fileInputProps} />
 
-			<div
-				className={`relative flex h-full flex-col gap-1 ${isDragOver ? "bg-accent/30" : ""}`}
+			<PanelView
+				title="Assets"
+				actions={mediaActions}
+				className={isDragOver ? "bg-accent/30" : ""}
 				{...dragProps}
 			>
-				<div className="bg-background h-12 px-4 pr-2 flex items-center justify-between border-b">
-					<span className="text-muted-foreground text-sm">Assets</span>
-					<div className="flex items-center gap-0">
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="text"
-										onClick={() =>
-											setMediaViewMode(
-												mediaViewMode === "grid" ? "list" : "grid",
-											)
-										}
-										disabled={isProcessing}
-										className="items-center justify-center"
-									>
-										{mediaViewMode === "grid" ? (
-											<HugeiconsIcon icon={LeftToRightListDashIcon} />
-										) : (
-											<HugeiconsIcon icon={GridViewIcon} />
-										)}
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>
-										{mediaViewMode === "grid"
-											? "Switch to list view"
-											: "Switch to grid view"}
-									</p>
-								</TooltipContent>
-								<Tooltip>
-									<DropdownMenu>
-										<TooltipTrigger asChild>
-											<DropdownMenuTrigger asChild>
-												<Button
-													size="icon"
-													variant="text"
-													disabled={isProcessing}
-													className="items-center justify-center"
-												>
-													<HugeiconsIcon icon={SortingOneNineIcon} />
-												</Button>
-											</DropdownMenuTrigger>
-										</TooltipTrigger>
-										<DropdownMenuContent align="end">
-											<SortMenuItem
-												label="Name"
-												sortKey="name"
-												currentSortBy={sortBy}
-												currentSortOrder={sortOrder}
-												onSort={({ key }) => {
-													if (sortBy === key) {
-														setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-													} else {
-														setSortBy(key);
-														setSortOrder("asc");
-													}
-												}}
-											/>
-											<SortMenuItem
-												label="Type"
-												sortKey="type"
-												currentSortBy={sortBy}
-												currentSortOrder={sortOrder}
-												onSort={({ key }) => {
-													if (sortBy === key) {
-														setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-													} else {
-														setSortBy(key);
-														setSortOrder("asc");
-													}
-												}}
-											/>
-											<SortMenuItem
-												label="Duration"
-												sortKey="duration"
-												currentSortBy={sortBy}
-												currentSortOrder={sortOrder}
-												onSort={({ key }) => {
-													if (sortBy === key) {
-														setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-													} else {
-														setSortBy(key);
-														setSortOrder("asc");
-													}
-												}}
-											/>
-											<SortMenuItem
-												label="File size"
-												sortKey="size"
-												currentSortBy={sortBy}
-												currentSortOrder={sortOrder}
-												onSort={({ key }) => {
-													if (sortBy === key) {
-														setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-													} else {
-														setSortBy(key);
-														setSortOrder("asc");
-													}
-												}}
-											/>
-										</DropdownMenuContent>
-									</DropdownMenu>
-									<TooltipContent>
-										<p>
-											Sort by {sortBy} (
-											{sortOrder === "asc" ? "ascending" : "descending"})
-										</p>
-									</TooltipContent>
-								</Tooltip>
-							</Tooltip>
-						</TooltipProvider>
-						<Button
-							variant="outline"
-							onClick={openFilePicker}
-							disabled={isProcessing}
-							size="sm"
-							className="items-center justify-center gap-1.5 ml-1.5 hover:bg-accent px-3"
-						>
-							<HugeiconsIcon icon={CloudUploadIcon} />
-							Import
-						</Button>
-					</div>
-				</div>
-
-				<div className="scrollbar-thin size-full overflow-y-auto pt-1">
-					<div className="w-full flex-1 p-3 pt-0">
-						{isDragOver || filteredMediaItems.length === 0 ? (
-							<MediaDragOverlay
-								isVisible={true}
-								isProcessing={isProcessing}
-								progress={progress}
-								onClick={openFilePicker}
-							/>
-						) : mediaViewMode === "grid" ? (
-							<GridView
-								items={filteredMediaItems}
-								renderPreview={renderPreview}
-								onRemove={handleRemove}
-								onAddToTimeline={addElementAtTime}
-								highlightedId={highlightedId}
-								registerElement={registerElement}
-							/>
-						) : (
-							<ListView
-								items={filteredMediaItems}
-								renderPreview={renderCompactPreview}
-								onRemove={handleRemove}
-								onAddToTimeline={addElementAtTime}
-								highlightedId={highlightedId}
-								registerElement={registerElement}
-							/>
-						)}
-					</div>
-				</div>
-			</div>
+				{isDragOver || filteredMediaItems.length === 0 ? (
+					<MediaDragOverlay
+						isVisible={true}
+						isProcessing={isProcessing}
+						progress={progress}
+						onClick={openFilePicker}
+					/>
+				) : mediaViewMode === "grid" ? (
+					<GridView
+						items={filteredMediaItems}
+						renderPreview={renderPreview}
+						onRemove={handleRemove}
+						onAddToTimeline={addElementAtTime}
+						highlightedId={highlightedId}
+						registerElement={registerElement}
+					/>
+				) : (
+					<ListView
+						items={filteredMediaItems}
+						renderPreview={renderCompactPreview}
+						onRemove={handleRemove}
+						onAddToTimeline={addElementAtTime}
+						highlightedId={highlightedId}
+						registerElement={registerElement}
+					/>
+				)}
+			</PanelView>
 		</>
 	);
 }
@@ -637,39 +636,3 @@ function SortMenuItem({
 	);
 }
 
-function createElementFromMedia({
-	asset,
-	startTime,
-}: {
-	asset: MediaAsset;
-	startTime: number;
-}): CreateTimelineElement {
-	const duration =
-		asset.duration ?? TIMELINE_CONSTANTS.DEFAULT_ELEMENT_DURATION;
-
-	switch (asset.type) {
-		case "video":
-			return buildVideoElement({
-				mediaId: asset.id,
-				name: asset.name,
-				duration,
-				startTime,
-			});
-		case "image":
-			return buildImageElement({
-				mediaId: asset.id,
-				name: asset.name,
-				duration,
-				startTime,
-			});
-		case "audio":
-			return buildUploadAudioElement({
-				mediaId: asset.id,
-				name: asset.name,
-				duration,
-				startTime,
-			});
-		default:
-			throw new Error(`Unsupported media type: ${asset.type}`);
-	}
-}

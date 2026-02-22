@@ -9,18 +9,13 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 import { CanvasRenderer } from "@/services/renderer/canvas-renderer";
 import type { RootNode } from "@/services/renderer/nodes/root-node";
 import { buildScene } from "@/services/renderer/scene-builder";
-import { formatTimeCode, getLastFrameTime } from "@/lib/time";
+import { getLastFrameTime } from "@/lib/time";
 import { PreviewInteractionOverlay } from "./preview-interaction-overlay";
-import { EditableTimecode } from "@/components/editable-timecode";
-import { invokeAction } from "@/lib/actions";
-import { Button } from "@/components/ui/button";
-import {
-	FullScreenIcon,
-	PauseIcon,
-	PlayIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "@/utils/ui";
+import { BookmarkNoteOverlay } from "./bookmark-note-overlay";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { usePreviewStore } from "@/stores/preview-store";
+import { PreviewContextMenu } from "./context-menu";
+import { PreviewToolbar } from "./toolbar";
 
 function usePreviewSize() {
 	const editor = useEditor();
@@ -30,6 +25,30 @@ function usePreviewSize() {
 		width: activeProject?.settings.canvasSize.width,
 		height: activeProject?.settings.canvasSize.height,
 	};
+}
+
+export function PreviewPanel() {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const { isFullscreen, toggleFullscreen } = useFullscreen({ containerRef });
+
+	return (
+		<div
+			ref={containerRef}
+			className="panel bg-background relative flex size-full min-h-0 min-w-0 flex-col rounded-sm border"
+		>
+			<div className="flex min-h-0 min-w-0 flex-1 items-center justify-center p-2 pb-0">
+				<PreviewCanvas
+					onToggleFullscreen={toggleFullscreen}
+					containerRef={containerRef}
+				/>
+				<RenderTreeController />
+			</div>
+			<PreviewToolbar
+				isFullscreen={isFullscreen}
+				onToggleFullscreen={toggleFullscreen}
+			/>
+		</div>
+	);
 }
 
 function RenderTreeController() {
@@ -58,98 +77,24 @@ function RenderTreeController() {
 	return null;
 }
 
-export function PreviewPanel() {
-	const containerRef = useRef<HTMLDivElement>(null);
-	const { isFullscreen, toggleFullscreen } = useFullscreen({ containerRef });
-
-	return (
-		<div
-			ref={containerRef}
-			className={cn(
-				"panel bg-background relative flex h-full min-h-0 w-full min-w-0 flex-col rounded-sm border",
-				isFullscreen && "bg-background",
-			)}
-		>
-			<div className="flex min-h-0 min-w-0 flex-1 items-center justify-center p-2 pb-0">
-				<PreviewCanvas />
-				<RenderTreeController />
-			</div>
-			<PreviewToolbar
-				isFullscreen={isFullscreen}
-				onToggleFullscreen={toggleFullscreen}
-			/>
-		</div>
-	);
-}
-
-function PreviewToolbar({
-	isFullscreen,
+function PreviewCanvas({
 	onToggleFullscreen,
+	containerRef,
 }: {
-	isFullscreen: boolean;
 	onToggleFullscreen: () => void;
+	containerRef: React.RefObject<HTMLElement | null>;
 }) {
-	const editor = useEditor();
-	const isPlaying = editor.playback.getIsPlaying();
-	const currentTime = editor.playback.getCurrentTime();
-	const totalDuration = editor.timeline.getTotalDuration();
-	const fps = editor.project.getActive().settings.fps;
-
-	return (
-		<div className="grid grid-cols-[1fr_auto_1fr] items-center pb-3 pt-5 px-5">
-			<div className="flex items-center mt-1">
-				<EditableTimecode
-					time={currentTime}
-					duration={totalDuration}
-					format="HH:MM:SS:FF"
-					fps={fps}
-					onTimeChange={({ time }) => editor.playback.seek({ time })}
-					className="text-center"
-				/>
-				<span className="text-muted-foreground px-2 font-mono text-xs">/</span>
-				<span className="text-muted-foreground font-mono text-xs">
-					{formatTimeCode({
-						timeInSeconds: totalDuration,
-						format: "HH:MM:SS:FF",
-						fps,
-					})}
-				</span>
-			</div>
-
-			<Button
-				variant="text"
-				size="icon"
-				type="button"
-				onClick={() => invokeAction("toggle-play")}
-			>
-				<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
-			</Button>
-
-			<div className="justify-self-end">
-				<Button
-					variant="text"
-					size="icon"
-					type="button"
-					onClick={onToggleFullscreen}
-					title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-				>
-					<HugeiconsIcon icon={FullScreenIcon} />
-				</Button>
-			</div>
-		</div>
-	);
-}
-
-function PreviewCanvas() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
+	const outerContainerRef = useRef<HTMLDivElement>(null);
+	const canvasBoundsRef = useRef<HTMLDivElement>(null);
 	const lastFrameRef = useRef(-1);
 	const lastSceneRef = useRef<RootNode | null>(null);
 	const renderingRef = useRef(false);
 	const { width: nativeWidth, height: nativeHeight } = usePreviewSize();
-	const containerSize = useContainerSize({ containerRef });
+	const containerSize = useContainerSize({ containerRef: outerContainerRef });
 	const editor = useEditor();
 	const activeProject = editor.project.getActive();
+	const { overlays } = usePreviewStore();
 
 	const renderer = useMemo(() => {
 		return new CanvasRenderer({
@@ -224,24 +169,42 @@ function PreviewCanvas() {
 
 	return (
 		<div
-			ref={containerRef}
-			className="relative flex h-full w-full items-center justify-center"
+			ref={outerContainerRef}
+			className="relative flex size-full items-center justify-center"
 		>
-			<canvas
-				ref={canvasRef}
-				width={nativeWidth}
-				height={nativeHeight}
-				className="block border"
-				style={{
-					width: displaySize.width,
-					height: displaySize.height,
-					background:
-						activeProject.settings.background.type === "blur"
-							? "transparent"
-							: activeProject?.settings.background.color,
-				}}
-			/>
-			<PreviewInteractionOverlay canvasRef={canvasRef} />
+			<ContextMenu>
+				<ContextMenuTrigger asChild>
+					<div
+						ref={canvasBoundsRef}
+						className="relative"
+						style={{ width: displaySize.width, height: displaySize.height }}
+					>
+						<canvas
+							ref={canvasRef}
+							width={nativeWidth}
+							height={nativeHeight}
+							className="block border"
+							style={{
+								width: displaySize.width,
+								height: displaySize.height,
+								background:
+									activeProject.settings.background.type === "blur"
+										? "transparent"
+										: activeProject?.settings.background.color,
+							}}
+						/>
+						<PreviewInteractionOverlay
+							canvasRef={canvasRef}
+							containerRef={canvasBoundsRef}
+						/>
+						{overlays.bookmarks && <BookmarkNoteOverlay />}
+					</div>
+				</ContextMenuTrigger>
+				<PreviewContextMenu
+						onToggleFullscreen={onToggleFullscreen}
+						containerRef={containerRef}
+					/>
+			</ContextMenu>
 		</div>
 	);
 }

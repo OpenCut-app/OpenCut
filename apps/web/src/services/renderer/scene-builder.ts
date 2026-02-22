@@ -66,6 +66,7 @@ export function buildScene(params: BuildSceneParams) {
 							trimEnd: element.trimEnd,
 							transform: element.transform,
 							opacity: element.opacity,
+							blendMode: element.blendMode,
 						}),
 					);
 				}
@@ -79,6 +80,7 @@ export function buildScene(params: BuildSceneParams) {
 							trimEnd: element.trimEnd,
 							transform: element.transform,
 							opacity: element.opacity,
+							blendMode: element.blendMode,
 						}),
 					);
 				}
@@ -98,14 +100,14 @@ export function buildScene(params: BuildSceneParams) {
 			if (element.type === "sticker") {
 				contentNodes.push(
 					new StickerNode({
-						iconName: element.iconName,
+						stickerId: element.stickerId,
 						duration: element.duration,
 						timeOffset: element.startTime,
 						trimStart: element.trimStart,
 						trimEnd: element.trimEnd,
 						transform: element.transform,
 						opacity: element.opacity,
-						color: element.color,
+						blendMode: element.blendMode,
 					}),
 				);
 			}

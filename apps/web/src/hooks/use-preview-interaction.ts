@@ -1,12 +1,22 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditor } from "@/hooks/use-editor";
-import { useSyncExternalStore } from "react";
-import type { Transform, TimelineTrack } from "@/types/timeline";
+import { useShiftKey } from "@/hooks/use-shift-key";
+import type { TextElement, Transform } from "@/types/timeline";
+import { getVisibleElementsWithBounds } from "@/lib/preview/element-bounds";
+import { hitTest } from "@/lib/preview/hit-test";
+import { screenToCanvas } from "@/lib/preview/preview-coords";
+import { isVisualElement } from "@/lib/timeline/element-utils";
+import { snapPosition, type SnapLine } from "@/lib/preview/preview-snap";
+
+const MIN_DRAG_DISTANCE = 0.5;
 
 interface DragState {
 	startX: number;
 	startY: number;
-	tracksSnapshot: TimelineTrack[];
+	bounds: {
+		width: number;
+		height: number;
+	};
 	elements: Array<{
 		trackId: string;
 		elementId: string;
@@ -20,59 +30,164 @@ export function usePreviewInteraction({
 	canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }) {
 	const editor = useEditor();
+	const isShiftHeldRef = useShiftKey();
 	const [isDragging, setIsDragging] = useState(false);
+	const [snapLines, setSnapLines] = useState<SnapLine[]>([]);
+	const [editingText, setEditingText] = useState<{
+		trackId: string;
+		elementId: string;
+		element: TextElement;
+		originalOpacity: number;
+	} | null>(null);
 	const dragStateRef = useRef<DragState | null>(null);
+	const wasPlayingRef = useRef(editor.playback.getIsPlaying());
+	const editingTextRef = useRef(editingText);
+	editingTextRef.current = editingText;
 
-	const selectedElements = useSyncExternalStore(
-		(listener) => editor.selection.subscribe(listener),
-		() => editor.selection.getSelectedElements(),
-	);
+	const commitTextEdit = useCallback(() => {
+		const current = editingTextRef.current;
+		if (!current) return;
+		editor.timeline.previewElements({
+			updates: [
+				{
+					trackId: current.trackId,
+					elementId: current.elementId,
+					updates: { opacity: current.originalOpacity },
+				},
+			],
+		});
+		editor.timeline.commitPreview();
+		setEditingText(null);
+	}, [editor.timeline]);
 
-	const getCanvasCoordinates = useCallback(
-		({ clientX, clientY }: { clientX: number; clientY: number }) => {
-			if (!canvasRef.current) return { x: 0, y: 0 };
+	const cancelTextEdit = useCallback(() => {
+		editor.timeline.discardPreview();
+		setEditingText(null);
+	}, [editor.timeline]);
 
-			const rect = canvasRef.current.getBoundingClientRect();
-			const logicalWidth = canvasRef.current.width;
-			const logicalHeight = canvasRef.current.height;
-			const scaleX = logicalWidth / rect.width;
-			const scaleY = logicalHeight / rect.height;
+	useEffect(() => {
+		const unsubscribe = editor.playback.subscribe(() => {
+			const isPlaying = editor.playback.getIsPlaying();
+			if (isPlaying && !wasPlayingRef.current && editingTextRef.current) {
+				commitTextEdit();
+			}
+			wasPlayingRef.current = isPlaying;
+		});
+		return unsubscribe;
+	}, [editor.playback, commitTextEdit]);
 
-			const canvasX = (clientX - rect.left) * scaleX;
-			const canvasY = (clientY - rect.top) * scaleY;
+	const handleDoubleClick = useCallback(
+		({ clientX, clientY }: React.MouseEvent) => {
+			if (!canvasRef.current || editingText) return;
 
-			return { x: canvasX, y: canvasY };
+			const tracks = editor.timeline.getTracks();
+			const currentTime = editor.playback.getCurrentTime();
+			const mediaAssets = editor.media.getAssets();
+			const canvasSize = editor.project.getActive().settings.canvasSize;
+
+			const startPos = screenToCanvas({
+				clientX,
+				clientY,
+				canvas: canvasRef.current,
+			});
+
+			const elementsWithBounds = getVisibleElementsWithBounds({
+				tracks,
+				currentTime,
+				canvasSize,
+				mediaAssets,
+			});
+
+			const hit = hitTest({
+				canvasX: startPos.x,
+				canvasY: startPos.y,
+				elementsWithBounds,
+			});
+
+			if (!hit || hit.element.type !== "text") return;
+
+			const textElement = hit.element as TextElement;
+			editor.timeline.previewElements({
+				updates: [
+					{
+						trackId: hit.trackId,
+						elementId: hit.elementId,
+						updates: { opacity: 0 },
+					},
+				],
+			});
+			setEditingText({
+				trackId: hit.trackId,
+				elementId: hit.elementId,
+				element: textElement,
+				originalOpacity: textElement.opacity,
+			});
 		},
-		[canvasRef],
+		[canvasRef, editor, editingText],
 	);
 
 	const handlePointerDown = useCallback(
-		(event: React.PointerEvent) => {
-			if (selectedElements.length === 0) return;
+		({
+			clientX,
+			clientY,
+			currentTarget,
+			pointerId,
+			button,
+		}: React.PointerEvent) => {
+			if (!canvasRef.current) return;
+			if (editingText) return;
+			if (button !== 0) return;
 
-			const elementsWithTracks = editor.timeline.getElementsWithTracks({
-				elements: selectedElements,
+			const tracks = editor.timeline.getTracks();
+			const currentTime = editor.playback.getCurrentTime();
+			const mediaAssets = editor.media.getAssets();
+			const canvasSize = editor.project.getActive().settings.canvasSize;
+
+			const startPos = screenToCanvas({
+				clientX,
+				clientY,
+				canvas: canvasRef.current,
 			});
 
-			const draggableElements = elementsWithTracks.filter(
-				({ element }) =>
-					element.type === "video" ||
-					element.type === "image" ||
-					element.type === "text" ||
-					element.type === "sticker",
+			const elementsWithBounds = getVisibleElementsWithBounds({
+				tracks,
+				currentTime,
+				canvasSize,
+				mediaAssets,
+			});
+
+			const hit = hitTest({
+				canvasX: startPos.x,
+				canvasY: startPos.y,
+				elementsWithBounds,
+			});
+
+			if (!hit) {
+				editor.selection.clearSelection();
+				return;
+			}
+
+			editor.selection.setSelectedElements({
+				elements: [{ trackId: hit.trackId, elementId: hit.elementId }],
+			});
+
+			const elementsWithTracks = editor.timeline.getElementsWithTracks({
+				elements: [{ trackId: hit.trackId, elementId: hit.elementId }],
+			});
+
+			const draggableElements = elementsWithTracks.filter(({ element }) =>
+				isVisualElement(element),
 			);
 
 			if (draggableElements.length === 0) return;
 
-			const startPos = getCanvasCoordinates({
-				clientX: event.clientX,
-				clientY: event.clientY,
-			});
-
 			dragStateRef.current = {
 				startX: startPos.x,
 				startY: startPos.y,
-				tracksSnapshot: editor.timeline.getTracks(),
+				bounds: {
+					width: hit.bounds.width,
+					height: hit.bounds.height,
+				},
 				elements: draggableElements.map(({ track, element }) => ({
 					trackId: track.id,
 					elementId: element.id,
@@ -81,107 +196,118 @@ export function usePreviewInteraction({
 			};
 
 			setIsDragging(true);
-			event.currentTarget.setPointerCapture(event.pointerId);
+			currentTarget.setPointerCapture(pointerId);
 		},
-		[selectedElements, editor, getCanvasCoordinates],
+		[editor, canvasRef, editingText],
 	);
 
 	const handlePointerMove = useCallback(
-		(event: React.PointerEvent) => {
-			if (!dragStateRef.current || !isDragging) return;
+		({ clientX, clientY }: React.PointerEvent) => {
+			if (!dragStateRef.current || !isDragging || !canvasRef.current) return;
 
-			const currentPos = getCanvasCoordinates({
-				clientX: event.clientX,
-				clientY: event.clientY,
+			const canvasSize = editor.project.getActive().settings.canvasSize;
+
+			const currentPos = screenToCanvas({
+				clientX,
+				clientY,
+				canvas: canvasRef.current,
 			});
 
 			const deltaX = currentPos.x - dragStateRef.current.startX;
 			const deltaY = currentPos.y - dragStateRef.current.startY;
-
-			for (const { trackId, elementId, initialTransform } of dragStateRef
-				.current.elements) {
-				const newPosition = {
-					x: initialTransform.position.x + deltaX,
-					y: initialTransform.position.y + deltaY,
-				};
-
-				editor.timeline.updateElements({
-					updates: [
-						{
-							trackId,
-							elementId,
-							updates: {
-								transform: {
-									...initialTransform,
-									position: newPosition,
-								},
-							},
-						},
-					],
-					pushHistory: false,
-				});
-			}
-		},
-		[isDragging, getCanvasCoordinates, editor],
-	);
-
-	const handlePointerUp = useCallback(
-		(event: React.PointerEvent) => {
-			if (!dragStateRef.current || !isDragging) return;
-
-			const currentPos = getCanvasCoordinates({
-				clientX: event.clientX,
-				clientY: event.clientY,
-			});
-
-			const deltaX = currentPos.x - dragStateRef.current.startX;
-			const deltaY = currentPos.y - dragStateRef.current.startY;
-
-			const hasMovement = Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5;
-
-
+			const hasMovement =
+				Math.abs(deltaX) > MIN_DRAG_DISTANCE ||
+				Math.abs(deltaY) > MIN_DRAG_DISTANCE;
 			if (!hasMovement) {
-				dragStateRef.current = null;
-				setIsDragging(false);
-				event.currentTarget.releasePointerCapture(event.pointerId);
+				setSnapLines([]);
 				return;
 			}
 
-			// revert to pre-drag state so the command captures the correct undo snapshot
-			editor.timeline.updateTracks(dragStateRef.current.tracksSnapshot);
+			const firstElement = dragStateRef.current.elements[0];
+			const proposedPosition = {
+				x: firstElement.initialTransform.position.x + deltaX,
+				y: firstElement.initialTransform.position.y + deltaY,
+			};
+
+			const shouldSnap = !isShiftHeldRef.current;
+			const { snappedPosition, activeLines } = shouldSnap
+				? snapPosition({
+						proposedPosition,
+						canvasSize,
+						elementSize: dragStateRef.current.bounds,
+					})
+				: {
+						snappedPosition: proposedPosition,
+						activeLines: [] as SnapLine[],
+					};
+
+			setSnapLines(activeLines);
+
+			const deltaSnappedX =
+				snappedPosition.x - firstElement.initialTransform.position.x;
+			const deltaSnappedY =
+				snappedPosition.y - firstElement.initialTransform.position.y;
 
 			const updates = dragStateRef.current.elements.map(
-				({ trackId, elementId, initialTransform }) => {
-					const newPosition = {
-						x: initialTransform.position.x + deltaX,
-						y: initialTransform.position.y + deltaY,
-					};
-
-					return {
-						trackId,
-						elementId,
-						updates: {
-							transform: {
-								...initialTransform,
-								position: newPosition,
+				({ trackId, elementId, initialTransform }) => ({
+					trackId,
+					elementId,
+					updates: {
+						transform: {
+							...initialTransform,
+							position: {
+								x: initialTransform.position.x + deltaSnappedX,
+								y: initialTransform.position.y + deltaSnappedY,
 							},
 						},
-					};
-				},
+					},
+				}),
 			);
 
-			editor.timeline.updateElements({ updates });
+			editor.timeline.previewElements({ updates });
+		},
+		[isDragging, canvasRef, editor, isShiftHeldRef],
+	);
+
+	const handlePointerUp = useCallback(
+		({ clientX, clientY, currentTarget, pointerId }: React.PointerEvent) => {
+			if (!dragStateRef.current || !isDragging || !canvasRef.current) return;
+
+			const currentPos = screenToCanvas({
+				clientX,
+				clientY,
+				canvas: canvasRef.current,
+			});
+
+			const deltaX = currentPos.x - dragStateRef.current.startX;
+			const deltaY = currentPos.y - dragStateRef.current.startY;
+
+			const hasMovement =
+				Math.abs(deltaX) > MIN_DRAG_DISTANCE ||
+				Math.abs(deltaY) > MIN_DRAG_DISTANCE;
+
+			if (!hasMovement) {
+				editor.timeline.discardPreview();
+			} else {
+				editor.timeline.commitPreview();
+			}
 
 			dragStateRef.current = null;
 			setIsDragging(false);
-			event.currentTarget.releasePointerCapture(event.pointerId);
+			setSnapLines([]);
+			currentTarget.releasePointerCapture(pointerId);
 		},
-		[isDragging, getCanvasCoordinates, editor],
+		[isDragging, canvasRef, editor],
 	);
 
 	return {
 		onPointerDown: handlePointerDown,
 		onPointerMove: handlePointerMove,
 		onPointerUp: handlePointerUp,
+		onDoubleClick: handleDoubleClick,
+		snapLines,
+		editingText,
+		commitTextEdit,
+		cancelTextEdit,
 	};
 }

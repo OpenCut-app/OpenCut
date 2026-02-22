@@ -23,12 +23,14 @@ import {
 	PasteCommand,
 	UpdateElementStartTimeCommand,
 	MoveElementCommand,
+	TracksSnapshotCommand,
 } from "@/lib/commands/timeline";
-import { BatchCommand } from "@/lib/commands";
+import { BatchCommand, PreviewTracker } from "@/lib/commands";
 import type { InsertElementParams } from "@/lib/commands/timeline/element/insert-element";
 
 export class TimelineManager {
 	private listeners = new Set<() => void>();
+	private previewTracker = new PreviewTracker<TimelineTrack[]>();
 
 	constructor(private editor: EditorCore) {}
 
@@ -214,11 +216,58 @@ export class TimelineManager {
 			({ trackId, elementId, updates: elementUpdates }) =>
 				new UpdateElementCommand(trackId, elementId, elementUpdates),
 		);
-		const command = commands.length === 1 ? commands[0] : new BatchCommand(commands);
+		const command =
+			commands.length === 1 ? commands[0] : new BatchCommand(commands);
 		if (pushHistory) {
 			this.editor.command.execute({ command });
 		} else {
 			command.execute();
+		}
+	}
+
+	isPreviewActive(): boolean {
+		return this.previewTracker.isActive();
+	}
+
+	previewElements({
+		updates,
+	}: {
+		updates: Array<{
+			trackId: string;
+			elementId: string;
+			updates: Partial<Record<string, unknown>>;
+		}>;
+	}): void {
+		const tracks = this.getTracks();
+		this.previewTracker.begin({ state: tracks });
+
+		let updatedTracks = tracks;
+		for (const { trackId, elementId, updates: elementUpdates } of updates) {
+			updatedTracks = updatedTracks.map((track) => {
+				if (track.id !== trackId) return track;
+				const newElements = track.elements.map((element) =>
+					element.id === elementId
+						? { ...element, ...elementUpdates }
+						: element,
+				);
+				return { ...track, elements: newElements } as TimelineTrack;
+			});
+		}
+		this.updateTracks(updatedTracks);
+	}
+
+	commitPreview(): void {
+		const snapshot = this.previewTracker.end();
+		if (snapshot === null) return;
+		const currentTracks = this.getTracks();
+		const command = new TracksSnapshotCommand(snapshot, currentTracks);
+		this.editor.command.push({ command });
+	}
+
+	discardPreview(): void {
+		const snapshot = this.previewTracker.end();
+		if (snapshot !== null) {
+			this.updateTracks(snapshot);
 		}
 	}
 

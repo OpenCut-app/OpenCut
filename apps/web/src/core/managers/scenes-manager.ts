@@ -7,14 +7,20 @@ import {
 	canDeleteScene,
 	findCurrentScene,
 } from "@/lib/scenes";
-import { getFrameTime, isBookmarkAtTime } from "@/lib/timeline/bookmarks";
+import {
+	getBookmarkAtTime,
+	getFrameTime,
+	isBookmarkAtTime,
+} from "@/lib/timeline/bookmarks";
 import { ensureMainTrack } from "@/lib/timeline/track-utils";
 import {
 	CreateSceneCommand,
 	DeleteSceneCommand,
+	MoveBookmarkCommand,
 	RemoveBookmarkCommand,
 	RenameSceneCommand,
 	ToggleBookmarkCommand,
+	UpdateBookmarkCommand,
 } from "@/lib/commands/scene";
 
 export class ScenesManager {
@@ -123,6 +129,45 @@ export class ScenesManager {
 	async removeBookmark({ time }: { time: number }): Promise<void> {
 		const command = new RemoveBookmarkCommand(time);
 		this.editor.command.execute({ command });
+	}
+
+	async updateBookmark({
+		time,
+		updates,
+	}: {
+		time: number;
+		updates: Partial<{ note: string; color: string; duration: number }>;
+	}): Promise<void> {
+		const command = new UpdateBookmarkCommand(time, updates);
+		this.editor.command.execute({ command });
+	}
+
+	async moveBookmark({
+		fromTime,
+		toTime,
+	}: {
+		fromTime: number;
+		toTime: number;
+	}): Promise<void> {
+		const command = new MoveBookmarkCommand(fromTime, toTime);
+		this.editor.command.execute({ command });
+	}
+
+	getBookmarkAtTime({ time }: { time: number }) {
+		const activeScene = this.active;
+		const activeProject = this.editor.project.getActive();
+
+		if (!activeScene || !activeProject) return null;
+
+		const frameTime = getFrameTime({
+			time,
+			fps: activeProject.settings.fps,
+		});
+
+		return getBookmarkAtTime({
+			bookmarks: activeScene.bookmarks,
+			frameTime,
+		});
 	}
 
 	async loadProjectScenes({ projectId }: { projectId: string }): Promise<void> {

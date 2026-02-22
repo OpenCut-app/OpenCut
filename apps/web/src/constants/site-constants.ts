@@ -1,4 +1,4 @@
-import { OcDataBuddyIcon, OcMarbleIcon, } from "@opencut/ui/icons";
+import { OcDataBuddyIcon, OcMarbleIcon } from "@opencut/ui/icons";
 
 export const SITE_URL = "https://opencut.app";
 

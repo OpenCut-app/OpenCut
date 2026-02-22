@@ -136,7 +136,11 @@ function getProjectVersion({ project }: { project: ProjectRecord }): number {
 	return 0;
 }
 
-function getProjectName({ project }: { project: ProjectRecord }): string | null {
+function getProjectName({
+	project,
+}: {
+	project: ProjectRecord;
+}): string | null {
 	const metadata = project.metadata;
 	if (isRecord(metadata) && typeof metadata.name === "string") {
 		return metadata.name;

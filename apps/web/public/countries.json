@@ -1,0 +1,1794 @@
+[
+	{
+		"name": "Andorra",
+		"code": "AD",
+		"languages": ["catalan"],
+		"flag_colors": ["blue", "yellow", "red"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "United Arab Emirates",
+		"code": "AE",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "green", "white", "black"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Afghanistan",
+		"code": "AF",
+		"languages": ["dari", "pashto"],
+		"flag_colors": ["black", "red", "green"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Antigua and Barbuda",
+		"code": "AG",
+		"languages": ["english"],
+		"flag_colors": ["red", "black", "blue", "white", "yellow"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Anguilla",
+		"code": "AI",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "orange"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Albania",
+		"code": "AL",
+		"languages": ["albanian"],
+		"flag_colors": ["red", "black"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Armenia",
+		"code": "AM",
+		"languages": ["armenian"],
+		"flag_colors": ["red", "blue", "orange"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Angola",
+		"code": "AO",
+		"languages": ["portuguese"],
+		"flag_colors": ["red", "black", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Antarctica",
+		"code": "AQ",
+		"languages": [],
+		"flag_colors": [],
+		"region": "Antarctica"
+	},
+	{
+		"name": "Argentina",
+		"code": "AR",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white", "yellow"],
+		"region": "South America"
+	},
+	{
+		"name": "American Samoa",
+		"code": "AS",
+		"languages": ["english", "samoan"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Austria",
+		"code": "AT",
+		"languages": ["german"],
+		"flag_colors": ["red", "white"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Australia",
+		"code": "AU",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Aruba",
+		"code": "AW",
+		"languages": ["dutch", "papiamento"],
+		"flag_colors": ["blue", "yellow", "red", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Aland Islands",
+		"code": "AX",
+		"languages": ["swedish"],
+		"flag_colors": ["blue", "yellow", "red"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Azerbaijan",
+		"code": "AZ",
+		"languages": ["azerbaijani"],
+		"flag_colors": ["blue", "red", "green", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Bosnia and Herzegovina",
+		"code": "BA",
+		"languages": ["bosnian", "croatian", "serbian"],
+		"flag_colors": ["blue", "yellow", "white"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Barbados",
+		"code": "BB",
+		"languages": ["english"],
+		"flag_colors": ["blue", "yellow", "black"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Bangladesh",
+		"code": "BD",
+		"languages": ["bengali"],
+		"flag_colors": ["green", "red"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Belgium",
+		"code": "BE",
+		"languages": ["french", "dutch", "german"],
+		"flag_colors": ["black", "yellow", "red"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Burkina Faso",
+		"code": "BF",
+		"languages": ["french"],
+		"flag_colors": ["red", "green", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Bulgaria",
+		"code": "BG",
+		"languages": ["bulgarian"],
+		"flag_colors": ["white", "green", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Bahrain",
+		"code": "BH",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Burundi",
+		"code": "BI",
+		"languages": ["kirundi", "french", "english"],
+		"flag_colors": ["red", "green", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Benin",
+		"code": "BJ",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Saint Barthelemy",
+		"code": "BL",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Bermuda",
+		"code": "BM",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "North Atlantic"
+	},
+	{
+		"name": "Brunei",
+		"code": "BN",
+		"languages": ["malay"],
+		"flag_colors": ["yellow", "white", "black", "red"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Bolivia",
+		"code": "BO",
+		"languages": ["spanish", "quechua", "aymara"],
+		"flag_colors": ["red", "yellow", "green"],
+		"region": "South America"
+	},
+	{
+		"name": "Sint Eustatius",
+		"code": "BQ-SE",
+		"languages": ["dutch", "english"],
+		"flag_colors": ["blue", "white", "red", "yellow"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Caribbean Netherlands",
+		"code": "BQ",
+		"languages": ["dutch", "papiamento", "english"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Brazil",
+		"code": "BR",
+		"languages": ["portuguese"],
+		"flag_colors": ["green", "yellow", "blue", "white"],
+		"region": "South America"
+	},
+	{
+		"name": "Bahamas",
+		"code": "BS",
+		"languages": ["english"],
+		"flag_colors": ["blue", "yellow", "black"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Bhutan",
+		"code": "BT",
+		"languages": ["dzongkha"],
+		"flag_colors": ["yellow", "orange", "white"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Bouvet Island",
+		"code": "BV",
+		"languages": [],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Antarctica"
+	},
+	{
+		"name": "Botswana",
+		"code": "BW",
+		"languages": ["english", "tswana"],
+		"flag_colors": ["blue", "black", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Belarus",
+		"code": "BY",
+		"languages": ["belarusian", "russian"],
+		"flag_colors": ["red", "green", "white"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Belize",
+		"code": "BZ",
+		"languages": ["english"],
+		"flag_colors": ["blue", "red", "white"],
+		"region": "Central America"
+	},
+	{
+		"name": "Canada",
+		"code": "CA",
+		"languages": ["english", "french"],
+		"flag_colors": ["red", "white"],
+		"region": "North America"
+	},
+	{
+		"name": "Cocos (Keeling) Islands",
+		"code": "CC",
+		"languages": ["english"],
+		"flag_colors": ["green", "red", "yellow", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Democratic Republic of the Congo",
+		"code": "CD",
+		"languages": ["french", "lingala", "swahili", "tshiluba", "kikongo"],
+		"flag_colors": ["blue", "red", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Central African Republic",
+		"code": "CF",
+		"languages": ["french", "sango"],
+		"flag_colors": ["blue", "white", "green", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Republic of the Congo",
+		"code": "CG",
+		"languages": ["french", "lingala", "kituba"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Switzerland",
+		"code": "CH",
+		"languages": ["german", "french", "italian"],
+		"flag_colors": ["red", "white"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Cote d'Ivoire",
+		"code": "CI",
+		"languages": ["french"],
+		"flag_colors": ["orange", "white", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Cook Islands",
+		"code": "CK",
+		"languages": ["english", "cook islands maori"],
+		"flag_colors": ["blue", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Chile",
+		"code": "CL",
+		"languages": ["spanish"],
+		"flag_colors": ["white", "red", "blue"],
+		"region": "South America"
+	},
+	{
+		"name": "Cameroon",
+		"code": "CM",
+		"languages": ["english", "french"],
+		"flag_colors": ["green", "red", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "China",
+		"code": "CN",
+		"languages": ["mandarin"],
+		"flag_colors": ["red", "yellow"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Colombia",
+		"code": "CO",
+		"languages": ["spanish"],
+		"flag_colors": ["yellow", "blue", "red"],
+		"region": "South America"
+	},
+	{
+		"name": "Costa Rica",
+		"code": "CR",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Central America"
+	},
+	{
+		"name": "Cuba",
+		"code": "CU",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Cape Verde",
+		"code": "CV",
+		"languages": ["portuguese"],
+		"flag_colors": ["blue", "white", "red", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Curacao",
+		"code": "CW",
+		"languages": ["dutch", "papiamento", "english"],
+		"flag_colors": ["blue", "yellow", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Christmas Island",
+		"code": "CX",
+		"languages": ["english"],
+		"flag_colors": ["green", "blue", "yellow", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Cyprus",
+		"code": "CY",
+		"languages": ["greek", "turkish"],
+		"flag_colors": ["white", "orange", "green"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Czechia",
+		"code": "CZ",
+		"languages": ["czech"],
+		"flag_colors": ["white", "red", "blue"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Germany",
+		"code": "DE",
+		"languages": ["german"],
+		"flag_colors": ["black", "red", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Djibouti",
+		"code": "DJ",
+		"languages": ["arabic", "french", "afar", "somali"],
+		"flag_colors": ["blue", "green", "white", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Denmark",
+		"code": "DK",
+		"languages": ["danish"],
+		"flag_colors": ["red", "white"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Dominica",
+		"code": "DM",
+		"languages": ["english"],
+		"flag_colors": ["green", "yellow", "black", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Dominican Republic",
+		"code": "DO",
+		"languages": ["spanish"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Algeria",
+		"code": "DZ",
+		"languages": ["arabic", "tamazight"],
+		"flag_colors": ["green", "white", "red"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Ecuador",
+		"code": "EC",
+		"languages": ["spanish"],
+		"flag_colors": ["yellow", "blue", "red"],
+		"region": "South America"
+	},
+	{
+		"name": "Estonia",
+		"code": "EE",
+		"languages": ["estonian"],
+		"flag_colors": ["blue", "black", "white"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Egypt",
+		"code": "EG",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white", "black", "yellow"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Western Sahara",
+		"code": "EH",
+		"languages": ["arabic", "spanish"],
+		"flag_colors": ["black", "white", "green", "red"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Eritrea",
+		"code": "ER",
+		"languages": ["tigrinya", "arabic", "english"],
+		"flag_colors": ["red", "green", "blue", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Spain",
+		"code": "ES",
+		"languages": ["spanish"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Ethiopia",
+		"code": "ET",
+		"languages": ["amharic", "oromo"],
+		"flag_colors": ["green", "yellow", "red", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "European Union",
+		"code": "EU",
+		"languages": ["english", "french", "german"],
+		"flag_colors": ["blue", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Finland",
+		"code": "FI",
+		"languages": ["finnish", "swedish"],
+		"flag_colors": ["white", "blue"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Fiji",
+		"code": "FJ",
+		"languages": ["english", "fijian", "hindi"],
+		"flag_colors": ["blue", "white", "red", "yellow"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Falkland Islands",
+		"code": "FK",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red", "yellow"],
+		"region": "South America"
+	},
+	{
+		"name": "Micronesia",
+		"code": "FM",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Faroe Islands",
+		"code": "FO",
+		"languages": ["faroese", "danish"],
+		"flag_colors": ["white", "red", "blue"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "France",
+		"code": "FR",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Gabon",
+		"code": "GA",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "England",
+		"code": "GB-ENG",
+		"languages": ["english"],
+		"flag_colors": ["red", "white"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Northern Ireland",
+		"code": "GB-NIR",
+		"languages": ["english", "irish"],
+		"flag_colors": ["white", "red"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Scotland",
+		"code": "GB-SCT",
+		"languages": ["english", "scottish gaelic"],
+		"flag_colors": ["blue", "white"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Wales",
+		"code": "GB-WLS",
+		"languages": ["english", "welsh"],
+		"flag_colors": ["green", "white", "red"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "United Kingdom",
+		"code": "GB",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Grenada",
+		"code": "GD",
+		"languages": ["english"],
+		"flag_colors": ["red", "yellow", "green", "black"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Georgia",
+		"code": "GE",
+		"languages": ["georgian"],
+		"flag_colors": ["white", "red"],
+		"region": "Middle East"
+	},
+	{
+		"name": "French Guiana",
+		"code": "GF",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "South America"
+	},
+	{
+		"name": "Guernsey",
+		"code": "GG",
+		"languages": ["english", "french"],
+		"flag_colors": ["white", "red", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Ghana",
+		"code": "GH",
+		"languages": ["english"],
+		"flag_colors": ["red", "yellow", "green", "black"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Gibraltar",
+		"code": "GI",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "yellow"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Greenland",
+		"code": "GL",
+		"languages": ["kalaallisut", "danish"],
+		"flag_colors": ["red", "white"],
+		"region": "North America"
+	},
+	{
+		"name": "Gambia",
+		"code": "GM",
+		"languages": ["english"],
+		"flag_colors": ["red", "blue", "green", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Guinea",
+		"code": "GN",
+		"languages": ["french"],
+		"flag_colors": ["red", "yellow", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Guadeloupe",
+		"code": "GP",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Equatorial Guinea",
+		"code": "GQ",
+		"languages": ["spanish", "french", "portuguese"],
+		"flag_colors": ["green", "white", "red", "blue", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Greece",
+		"code": "GR",
+		"languages": ["greek"],
+		"flag_colors": ["blue", "white"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "South Georgia and the South Sandwich Islands",
+		"code": "GS",
+		"languages": [],
+		"flag_colors": ["blue", "white", "yellow"],
+		"region": "Atlantic Ocean"
+	},
+	{
+		"name": "Guatemala",
+		"code": "GT",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white"],
+		"region": "Central America"
+	},
+	{
+		"name": "Guam",
+		"code": "GU",
+		"languages": ["english", "chamorro"],
+		"flag_colors": ["blue", "red"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Guinea-Bissau",
+		"code": "GW",
+		"languages": ["portuguese"],
+		"flag_colors": ["red", "yellow", "green", "black"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Guyana",
+		"code": "GY",
+		"languages": ["english"],
+		"flag_colors": ["green", "yellow", "red", "black", "white"],
+		"region": "South America"
+	},
+	{
+		"name": "Hong Kong",
+		"code": "HK",
+		"languages": ["cantonese", "english"],
+		"flag_colors": ["red", "white"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Heard Island and McDonald Islands",
+		"code": "HM",
+		"languages": [],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Honduras",
+		"code": "HN",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white"],
+		"region": "Central America"
+	},
+	{
+		"name": "Croatia",
+		"code": "HR",
+		"languages": ["croatian"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Haiti",
+		"code": "HT",
+		"languages": ["haitian creole", "french"],
+		"flag_colors": ["blue", "red", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Hungary",
+		"code": "HU",
+		"languages": ["hungarian"],
+		"flag_colors": ["red", "white", "green"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Indonesia",
+		"code": "ID",
+		"languages": ["indonesian"],
+		"flag_colors": ["red", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Ireland",
+		"code": "IE",
+		"languages": ["english", "irish"],
+		"flag_colors": ["green", "white", "orange"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Israel",
+		"code": "IL",
+		"languages": ["hebrew", "arabic"],
+		"flag_colors": ["blue", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Isle of Man",
+		"code": "IM",
+		"languages": ["english", "manx"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "India",
+		"code": "IN",
+		"languages": ["hindi", "english"],
+		"flag_colors": ["orange", "white", "green", "blue"],
+		"region": "South Asia"
+	},
+	{
+		"name": "British Indian Ocean Territory",
+		"code": "IO",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red", "yellow"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Iraq",
+		"code": "IQ",
+		"languages": ["arabic", "kurdish"],
+		"flag_colors": ["red", "white", "black", "green"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Iran",
+		"code": "IR",
+		"languages": ["persian"],
+		"flag_colors": ["green", "white", "red"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Iceland",
+		"code": "IS",
+		"languages": ["icelandic"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Italy",
+		"code": "IT",
+		"languages": ["italian"],
+		"flag_colors": ["green", "white", "red"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Jersey",
+		"code": "JE",
+		"languages": ["english", "french"],
+		"flag_colors": ["white", "red", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Jamaica",
+		"code": "JM",
+		"languages": ["english"],
+		"flag_colors": ["green", "yellow", "black"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Jordan",
+		"code": "JO",
+		"languages": ["arabic"],
+		"flag_colors": ["black", "white", "green", "red"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Japan",
+		"code": "JP",
+		"languages": ["japanese"],
+		"flag_colors": ["red", "white"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Kenya",
+		"code": "KE",
+		"languages": ["english", "swahili"],
+		"flag_colors": ["black", "red", "green", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Kyrgyzstan",
+		"code": "KG",
+		"languages": ["kyrgyz", "russian"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Central Asia"
+	},
+	{
+		"name": "Cambodia",
+		"code": "KH",
+		"languages": ["khmer"],
+		"flag_colors": ["blue", "red", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Kiribati",
+		"code": "KI",
+		"languages": ["english", "kiribati"],
+		"flag_colors": ["red", "blue", "white", "yellow"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Comoros",
+		"code": "KM",
+		"languages": ["comorian", "arabic", "french"],
+		"flag_colors": ["green", "yellow", "white", "red", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Saint Kitts and Nevis",
+		"code": "KN",
+		"languages": ["english"],
+		"flag_colors": ["green", "red", "black", "yellow", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "North Korea",
+		"code": "KP",
+		"languages": ["korean"],
+		"flag_colors": ["red", "blue", "white"],
+		"region": "East Asia"
+	},
+	{
+		"name": "South Korea",
+		"code": "KR",
+		"languages": ["korean"],
+		"flag_colors": ["white", "red", "blue", "black"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Kuwait",
+		"code": "KW",
+		"languages": ["arabic"],
+		"flag_colors": ["green", "white", "red", "black"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Cayman Islands",
+		"code": "KY",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Kazakhstan",
+		"code": "KZ",
+		"languages": ["kazakh", "russian"],
+		"flag_colors": ["blue", "yellow"],
+		"region": "Central Asia"
+	},
+	{
+		"name": "Laos",
+		"code": "LA",
+		"languages": ["lao"],
+		"flag_colors": ["red", "blue", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Lebanon",
+		"code": "LB",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white", "green"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Saint Lucia",
+		"code": "LC",
+		"languages": ["english"],
+		"flag_colors": ["blue", "yellow", "black", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Liechtenstein",
+		"code": "LI",
+		"languages": ["german"],
+		"flag_colors": ["blue", "red", "yellow"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Sri Lanka",
+		"code": "LK",
+		"languages": ["sinhala", "tamil"],
+		"flag_colors": ["yellow", "green", "orange", "red"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Liberia",
+		"code": "LR",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Lesotho",
+		"code": "LS",
+		"languages": ["sesotho", "english"],
+		"flag_colors": ["blue", "white", "green", "black"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Lithuania",
+		"code": "LT",
+		"languages": ["lithuanian"],
+		"flag_colors": ["yellow", "green", "red"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Luxembourg",
+		"code": "LU",
+		"languages": ["luxembourgish", "french", "german"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Latvia",
+		"code": "LV",
+		"languages": ["latvian"],
+		"flag_colors": ["red", "white"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Libya",
+		"code": "LY",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "black", "green", "white"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Morocco",
+		"code": "MA",
+		"languages": ["arabic", "tamazight"],
+		"flag_colors": ["red", "green"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Monaco",
+		"code": "MC",
+		"languages": ["french"],
+		"flag_colors": ["red", "white"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Moldova",
+		"code": "MD",
+		"languages": ["romanian"],
+		"flag_colors": ["blue", "yellow", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Montenegro",
+		"code": "ME",
+		"languages": ["montenegrin"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Saint Martin",
+		"code": "MF",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Madagascar",
+		"code": "MG",
+		"languages": ["malagasy", "french"],
+		"flag_colors": ["white", "red", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Marshall Islands",
+		"code": "MH",
+		"languages": ["marshallese", "english"],
+		"flag_colors": ["blue", "white", "orange"],
+		"region": "Oceania"
+	},
+	{
+		"name": "North Macedonia",
+		"code": "MK",
+		"languages": ["macedonian", "albanian"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Mali",
+		"code": "ML",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Myanmar",
+		"code": "MM",
+		"languages": ["burmese"],
+		"flag_colors": ["yellow", "green", "red", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Mongolia",
+		"code": "MN",
+		"languages": ["mongolian"],
+		"flag_colors": ["red", "blue", "yellow"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Macao",
+		"code": "MO",
+		"languages": ["cantonese", "portuguese"],
+		"flag_colors": ["green", "white", "yellow"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Northern Mariana Islands",
+		"code": "MP",
+		"languages": ["english", "chamorro", "carolinian"],
+		"flag_colors": ["blue", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Martinique",
+		"code": "MQ",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Mauritania",
+		"code": "MR",
+		"languages": ["arabic"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Montserrat",
+		"code": "MS",
+		"languages": ["english"],
+		"flag_colors": ["blue", "green", "white", "yellow", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Malta",
+		"code": "MT",
+		"languages": ["maltese", "english"],
+		"flag_colors": ["white", "red"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Mauritius",
+		"code": "MU",
+		"languages": ["english", "french", "mauritian creole"],
+		"flag_colors": ["red", "blue", "yellow", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Maldives",
+		"code": "MV",
+		"languages": ["divehi"],
+		"flag_colors": ["red", "green", "white"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Malawi",
+		"code": "MW",
+		"languages": ["english", "chichewa"],
+		"flag_colors": ["black", "red", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Mexico",
+		"code": "MX",
+		"languages": ["spanish"],
+		"flag_colors": ["green", "white", "red"],
+		"region": "North America"
+	},
+	{
+		"name": "Malaysia",
+		"code": "MY",
+		"languages": ["malay"],
+		"flag_colors": ["red", "white", "blue", "yellow"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Mozambique",
+		"code": "MZ",
+		"languages": ["portuguese"],
+		"flag_colors": ["green", "black", "yellow", "white", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Namibia",
+		"code": "NA",
+		"languages": ["english"],
+		"flag_colors": ["blue", "red", "green", "white", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "New Caledonia",
+		"code": "NC",
+		"languages": ["french"],
+		"flag_colors": ["blue", "red", "green", "yellow", "black"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Niger",
+		"code": "NE",
+		"languages": ["french"],
+		"flag_colors": ["orange", "white", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Norfolk Island",
+		"code": "NF",
+		"languages": ["english", "norfuk"],
+		"flag_colors": ["green", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Nigeria",
+		"code": "NG",
+		"languages": ["english"],
+		"flag_colors": ["green", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Nicaragua",
+		"code": "NI",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white"],
+		"region": "Central America"
+	},
+	{
+		"name": "Netherlands",
+		"code": "NL",
+		"languages": ["dutch"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Western Europe"
+	},
+	{
+		"name": "Norway",
+		"code": "NO",
+		"languages": ["norwegian"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Nepal",
+		"code": "NP",
+		"languages": ["nepali"],
+		"flag_colors": ["red", "blue", "white"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Nauru",
+		"code": "NR",
+		"languages": ["nauruan", "english"],
+		"flag_colors": ["blue", "yellow", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Niue",
+		"code": "NU",
+		"languages": ["niuean", "english"],
+		"flag_colors": ["yellow", "blue", "white", "red"],
+		"region": "Oceania"
+	},
+	{
+		"name": "New Zealand",
+		"code": "NZ",
+		"languages": ["english", "maori"],
+		"flag_colors": ["blue", "red", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Oman",
+		"code": "OM",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white", "green"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Panama",
+		"code": "PA",
+		"languages": ["spanish"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Central America"
+	},
+	{
+		"name": "Peru",
+		"code": "PE",
+		"languages": ["spanish", "quechua", "aymara"],
+		"flag_colors": ["red", "white"],
+		"region": "South America"
+	},
+	{
+		"name": "French Polynesia",
+		"code": "PF",
+		"languages": ["french", "tahitian"],
+		"flag_colors": ["red", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Papua New Guinea",
+		"code": "PG",
+		"languages": ["english", "tok pisin", "hiri motu"],
+		"flag_colors": ["red", "black", "yellow", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Philippines",
+		"code": "PH",
+		"languages": ["filipino", "english"],
+		"flag_colors": ["blue", "red", "white", "yellow"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Pakistan",
+		"code": "PK",
+		"languages": ["urdu", "english"],
+		"flag_colors": ["green", "white"],
+		"region": "South Asia"
+	},
+	{
+		"name": "Poland",
+		"code": "PL",
+		"languages": ["polish"],
+		"flag_colors": ["white", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Saint Pierre and Miquelon",
+		"code": "PM",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red", "yellow", "black"],
+		"region": "North America"
+	},
+	{
+		"name": "Pitcairn Islands",
+		"code": "PN",
+		"languages": ["english", "pitkern"],
+		"flag_colors": ["blue", "green", "yellow", "red", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Puerto Rico",
+		"code": "PR",
+		"languages": ["spanish", "english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Palestine",
+		"code": "PS",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "green", "white", "black"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Portugal",
+		"code": "PT",
+		"languages": ["portuguese"],
+		"flag_colors": ["green", "red", "yellow"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Palau",
+		"code": "PW",
+		"languages": ["palauan", "english"],
+		"flag_colors": ["blue", "yellow"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Paraguay",
+		"code": "PY",
+		"languages": ["spanish", "guarani"],
+		"flag_colors": ["red", "white", "blue", "yellow"],
+		"region": "South America"
+	},
+	{
+		"name": "Qatar",
+		"code": "QA",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Reunion",
+		"code": "RE",
+		"languages": ["french", "reunion creole"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Romania",
+		"code": "RO",
+		"languages": ["romanian"],
+		"flag_colors": ["blue", "yellow", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Serbia",
+		"code": "RS",
+		"languages": ["serbian"],
+		"flag_colors": ["red", "blue", "white", "yellow"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Russia",
+		"code": "RU",
+		"languages": ["russian"],
+		"flag_colors": ["white", "blue", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Rwanda",
+		"code": "RW",
+		"languages": ["kinyarwanda", "french", "english"],
+		"flag_colors": ["blue", "yellow", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Saudi Arabia",
+		"code": "SA",
+		"languages": ["arabic"],
+		"flag_colors": ["green", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Solomon Islands",
+		"code": "SB",
+		"languages": ["english"],
+		"flag_colors": ["blue", "green", "yellow", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Seychelles",
+		"code": "SC",
+		"languages": ["seychellois creole", "english", "french"],
+		"flag_colors": ["blue", "yellow", "red", "white", "green"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Sudan",
+		"code": "SD",
+		"languages": ["arabic", "english"],
+		"flag_colors": ["red", "white", "black", "green"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Sweden",
+		"code": "SE",
+		"languages": ["swedish"],
+		"flag_colors": ["blue", "yellow"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Singapore",
+		"code": "SG",
+		"languages": ["english", "malay", "mandarin", "tamil"],
+		"flag_colors": ["red", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Saint Helena",
+		"code": "SH",
+		"languages": ["english"],
+		"flag_colors": ["blue", "red", "white", "yellow", "green"],
+		"region": "Atlantic Ocean"
+	},
+	{
+		"name": "Slovenia",
+		"code": "SI",
+		"languages": ["slovenian"],
+		"flag_colors": ["white", "blue", "red"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Svalbard and Jan Mayen",
+		"code": "SJ",
+		"languages": ["norwegian"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Northern Europe"
+	},
+	{
+		"name": "Slovakia",
+		"code": "SK",
+		"languages": ["slovak"],
+		"flag_colors": ["white", "blue", "red"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Sierra Leone",
+		"code": "SL",
+		"languages": ["english"],
+		"flag_colors": ["green", "white", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "San Marino",
+		"code": "SM",
+		"languages": ["italian"],
+		"flag_colors": ["white", "blue"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Senegal",
+		"code": "SN",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Somalia",
+		"code": "SO",
+		"languages": ["somali", "arabic"],
+		"flag_colors": ["blue", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Suriname",
+		"code": "SR",
+		"languages": ["dutch"],
+		"flag_colors": ["green", "white", "red", "yellow"],
+		"region": "South America"
+	},
+	{
+		"name": "South Sudan",
+		"code": "SS",
+		"languages": ["english"],
+		"flag_colors": ["black", "red", "green", "blue", "white", "yellow"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Sao Tome and Principe",
+		"code": "ST",
+		"languages": ["portuguese"],
+		"flag_colors": ["green", "yellow", "red", "black"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "El Salvador",
+		"code": "SV",
+		"languages": ["spanish"],
+		"flag_colors": ["blue", "white"],
+		"region": "Central America"
+	},
+	{
+		"name": "Sint Maarten",
+		"code": "SX",
+		"languages": ["dutch", "english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Syria",
+		"code": "SY",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white", "black", "green"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Eswatini",
+		"code": "SZ",
+		"languages": ["swazi", "english"],
+		"flag_colors": ["blue", "red", "yellow", "black", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Turks and Caicos Islands",
+		"code": "TC",
+		"languages": ["english"],
+		"flag_colors": ["blue", "red", "white", "yellow", "green"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Chad",
+		"code": "TD",
+		"languages": ["french", "arabic"],
+		"flag_colors": ["blue", "yellow", "red"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "French Southern Territories",
+		"code": "TF",
+		"languages": ["french"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Togo",
+		"code": "TG",
+		"languages": ["french"],
+		"flag_colors": ["green", "yellow", "red", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Thailand",
+		"code": "TH",
+		"languages": ["thai"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Tajikistan",
+		"code": "TJ",
+		"languages": ["tajik"],
+		"flag_colors": ["red", "white", "green", "yellow"],
+		"region": "Central Asia"
+	},
+	{
+		"name": "Tokelau",
+		"code": "TK",
+		"languages": ["tokelauan", "english"],
+		"flag_colors": ["blue", "yellow", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Timor-Leste",
+		"code": "TL",
+		"languages": ["tetum", "portuguese"],
+		"flag_colors": ["red", "yellow", "black", "white"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Turkmenistan",
+		"code": "TM",
+		"languages": ["turkmen"],
+		"flag_colors": ["green", "red", "white"],
+		"region": "Central Asia"
+	},
+	{
+		"name": "Tunisia",
+		"code": "TN",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white"],
+		"region": "North Africa"
+	},
+	{
+		"name": "Tonga",
+		"code": "TO",
+		"languages": ["tongan", "english"],
+		"flag_colors": ["red", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Turkey",
+		"code": "TR",
+		"languages": ["turkish"],
+		"flag_colors": ["red", "white"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Trinidad and Tobago",
+		"code": "TT",
+		"languages": ["english"],
+		"flag_colors": ["red", "black", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Tuvalu",
+		"code": "TV",
+		"languages": ["tuvaluan", "english"],
+		"flag_colors": ["blue", "yellow", "red", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Taiwan",
+		"code": "TW",
+		"languages": ["mandarin"],
+		"flag_colors": ["red", "blue", "white"],
+		"region": "East Asia"
+	},
+	{
+		"name": "Tanzania",
+		"code": "TZ",
+		"languages": ["swahili", "english"],
+		"flag_colors": ["green", "yellow", "black", "blue"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Ukraine",
+		"code": "UA",
+		"languages": ["ukrainian"],
+		"flag_colors": ["blue", "yellow"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Uganda",
+		"code": "UG",
+		"languages": ["english", "swahili"],
+		"flag_colors": ["black", "yellow", "red", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "United States Minor Outlying Islands",
+		"code": "UM",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Oceania"
+	},
+	{
+		"name": "United States",
+		"code": "US",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "North America"
+	},
+	{
+		"name": "Uruguay",
+		"code": "UY",
+		"languages": ["spanish"],
+		"flag_colors": ["white", "blue", "yellow"],
+		"region": "South America"
+	},
+	{
+		"name": "Uzbekistan",
+		"code": "UZ",
+		"languages": ["uzbek"],
+		"flag_colors": ["blue", "white", "green", "red"],
+		"region": "Central Asia"
+	},
+	{
+		"name": "Vatican City",
+		"code": "VA",
+		"languages": ["italian", "latin"],
+		"flag_colors": ["yellow", "white"],
+		"region": "Southern Europe"
+	},
+	{
+		"name": "Saint Vincent and the Grenadines",
+		"code": "VC",
+		"languages": ["english"],
+		"flag_colors": ["blue", "yellow", "green", "white"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Venezuela",
+		"code": "VE",
+		"languages": ["spanish"],
+		"flag_colors": ["yellow", "blue", "red", "white"],
+		"region": "South America"
+	},
+	{
+		"name": "British Virgin Islands",
+		"code": "VG",
+		"languages": ["english"],
+		"flag_colors": ["blue", "white", "red"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "U.S. Virgin Islands",
+		"code": "VI",
+		"languages": ["english"],
+		"flag_colors": ["red", "white", "blue", "yellow"],
+		"region": "Caribbean"
+	},
+	{
+		"name": "Vietnam",
+		"code": "VN",
+		"languages": ["vietnamese"],
+		"flag_colors": ["red", "yellow"],
+		"region": "Southeast Asia"
+	},
+	{
+		"name": "Vanuatu",
+		"code": "VU",
+		"languages": ["bislama", "english", "french"],
+		"flag_colors": ["red", "green", "black", "yellow"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Wallis and Futuna",
+		"code": "WF",
+		"languages": ["french", "wallisian", "futunan"],
+		"flag_colors": ["red", "white", "blue"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Samoa",
+		"code": "WS",
+		"languages": ["samoan", "english"],
+		"flag_colors": ["red", "blue", "white"],
+		"region": "Oceania"
+	},
+	{
+		"name": "Kosovo",
+		"code": "XK",
+		"languages": ["albanian", "serbian"],
+		"flag_colors": ["blue", "yellow", "white"],
+		"region": "Eastern Europe"
+	},
+	{
+		"name": "Yemen",
+		"code": "YE",
+		"languages": ["arabic"],
+		"flag_colors": ["red", "white", "black"],
+		"region": "Middle East"
+	},
+	{
+		"name": "Mayotte",
+		"code": "YT",
+		"languages": ["french", "shimaore", "kibushi"],
+		"flag_colors": ["white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "South Africa",
+		"code": "ZA",
+		"languages": ["zulu", "xhosa", "afrikaans", "english"],
+		"flag_colors": ["red", "blue", "green", "yellow", "black", "white"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Zambia",
+		"code": "ZM",
+		"languages": ["english"],
+		"flag_colors": ["green", "red", "black", "orange"],
+		"region": "Sub-Saharan Africa"
+	},
+	{
+		"name": "Zimbabwe",
+		"code": "ZW",
+		"languages": ["english", "shona", "ndebele"],
+		"flag_colors": ["green", "yellow", "red", "black", "white"],
+		"region": "Sub-Saharan Africa"
+	}
+]

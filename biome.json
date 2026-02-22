@@ -13,8 +13,7 @@
 			"!**/node_modules/**",
 			"!**/dist/**",
 			"!**/build/**",
-			"!**/apps/web/public/ffmpeg/**",
-			"!**/apps/web/src/components/ui/**"
+			"!**/apps/web/public/ffmpeg/**"
 		]
 	},
 	"formatter": {
@@ -31,7 +30,6 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
-			
 		}
 	},
 	"assist": {

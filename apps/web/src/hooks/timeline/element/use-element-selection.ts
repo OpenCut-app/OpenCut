@@ -21,7 +21,9 @@ export function useElementSelection() {
 
 	const selectElement = useCallback(
 		({ trackId, elementId }: ElementRef) => {
-			editor.selection.setSelectedElements({ elements: [{ trackId, elementId }] });
+			editor.selection.setSelectedElements({
+				elements: [{ trackId, elementId }],
+			});
 		},
 		[editor],
 	);

@@ -1,32 +1,33 @@
 {
-  "name": "opencut",
-  "packageManager": "bun@1.2.18",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev:web": "turbo run dev --filter=@opencut/web",
-    "build:web": "turbo run build --filter=@opencut/web",
-    "dev:tools": "turbo run dev --filter=@opencut/tools",
-    "build:tools": "turbo run build --filter=@opencut/tools",
-    "start:tools": "turbo run start --filter=@opencut/tools",
-    "lint:web": "biome lint apps/web/src --max-diagnostics=1000",
-    "lint:web:fix": "biome lint apps/web/src --write --max-diagnostics=1000",
-    "format:web": "biome format apps/web/src/services/renderer --write --max-diagnostics=1000",
-    "test": "bun test"
-  },
-  "dependencies": {
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
-    "better-auth": "^1.4.15",
-    "next": "^16.1.3"
-  },
-  "devDependencies": {
-    "turbo": "^2.7.5",
-    "typescript": "5.8.3"
-  },
-  "trustedDependencies": [
-    "@tailwindcss/oxide"
-  ]
+	"name": "opencut",
+	"packageManager": "bun@1.2.18",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev:web": "turbo run dev --filter=@opencut/web",
+		"build:web": "turbo run build --filter=@opencut/web",
+		"dev:tools": "turbo run dev --filter=@opencut/tools",
+		"build:tools": "turbo run build --filter=@opencut/tools",
+		"start:tools": "turbo run start --filter=@opencut/tools",
+		"lint:web": "biome lint apps/web/src --max-diagnostics=1000",
+		"lint:web:fix": "biome lint apps/web/src --write --max-diagnostics=1000",
+		"format:web": "biome format apps/web/src/services/renderer --write --max-diagnostics=1000",
+		"test": "bun test",
+		"generate:fonts": "npx tsx apps/web/scripts/generate-font-sprites.ts"
+	},
+	"dependencies": {
+		"@types/react": "^19.2.10",
+		"@types/react-dom": "^19.2.3",
+		"better-auth": "^1.4.15",
+		"next": "^16.1.3"
+	},
+	"devDependencies": {
+		"turbo": "^2.7.5",
+		"typescript": "5.8.3"
+	},
+	"trustedDependencies": [
+		"@tailwindcss/oxide"
+	]
 }

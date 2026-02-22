@@ -235,7 +235,7 @@ function SoundEffectsView() {
 			<div className="flex items-center gap-3">
 				<Input
 					placeholder="Search sound effects"
-					className="bg-accent w-full"
+					className="w-full"
 					containerClassName="w-full"
 					value={searchQuery}
 					onChange={({ currentTarget }) =>

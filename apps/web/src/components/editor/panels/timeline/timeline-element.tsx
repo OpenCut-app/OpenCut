@@ -29,6 +29,7 @@ import type { MediaAsset } from "@/types/assets";
 import { mediaSupportsAudio } from "@/lib/media/media-utils";
 import { getActionDefinition, type TAction, invokeAction } from "@/lib/actions";
 import { useElementSelection } from "@/hooks/timeline/element/use-element-selection";
+import { resolveStickerId } from "@/lib/stickers";
 import Image from "next/image";
 import {
 	ScissorIcon,
@@ -139,9 +140,7 @@ export function TimelineElement({
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
 				<div
-					className={`absolute top-0 h-full select-none ${
-						isBeingDragged ? "z-30" : "z-10"
-					}`}
+					className={`absolute top-0 h-full select-none`}
 					style={{
 						left: `${elementLeft}px`,
 						width: `${elementWidth}px`,
@@ -165,7 +164,7 @@ export function TimelineElement({
 					/>
 				</div>
 			</ContextMenuTrigger>
-			<ContextMenuContent className="z-200 w-64">
+			<ContextMenuContent className="w-64">
 				<ActionMenuItem
 					action="split"
 					icon={<HugeiconsIcon icon={ScissorIcon} />}
@@ -248,7 +247,7 @@ function ElementInner({
 		element: TimelineElementType,
 	) => void;
 	handleResizeStart: (params: {
-		e: React.MouseEvent;
+		event: React.MouseEvent;
 		elementId: string;
 		side: "left" | "right";
 	}) => void;
@@ -259,7 +258,7 @@ function ElementInner({
 				{
 					type: track.type,
 				},
-			)} ${isBeingDragged ? "z-30" : "z-10"} ${canElementBeHidden(element) && element.hidden ? "opacity-50" : ""}`}
+			)} ${canElementBeHidden(element) && element.hidden ? "opacity-50" : ""}`}
 		>
 			<button
 				type="button"
@@ -321,7 +320,7 @@ function ResizeHandle({
 	side: "left" | "right";
 	elementId: string;
 	handleResizeStart: (params: {
-		e: React.MouseEvent;
+		event: React.MouseEvent;
 		elementId: string;
 		side: "left" | "right";
 	}) => void;
@@ -330,8 +329,8 @@ function ResizeHandle({
 	return (
 		<button
 			type="button"
-			className={`bg-primary absolute top-0 bottom-0 z-50 flex w-[0.6rem] items-center justify-center ${isLeft ? "left-0 cursor-w-resize" : "right-0 cursor-e-resize"}`}
-			onMouseDown={(e) => handleResizeStart({ e, elementId, side })}
+			className={`bg-primary absolute top-0 bottom-0 flex w-[0.6rem] items-center justify-center ${isLeft ? "left-0 cursor-w-resize" : "right-0 cursor-e-resize"}`}
+			onMouseDown={(event) => handleResizeStart({ event, elementId, side })}
 			aria-label={`${isLeft ? "Left" : "Right"} resize handle`}
 		>
 			<div className="bg-foreground h-[1.5rem] w-[0.2rem] rounded-full" />
@@ -362,7 +361,10 @@ function ElementContent({
 		return (
 			<div className="flex size-full items-center gap-2 pl-2">
 				<Image
-					src={`https://api.iconify.design/${element.iconName}.svg?width=20&height=20`}
+					src={resolveStickerId({
+						stickerId: element.stickerId,
+						options: { width: 20, height: 20 },
+					})}
 					alt={element.name}
 					className="size-5 shrink-0"
 					width={20}

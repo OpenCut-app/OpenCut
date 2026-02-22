@@ -125,7 +125,8 @@ export class AudioManager {
 
 	private getPlaybackTime(): number {
 		if (!this.audioContext) return this.playbackStartTime;
-		const elapsed = this.audioContext.currentTime - this.playbackStartContextTime;
+		const elapsed =
+			this.audioContext.currentTime - this.playbackStartContextTime;
 		return this.playbackStartTime + elapsed;
 	}
 
@@ -176,7 +177,11 @@ export class AudioManager {
 			if (clip.startTime > windowEnd) continue;
 
 			this.activeClipIds.add(clip.id);
-			void this.runClipIterator({ clip, startTime: currentTime, sessionId: this.playbackSessionId });
+			void this.runClipIterator({
+				clip,
+				startTime: currentTime,
+				sessionId: this.playbackSessionId,
+			});
 		}
 	}
 
@@ -239,8 +244,7 @@ export class AudioManager {
 			node.connect(this.masterGain ?? audioContext.destination);
 
 			const startTimestamp =
-				this.playbackStartContextTime +
-				(timelineTime - this.playbackStartTime);
+				this.playbackStartContextTime + (timelineTime - this.playbackStartTime);
 
 			if (startTimestamp >= audioContext.currentTime) {
 				node.start(startTimestamp);

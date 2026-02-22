@@ -6,3 +6,5 @@
 !.env.example
 
 .next/
+
+.font-cache/

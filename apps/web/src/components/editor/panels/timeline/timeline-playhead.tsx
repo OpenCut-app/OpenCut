@@ -72,20 +72,22 @@ export function TimelinePlayhead({
 			aria-valuemax={duration}
 			aria-valuenow={playheadPosition}
 			tabIndex={0}
-			className="pointer-events-auto absolute z-60"
+			className="pointer-events-none absolute z-5"
 			style={{
 				left: `${leftPosition}px`,
 				top: 0,
 				height: `${totalHeight}px`,
 				width: "2px",
 			}}
-			onMouseDown={handlePlayheadMouseDown}
 			onKeyDown={handlePlayheadKeyDown}
 		>
-			<div className="bg-foreground absolute left-0 h-full w-0.5 cursor-col-resize" />
+			<div className="bg-foreground pointer-events-none absolute left-0 h-full w-0.5" />
 
-			<div
-				className={`absolute top-1 left-1/2 size-3 -translate-x-1/2 transform rounded-full border-2 shadow-xs ${isSnappingToPlayhead ? "bg-foreground border-foreground" : "bg-foreground border-foreground/50"}`}
+			<button
+				type="button"
+				aria-label="Drag playhead"
+				className={`pointer-events-auto absolute top-1 left-1/2 size-3 -translate-x-1/2 transform cursor-col-resize rounded-full border-2 shadow-xs ${isSnappingToPlayhead ? "bg-foreground border-foreground" : "bg-foreground border-foreground/50"}`}
+				onMouseDown={handlePlayheadMouseDown}
 			/>
 		</div>
 	);

@@ -1,9 +1,18 @@
+import type { BlendMode } from "./rendering";
+
+export interface Bookmark {
+	time: number;
+	note?: string;
+	color?: string;
+	duration?: number;
+}
+
 export interface TScene {
 	id: string;
 	name: string;
 	isMain: boolean;
 	tracks: TimelineTrack[];
-	bookmarks: number[];
+	bookmarks: Bookmark[];
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -87,6 +96,7 @@ export interface VideoElement extends BaseTimelineElement {
 	hidden?: boolean;
 	transform: Transform;
 	opacity: number;
+	blendMode?: BlendMode;
 }
 
 export interface ImageElement extends BaseTimelineElement {
@@ -95,6 +105,7 @@ export interface ImageElement extends BaseTimelineElement {
 	hidden?: boolean;
 	transform: Transform;
 	opacity: number;
+	blendMode?: BlendMode;
 }
 
 export interface TextElement extends BaseTimelineElement {
@@ -108,18 +119,21 @@ export interface TextElement extends BaseTimelineElement {
 	fontWeight: "normal" | "bold";
 	fontStyle: "normal" | "italic";
 	textDecoration: "none" | "underline" | "line-through";
+	letterSpacing?: number;
+	lineHeight?: number;
 	hidden?: boolean;
 	transform: Transform;
 	opacity: number;
+	blendMode?: BlendMode;
 }
 
 export interface StickerElement extends BaseTimelineElement {
 	type: "sticker";
-	iconName: string;
+	stickerId: string;
 	hidden?: boolean;
 	transform: Transform;
 	opacity: number;
-	color?: string;
+	blendMode?: BlendMode;
 }
 
 export type TimelineElement =
@@ -146,8 +160,6 @@ export type CreateTimelineElement =
 	| CreateImageElement
 	| CreateTextElement
 	| CreateStickerElement;
-
-// ---- Drag State ----
 
 export interface ElementDragState {
 	isDragging: boolean;

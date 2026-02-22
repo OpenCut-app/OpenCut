@@ -1,9 +1,9 @@
 import type { CanvasRenderer } from "../canvas-renderer";
+import { resolveStickerId } from "@/lib/stickers";
 import { VisualNode, type VisualNodeParams } from "./visual-node";
 
 export interface StickerNodeParams extends VisualNodeParams {
-	iconName: string;
-	color?: string;
+	stickerId: string;
 }
 
 export class StickerNode extends VisualNode<StickerNodeParams> {
@@ -18,15 +18,15 @@ export class StickerNode extends VisualNode<StickerNodeParams> {
 	private async load() {
 		const image = new Image();
 		this.image = image;
-		const color = this.params.color
-			? `&color=${encodeURIComponent(this.params.color)}`
-			: "";
-		const url = `https://api.iconify.design/${this.params.iconName}.svg?width=200&height=200${color}`;
+		const url = resolveStickerId({
+			stickerId: this.params.stickerId,
+			options: { width: 200, height: 200 },
+		});
 
 		await new Promise<void>((resolve, reject) => {
 			image.onload = () => resolve();
 			image.onerror = () =>
-				reject(new Error(`Failed to load sticker: ${this.params.iconName}`));
+				reject(new Error(`Failed to load sticker: ${this.params.stickerId}`));
 			image.src = url;
 		});
 	}
