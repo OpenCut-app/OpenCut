@@ -76,7 +76,7 @@ Before you begin, ensure you have the following installed on your system:
 
    ```bash
    # From project root
-   docker-compose up -d
+   docker-compose up -d      #Where is docker file. Are you delete it in project
    ```
 
 2. Navigate to the web app directory:
