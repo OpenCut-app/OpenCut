@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { AlertTriangle } from "lucide-react";
 import { cn } from "@/utils/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert02Icon } from "@hugeicons/core-free-icons";

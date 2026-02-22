@@ -79,7 +79,7 @@
         "tailwindcss-animate": "^1.0.7",
         "unified": "^11.0.5",
         "use-deep-compare-effect": "^1.8.1",
-        "vaul": "^1.1.1",
+        "vaul": "^1.1.2",
         "wavesurfer.js": "^7.9.8",
         "zod": "^3.25.67",
         "zustand": "^5.0.2",
