@@ -65,7 +65,13 @@ function getCornerDistance({
 	bounds,
 	corner,
 }: {
-	bounds: { cx: number; cy: number; width: number; height: number; rotation: number };
+	bounds: {
+		cx: number;
+		cy: number;
+		width: number;
+		height: number;
+		rotation: number;
+	};
 	corner: Corner;
 }): number {
 	const halfW = bounds.width / 2;
@@ -124,8 +130,7 @@ export function useTransformHandles({
 			: null;
 
 	const hasVisualSelection =
-		selectedWithBounds !== null &&
-		isVisualElement(selectedWithBounds.element);
+		selectedWithBounds !== null && isVisualElement(selectedWithBounds.element);
 
 	const handleCornerPointerDown = useCallback(
 		({ event, corner }: { event: React.PointerEvent; corner: Corner }) => {
@@ -135,11 +140,11 @@ export function useTransformHandles({
 			const { bounds, trackId, elementId, element } = selectedWithBounds;
 			if (!isVisualElement(element)) return;
 
-		const initialDistance = getCornerDistance({ bounds, corner });
-		const baseWidth = bounds.width / element.transform.scale;
-		const baseHeight = bounds.height / element.transform.scale;
+			const initialDistance = getCornerDistance({ bounds, corner });
+			const baseWidth = bounds.width / element.transform.scale;
+			const baseHeight = bounds.height / element.transform.scale;
 
-		scaleStateRef.current = {
+			scaleStateRef.current = {
 				trackId,
 				elementId,
 				initialTransform: element.transform,
@@ -197,7 +202,11 @@ export function useTransformHandles({
 				canvas: canvasRef.current,
 			});
 
-			if (scaleStateRef.current && activeHandle && activeHandle !== "rotation") {
+			if (
+				scaleStateRef.current &&
+				activeHandle &&
+				activeHandle !== "rotation"
+			) {
 				const {
 					trackId,
 					elementId,

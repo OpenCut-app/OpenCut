@@ -315,8 +315,7 @@ export function useTimelineDragDrop({
 					zoomLevel,
 				});
 
-				const trackType: TrackType =
-					asset.type === "audio" ? "audio" : "video";
+				const trackType: TrackType = asset.type === "audio" ? "audio" : "video";
 				const addMediaCmd = new AddMediaAssetCommand(projectId, asset);
 				const assetId = addMediaCmd.getAssetId();
 

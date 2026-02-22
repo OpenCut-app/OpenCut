@@ -5,20 +5,26 @@ import { v5Project } from "./fixtures";
 describe("V5 to V6 Migration", () => {
 	test("converts number bookmarks to Bookmark objects", async () => {
 		const result = transformProjectV5ToV6({
-			project: v5Project as Parameters<typeof transformProjectV5ToV6>[0]["project"],
+			project: v5Project as Parameters<
+				typeof transformProjectV5ToV6
+			>[0]["project"],
 		});
 
 		expect(result.skipped).toBe(false);
 		expect(result.project.version).toBe(6);
 
-		const mainScene = (result.project.scenes as Array<{ bookmarks: unknown[] }>)[0];
+		const mainScene = (
+			result.project.scenes as Array<{ bookmarks: unknown[] }>
+		)[0];
 		expect(mainScene.bookmarks).toEqual([
 			{ time: 2.0 },
 			{ time: 5.5 },
 			{ time: 12.0 },
 		]);
 
-		const introScene = (result.project.scenes as Array<{ bookmarks: unknown[] }>)[1];
+		const introScene = (
+			result.project.scenes as Array<{ bookmarks: unknown[] }>
+		)[1];
 		expect(introScene.bookmarks).toEqual([]);
 	});
 
@@ -29,7 +35,7 @@ describe("V5 to V6 Migration", () => {
 				version: 6,
 				scenes: [
 					{
-						...((v5Project as { scenes: unknown[] }).scenes[0]),
+						...(v5Project as { scenes: unknown[] }).scenes[0],
 						bookmarks: [{ time: 2 }, { time: 5 }],
 					},
 				],
@@ -58,7 +64,8 @@ describe("V5 to V6 Migration", () => {
 			version: 5,
 			scenes: [
 				{
-					...(v5Project as { scenes: Array<Record<string, unknown>> }).scenes[0],
+					...(v5Project as { scenes: Array<Record<string, unknown>> })
+						.scenes[0],
 					bookmarks: [
 						{ time: 1, note: "Intro", color: "#ef4444" },
 						{ time: 5.5, duration: 2 },
@@ -68,14 +75,15 @@ describe("V5 to V6 Migration", () => {
 		};
 
 		const result = transformProjectV5ToV6({
-			project:
-				projectWithRichBookmarks as Parameters<
-					typeof transformProjectV5ToV6
-				>[0]["project"],
+			project: projectWithRichBookmarks as Parameters<
+				typeof transformProjectV5ToV6
+			>[0]["project"],
 		});
 
 		expect(result.skipped).toBe(false);
-		const mainScene = (result.project.scenes as Array<{ bookmarks: unknown[] }>)[0];
+		const mainScene = (
+			result.project.scenes as Array<{ bookmarks: unknown[] }>
+		)[0];
 		expect(mainScene.bookmarks).toEqual([
 			{ time: 1, note: "Intro", color: "#ef4444" },
 			{ time: 5.5, duration: 2 },

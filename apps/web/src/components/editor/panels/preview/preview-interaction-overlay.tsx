@@ -42,10 +42,7 @@ export function PreviewInteractionOverlay({
 					onCancel={cancelTextEdit}
 				/>
 			) : (
-				<TransformHandles
-					canvasRef={canvasRef}
-					containerRef={containerRef}
-				/>
+				<TransformHandles canvasRef={canvasRef} containerRef={containerRef} />
 			)}
 			<SnapGuides
 				lines={snapLines}

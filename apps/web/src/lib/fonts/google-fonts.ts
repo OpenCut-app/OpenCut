@@ -86,7 +86,5 @@ export async function loadFonts({
 	families: string[];
 }): Promise<void> {
 	const googleFonts = families.filter((family) => !SYSTEM_FONTS.has(family));
-	await Promise.all(
-		googleFonts.map((family) => loadFullFont({ family })),
-	);
+	await Promise.all(googleFonts.map((family) => loadFullFont({ family })));
 }

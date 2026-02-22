@@ -395,22 +395,22 @@ function BookmarkPopoverContent({
 					/>
 				</div>
 			</div>
-		<Button
-			type="button"
-			variant="outline"
-			size="sm"
-			className="text-destructive hover:bg-destructive/10"
-			onClick={handleRemove}
-			onKeyDown={(event) => {
-				if (event.key === "Enter" || event.key === " ") {
-					handleRemove();
-				}
-			}}
-			aria-label="delete bookmark"
-		>
-			<HugeiconsIcon icon={Delete02Icon} className="!size-3.5" />
-			Delete
-		</Button>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				className="text-destructive hover:bg-destructive/10"
+				onClick={handleRemove}
+				onKeyDown={(event) => {
+					if (event.key === "Enter" || event.key === " ") {
+						handleRemove();
+					}
+				}}
+				aria-label="delete bookmark"
+			>
+				<HugeiconsIcon icon={Delete02Icon} className="!size-3.5" />
+				Delete
+			</Button>
 		</>
 	);
 }

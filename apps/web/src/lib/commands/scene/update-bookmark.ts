@@ -2,10 +2,7 @@ import { Command } from "@/lib/commands/base-command";
 import { EditorCore } from "@/core";
 import type { Bookmark, TScene } from "@/types/timeline";
 import { updateSceneInArray } from "@/lib/scenes";
-import {
-	getFrameTime,
-	updateBookmarkInArray,
-} from "@/lib/timeline/bookmarks";
+import { getFrameTime, updateBookmarkInArray } from "@/lib/timeline/bookmarks";
 
 export class UpdateBookmarkCommand extends Command {
 	private savedScenes: TScene[] | null = null;

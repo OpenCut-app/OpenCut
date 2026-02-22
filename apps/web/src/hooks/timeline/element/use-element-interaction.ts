@@ -9,7 +9,10 @@ import {
 import { useEditor } from "@/hooks/use-editor";
 import { useShiftKey } from "@/hooks/use-shift-key";
 import { useElementSelection } from "@/hooks/timeline/element/use-element-selection";
-import { DRAG_THRESHOLD_PX, TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+import {
+	DRAG_THRESHOLD_PX,
+	TIMELINE_CONSTANTS,
+} from "@/constants/timeline-constants";
 import { snapTimeToFrame } from "@/lib/time";
 import { computeDropTarget } from "@/lib/timeline/drop-utils";
 import { getMouseTimeFromClientX } from "@/lib/timeline/drag-utils";

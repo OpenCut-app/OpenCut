@@ -201,9 +201,9 @@ function PreviewCanvas({
 					</div>
 				</ContextMenuTrigger>
 				<PreviewContextMenu
-						onToggleFullscreen={onToggleFullscreen}
-						containerRef={containerRef}
-					/>
+					onToggleFullscreen={onToggleFullscreen}
+					containerRef={containerRef}
+				/>
 			</ContextMenu>
 		</div>
 	);

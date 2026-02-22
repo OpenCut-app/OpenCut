@@ -12,8 +12,7 @@ const inputVariants = cva(
 	{
 		variants: {
 			variant: {
-				default:
-					"selection:bg-primary selection:text-primary-foreground",
+				default: "selection:bg-primary selection:text-primary-foreground",
 				destructive:
 					"selection:bg-destructive selection:text-destructive-foreground focus-visible:border-destructive focus-visible:ring-destructive/10",
 			},

@@ -282,7 +282,9 @@ export function snapRotation({
 	const nearestRotationSnap =
 		Math.round(proposedRotation / ROTATION_SNAP_STEP_DEGREES) *
 		ROTATION_SNAP_STEP_DEGREES;
-	const distanceToNearestSnap = Math.abs(proposedRotation - nearestRotationSnap);
+	const distanceToNearestSnap = Math.abs(
+		proposedRotation - nearestRotationSnap,
+	);
 	if (distanceToNearestSnap <= ROTATION_SNAP_THRESHOLD_DEGREES) {
 		return { snappedRotation: nearestRotationSnap, isSnapped: true };
 	}

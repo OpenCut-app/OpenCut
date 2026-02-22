@@ -141,6 +141,9 @@ export function getBookmarksActiveAtTime({
 			bookmark.duration != null && bookmark.duration > 0
 				? start + bookmark.duration
 				: start;
-		return time >= start - BOOKMARK_TIME_EPSILON && time <= end + BOOKMARK_TIME_EPSILON;
+		return (
+			time >= start - BOOKMARK_TIME_EPSILON &&
+			time <= end + BOOKMARK_TIME_EPSILON
+		);
 	});
 }

@@ -91,7 +91,7 @@ export function usePasteMedia() {
 				console.error("Failed to paste media:", error);
 				toast.error("Failed to paste media");
 			}
-		}
+		};
 
 		window.addEventListener("paste", handlePaste);
 		return () => window.removeEventListener("paste", handlePaste);

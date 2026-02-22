@@ -20,10 +20,7 @@ export function PreviewContextMenu({
 
 	return (
 		<ContextMenuContent className="w-56" container={containerRef.current}>
-			<ContextMenuItem
-				onClick={onToggleFullscreen}
-				inset
-			>
+			<ContextMenuItem onClick={onToggleFullscreen} inset>
 				Full screen
 			</ContextMenuItem>
 			<ContextMenuCheckboxItem

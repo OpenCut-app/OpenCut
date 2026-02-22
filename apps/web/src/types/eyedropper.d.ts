@@ -9,5 +9,5 @@ interface EyeDropper {
 declare const EyeDropper:
 	| {
 			new (): EyeDropper;
-		}
+	  }
 	| undefined;

@@ -4,10 +4,7 @@ import { useTransformHandles } from "@/hooks/use-transform-handles";
 import { useEditor } from "@/hooks/use-editor";
 import { isVisualElement } from "@/lib/timeline/element-utils";
 import { SnapGuides } from "./snap-guides";
-import {
-	canvasToOverlay,
-	getDisplayScale,
-} from "@/lib/preview/preview-coords";
+import { canvasToOverlay, getDisplayScale } from "@/lib/preview/preview-coords";
 import type { ElementBounds } from "@/lib/preview/element-bounds";
 import { cn } from "@/utils/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -19,7 +16,12 @@ const ROTATION_HANDLE_RADIUS = 10;
 const CORNER_HIT_AREA_SIZE = 18;
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-const CORNERS: Corner[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
+const CORNERS: Corner[] = [
+	"top-left",
+	"top-right",
+	"bottom-left",
+	"bottom-right",
+];
 
 function getCornerPosition({
 	bounds,
@@ -45,11 +47,10 @@ function getCornerPosition({
 	};
 }
 
-function getRotationHandlePosition({
-	bounds,
-}: {
-	bounds: ElementBounds;
-}): { x: number; y: number } {
+function getRotationHandlePosition({ bounds }: { bounds: ElementBounds }): {
+	x: number;
+	y: number;
+} {
 	const angleRad = (bounds.rotation * Math.PI) / 180;
 	const cos = Math.cos(angleRad);
 	const sin = Math.sin(angleRad);
@@ -107,8 +108,20 @@ export function TransformHandles({
 	const { canvasRect, containerRect } = overlayContext;
 	const displayScale = getDisplayScale({ canvasRect, canvasSize });
 
-	const toOverlay = ({ canvasX, canvasY }: { canvasX: number; canvasY: number }) =>
-		canvasToOverlay({ canvasX, canvasY, canvasRect, containerRect, canvasSize });
+	const toOverlay = ({
+		canvasX,
+		canvasY,
+	}: {
+		canvasX: number;
+		canvasY: number;
+	}) =>
+		canvasToOverlay({
+			canvasX,
+			canvasY,
+			canvasRect,
+			containerRect,
+			canvasSize,
+		});
 
 	const center = toOverlay({ canvasX: bounds.cx, canvasY: bounds.cy });
 	const outlineWidth = bounds.width * displayScale.x;
@@ -234,7 +247,6 @@ function CornerHandle({
 		</button>
 	);
 }
-
 
 function RotationHandle({
 	screen,

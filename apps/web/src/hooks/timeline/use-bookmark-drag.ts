@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+	useState,
+	useCallback,
+	useEffect,
+	useRef,
+	type RefObject,
+} from "react";
 import { useEditor } from "@/hooks/use-editor";
 import { useShiftKey } from "@/hooks/use-shift-key";
 import { DRAG_THRESHOLD_PX } from "@/constants/timeline-constants";
@@ -177,10 +183,7 @@ export function useBookmarkDrag({
 				zoomLevel,
 				scrollLeft,
 			});
-			const clampedTime = Math.max(
-				0,
-				Math.min(mouseTime, duration),
-			);
+			const clampedTime = Math.max(0, Math.min(mouseTime, duration));
 			const frameSnappedTime = snapTimeToFrame({
 				time: clampedTime,
 				fps: activeProject.settings.fps,
@@ -262,13 +265,7 @@ export function useBookmarkDrag({
 	}, [isPendingDrag, onSnapPointChange]);
 
 	const handleBookmarkMouseDown = useCallback(
-		({
-			event,
-			bookmark,
-		}: {
-			event: React.MouseEvent;
-			bookmark: Bookmark;
-		}) => {
+		({ event, bookmark }: { event: React.MouseEvent; bookmark: Bookmark }) => {
 			if (event.button !== 0) return;
 
 			event.preventDefault();

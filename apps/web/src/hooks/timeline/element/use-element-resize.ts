@@ -98,8 +98,7 @@ export function useTimelineElementResize({
 
 			const deltaX = clientX - resizing.startX;
 			let deltaTime =
-				deltaX /
-				(TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel);
+				deltaX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel);
 			let resizeSnapPoint: SnapPoint | null = null;
 
 			const projectFps = activeProject.settings.fps;

@@ -22,7 +22,11 @@ function normalizeBookmarks({ raw }: { raw: unknown }): Bookmark[] {
 		.map((item): Bookmark | null => {
 			if (typeof item === "number") return { time: item };
 			const obj = item as Record<string, unknown>;
-			if (typeof obj !== "object" || obj === null || typeof obj.time !== "number") {
+			if (
+				typeof obj !== "object" ||
+				obj === null ||
+				typeof obj.time !== "number"
+			) {
 				return null;
 			}
 			return {

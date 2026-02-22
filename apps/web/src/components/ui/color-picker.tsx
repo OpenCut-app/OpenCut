@@ -1,7 +1,12 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { cn } from "@/utils/ui";
 import { Input } from "./input";
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./popover";
+import {
+	Popover,
+	PopoverClose,
+	PopoverContent,
+	PopoverTrigger,
+} from "./popover";
 import {
 	Select,
 	SelectContent,
@@ -64,8 +69,8 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			}
 		};
 		const hueDiff = Math.abs(h - internalHue);
-	const isSameHueWrapped = hueDiff < 1 || Math.abs(hueDiff - 360) < 1;
-	const displayHue = s === 0 || isSameHueWrapped ? internalHue : h;
+		const isSameHueWrapped = hueDiff < 1 || Math.abs(hueDiff - 360) < 1;
+		const displayHue = s === 0 || isSameHueWrapped ? internalHue : h;
 
 		useEffect(() => {
 			setInputValue(formatColorValue({ hex: value, format: colorFormat }));
@@ -75,31 +80,37 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			const handleMouseMove = (e: MouseEvent) => {
 				if (!isDragging) return;
 
-			if (isDragging === "saturation" && saturationRef.current) {
-				const rect = saturationRef.current.getBoundingClientRect();
-				const x = Math.max(
-					0,
-					Math.min(1, (e.clientX - rect.left) / rect.width),
-				);
-				const y = Math.max(
-					0,
-					Math.min(1, (e.clientY - rect.top) / rect.height),
-				);
-				const newHex = appendAlpha({ rgbHex: hsvToHex({ h: displayHue, s: x, v: 1 - y }), alpha });
-				latestDragColorRef.current = newHex;
-				onChange?.(newHex);
-			}
+				if (isDragging === "saturation" && saturationRef.current) {
+					const rect = saturationRef.current.getBoundingClientRect();
+					const x = Math.max(
+						0,
+						Math.min(1, (e.clientX - rect.left) / rect.width),
+					);
+					const y = Math.max(
+						0,
+						Math.min(1, (e.clientY - rect.top) / rect.height),
+					);
+					const newHex = appendAlpha({
+						rgbHex: hsvToHex({ h: displayHue, s: x, v: 1 - y }),
+						alpha,
+					});
+					latestDragColorRef.current = newHex;
+					onChange?.(newHex);
+				}
 
-			if (isDragging === "hue" && hueRef.current) {
-				const rect = hueRef.current.getBoundingClientRect();
-				const x = Math.max(
-					0,
-					Math.min(1, (e.clientX - rect.left) / rect.width),
-				);
-				const newH = x * 360;
-				setInternalHue(newH);
+				if (isDragging === "hue" && hueRef.current) {
+					const rect = hueRef.current.getBoundingClientRect();
+					const x = Math.max(
+						0,
+						Math.min(1, (e.clientX - rect.left) / rect.width),
+					);
+					const newH = x * 360;
+					setInternalHue(newH);
 					if (s > 0) {
-						const newHex = appendAlpha({ rgbHex: hsvToHex({ h: newH, s, v }), alpha });
+						const newHex = appendAlpha({
+							rgbHex: hsvToHex({ h: newH, s, v }),
+							alpha,
+						});
 						latestDragColorRef.current = newHex;
 						onChange?.(newHex);
 					}
@@ -143,7 +154,10 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			const rect = saturationElement.getBoundingClientRect();
 			const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
 			const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-			const newHex = appendAlpha({ rgbHex: hsvToHex({ h: displayHue, s: x, v: 1 - y }), alpha });
+			const newHex = appendAlpha({
+				rgbHex: hsvToHex({ h: displayHue, s: x, v: 1 - y }),
+				alpha,
+			});
 			latestDragColorRef.current = newHex;
 			onChange?.(newHex);
 		};
@@ -158,7 +172,10 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			const newH = x * 360;
 			setInternalHue(newH);
 			if (s > 0) {
-				const newHex = appendAlpha({ rgbHex: hsvToHex({ h: newH, s, v }), alpha });
+				const newHex = appendAlpha({
+					rgbHex: hsvToHex({ h: newH, s, v }),
+					alpha,
+				});
 				latestDragColorRef.current = newHex;
 				onChange?.(newHex);
 			}
@@ -322,10 +339,10 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 								</Button>
 							)}
 							<PopoverClose asChild>
-							<Button variant="ghost" size="icon" type="button">
-								<HugeiconsIcon icon={Cancel01Icon} />
-							</Button>
-						</PopoverClose>
+								<Button variant="ghost" size="icon" type="button">
+									<HugeiconsIcon icon={Cancel01Icon} />
+								</Button>
+							</PopoverClose>
 						</div>
 					</header>
 					<div className="px-2 flex flex-col gap-3">

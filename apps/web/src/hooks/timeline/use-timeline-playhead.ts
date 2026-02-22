@@ -65,52 +65,52 @@ export function useTimelinePlayhead({
 				Math.min(timelineContentWidth, relativeMouseX),
 			);
 
-		const rawTime = Math.max(
-			0,
-			Math.min(
+			const rawTime = Math.max(
+				0,
+				Math.min(
+					duration,
+					clampedMouseX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel),
+				),
+			);
+
+			const framesPerSecond = activeProject.settings.fps;
+			const frameTime = getSnappedSeekTime({
+				rawTime,
 				duration,
-				clampedMouseX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel),
-			),
-		);
+				fps: framesPerSecond,
+			});
 
-		const framesPerSecond = activeProject.settings.fps;
-		const frameTime = getSnappedSeekTime({
-			rawTime,
+			const bookmarks = editor.scenes.getActiveScene()?.bookmarks ?? [];
+			const bookmarkSnapPoints: SnapPoint[] = bookmarks.map((bookmark) => ({
+				time: bookmark.time,
+				type: "bookmark",
+			}));
+			const shouldSnapToBookmark =
+				!isShiftHeldRef.current && bookmarkSnapPoints.length > 0;
+			const snapResult = shouldSnapToBookmark
+				? snapToNearestPoint({
+						targetTime: frameTime,
+						snapPoints: bookmarkSnapPoints,
+						zoomLevel,
+					})
+				: null;
+			const time = snapResult?.snapPoint ? snapResult.snappedTime : frameTime;
+
+			setScrubTime(time);
+			seek({ time });
+
+			lastMouseXRef.current = event.clientX;
+		},
+		[
 			duration,
-			fps: framesPerSecond,
-		});
-
-		const bookmarks = editor.scenes.getActiveScene()?.bookmarks ?? [];
-		const bookmarkSnapPoints: SnapPoint[] = bookmarks.map((bookmark) => ({
-			time: bookmark.time,
-			type: "bookmark",
-		}));
-		const shouldSnapToBookmark =
-			!isShiftHeldRef.current && bookmarkSnapPoints.length > 0;
-		const snapResult = shouldSnapToBookmark
-			? snapToNearestPoint({
-					targetTime: frameTime,
-					snapPoints: bookmarkSnapPoints,
-					zoomLevel,
-				})
-			: null;
-		const time = snapResult?.snapPoint ? snapResult.snappedTime : frameTime;
-
-		setScrubTime(time);
-		seek({ time });
-
-		lastMouseXRef.current = event.clientX;
-	},
-	[
-		duration,
-		zoomLevel,
-		seek,
-		rulerRef,
-		activeProject.settings.fps,
-		isShiftHeldRef,
-		editor.scenes,
-		snapToNearestPoint,
-	],
+			zoomLevel,
+			seek,
+			rulerRef,
+			activeProject.settings.fps,
+			isShiftHeldRef,
+			editor.scenes,
+			snapToNearestPoint,
+		],
 	);
 
 	const handlePlayheadMouseDown = useCallback(

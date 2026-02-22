@@ -82,7 +82,8 @@ export function useTimelineSnapping({
 				for (const bookmark of bookmarks) {
 					if (
 						excludeBookmarkTime != null &&
-						Math.abs(bookmark.time - excludeBookmarkTime) < BOOKMARK_TIME_EPSILON
+						Math.abs(bookmark.time - excludeBookmarkTime) <
+							BOOKMARK_TIME_EPSILON
 					) {
 						continue;
 					}

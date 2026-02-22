@@ -32,7 +32,11 @@ function getVisualElementBounds({
 	canvasHeight: number;
 	sourceWidth: number;
 	sourceHeight: number;
-	transform: { scale: number; position: { x: number; y: number }; rotate: number };
+	transform: {
+		scale: number;
+		position: { x: number; y: number };
+		rotate: number;
+	};
 }): ElementBounds {
 	const containScale = Math.min(
 		canvasWidth / sourceWidth,
