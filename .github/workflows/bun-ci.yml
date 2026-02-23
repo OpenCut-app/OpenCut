@@ -27,7 +27,16 @@ jobs:
       NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
       UPSTASH_REDIS_REST_URL: "https://your-upstash-redis-url"
       UPSTASH_REDIS_REST_TOKEN: "your-upstash-redis-token"
-
+      NEXT_PUBLIC_MARBLE_API_URL: "https://placeholder.example.com"
+      MARBLE_WORKSPACE_KEY: "placeholder"
+      FREESOUND_CLIENT_ID: "placeholder"
+      FREESOUND_API_KEY: "placeholder"
+      CLOUDFLARE_ACCOUNT_ID: "placeholder"
+      R2_ACCESS_KEY_ID: "placeholder"
+      R2_SECRET_ACCESS_KEY: "placeholder"
+      R2_BUCKET_NAME: "placeholder"
+      MODAL_TRANSCRIPTION_URL: "https://placeholder.example.com"
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
