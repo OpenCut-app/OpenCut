@@ -549,10 +549,19 @@ function mixAudioChannels({
 			const outputIndex = outputStartSample + i;
 			if (outputIndex >= outputLength) break;
 
-			const sourceIndex = sourceStartSample + Math.floor(i / resampleRatio);
-			if (sourceIndex >= sourceData.length) break;
+			// Use linear interpolation for better resampling quality
+			const sourcePosition = sourceStartSample + i / resampleRatio;
+			const sourceIndex = Math.floor(sourcePosition);
+			if (sourceIndex >= sourceData.length - 1) break;
 
-			outputData[outputIndex] += sourceData[sourceIndex];
+			const fraction = sourcePosition - sourceIndex;
+			const sample1 = sourceData[sourceIndex];
+			const sample2 = sourceData[sourceIndex + 1] ?? sample1;
+			const interpolatedSample = sample1 + fraction * (sample2 - sample1);
+
+			// Add sample and clamp to prevent distortion from clipping
+			const newValue = outputData[outputIndex] + interpolatedSample;
+			outputData[outputIndex] = Math.max(-1, Math.min(1, newValue));
 		}
 	}
 }

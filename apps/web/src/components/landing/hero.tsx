@@ -28,17 +28,17 @@ export function Hero() {
 				</p>
 
 				<div className="mt-8 flex justify-center gap-8">
-					<Link href="/projects">
-						<Button
-							variant="foreground"
-							type="submit"
-							size="lg"
-							className="h-11 text-base"
-						>
+					<Button
+						variant="foreground"
+						size="lg"
+						className="h-11 text-base"
+						asChild
+					>
+						<Link href="/projects">
 							Try early beta
 							<ArrowRight className="ml-0.5" />
-						</Button>
-					</Link>
+						</Link>
+					</Button>
 				</div>
 			</div>
 		</div>

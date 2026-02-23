@@ -45,6 +45,45 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
+// File size limits in bytes
+const FILE_SIZE_LIMITS = {
+	image: 50 * 1024 * 1024, // 50MB
+	video: 500 * 1024 * 1024, // 500MB
+	audio: 100 * 1024 * 1024, // 100MB
+} as const;
+
+function formatFileSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	if (bytes < 1024 * 1024 * 1024)
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function getMediaTypeFromFile(file: File): "image" | "video" | "audio" | null {
+	if (file.type.startsWith("image/")) return "image";
+	if (file.type.startsWith("video/")) return "video";
+	if (file.type.startsWith("audio/")) return "audio";
+	return null;
+}
+
+function validateFileSize(file: File): { valid: boolean; error?: string } {
+	const mediaType = getMediaTypeFromFile(file);
+	if (!mediaType) {
+		return { valid: false, error: `Unsupported file type: ${file.type}` };
+	}
+
+	const limit = FILE_SIZE_LIMITS[mediaType];
+	if (file.size > limit) {
+		return {
+			valid: false,
+			error: `${file.name} (${formatFileSize(file.size)}) exceeds the ${formatFileSize(limit)} limit for ${mediaType} files`,
+		};
+	}
+
+	return { valid: true };
+}
+
 export function MediaView() {
 	const editor = useEditor();
 	const mediaFiles = editor.media.getAssets();
@@ -71,11 +110,41 @@ export function MediaView() {
 			return;
 		}
 
+		// Validate file sizes before processing
+		const validFiles: File[] = [];
+		const errors: string[] = [];
+
+		for (const file of Array.from(files)) {
+			const validation = validateFileSize(file);
+			if (validation.valid) {
+				validFiles.push(file);
+			} else if (validation.error) {
+				errors.push(validation.error);
+			}
+		}
+
+		// Show errors for rejected files
+		for (const error of errors) {
+			toast.error(error);
+		}
+
+		// If no valid files, stop here
+		if (validFiles.length === 0) {
+			return;
+		}
+
+		// Create a new FileList-like object from valid files
+		const dataTransfer = new DataTransfer();
+		for (const file of validFiles) {
+			dataTransfer.items.add(file);
+		}
+		const validFileList = dataTransfer.files;
+
 		setIsProcessing(true);
 		setProgress(0);
 		try {
 			const processedAssets = await processMediaAssets({
-				files,
+				files: validFileList,
 				onProgress: (progress: { progress: number }) =>
 					setProgress(progress.progress),
 			});

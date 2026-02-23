@@ -18,22 +18,26 @@ export async function getVideoInfo({
 		formats: ALL_FORMATS,
 	});
 
-	const duration = await input.computeDuration();
-	const videoTrack = await input.getPrimaryVideoTrack();
+	try {
+		const duration = await input.computeDuration();
+		const videoTrack = await input.getPrimaryVideoTrack();
 
-	if (!videoTrack) {
-		throw new Error("No video track found in the file");
+		if (!videoTrack) {
+			throw new Error("No video track found in the file");
+		}
+
+		const packetStats = await videoTrack.computePacketStats(100);
+		const fps = packetStats.averagePacketRate;
+
+		return {
+			duration,
+			width: videoTrack.displayWidth,
+			height: videoTrack.displayHeight,
+			fps,
+		};
+	} finally {
+		input.dispose();
 	}
-
-	const packetStats = await videoTrack.computePacketStats(100);
-	const fps = packetStats.averagePacketRate;
-
-	return {
-		duration,
-		width: videoTrack.displayWidth,
-		height: videoTrack.displayHeight,
-		fps,
-	};
 }
 
 const SAMPLE_RATE = 44100;
@@ -134,40 +138,44 @@ async function decodeAndMixAudioSource({
 		formats: ALL_FORMATS,
 	});
 
-	const audioTrack = await input.getPrimaryAudioTrack();
-	if (!audioTrack) return;
+	try {
+		const audioTrack = await input.getPrimaryAudioTrack();
+		if (!audioTrack) return;
 
-	const sink = new AudioBufferSink(audioTrack);
-	const trimEnd = source.trimStart + source.duration;
+		const sink = new AudioBufferSink(audioTrack);
+		const trimEnd = source.trimStart + source.duration;
 
-	for await (const { buffer, timestamp } of sink.buffers(
-		source.trimStart,
-		trimEnd,
-	)) {
-		const relativeTime = timestamp - source.trimStart;
-		const outputStartSample = Math.floor(
-			(source.startTime + relativeTime) * SAMPLE_RATE,
-		);
+		for await (const { buffer, timestamp } of sink.buffers(
+			source.trimStart,
+			trimEnd,
+		)) {
+			const relativeTime = timestamp - source.trimStart;
+			const outputStartSample = Math.floor(
+				(source.startTime + relativeTime) * SAMPLE_RATE,
+			);
 
-		// resample if needed
-		const resampleRatio = SAMPLE_RATE / buffer.sampleRate;
+			// resample if needed
+			const resampleRatio = SAMPLE_RATE / buffer.sampleRate;
 
-		for (let ch = 0; ch < NUM_CHANNELS; ch++) {
-			const sourceChannel = Math.min(ch, buffer.numberOfChannels - 1);
-			const channelData = buffer.getChannelData(sourceChannel);
-			const outputChannel = mixBuffers[ch];
+			for (let ch = 0; ch < NUM_CHANNELS; ch++) {
+				const sourceChannel = Math.min(ch, buffer.numberOfChannels - 1);
+				const channelData = buffer.getChannelData(sourceChannel);
+				const outputChannel = mixBuffers[ch];
 
-			const resampledLength = Math.floor(channelData.length * resampleRatio);
-			for (let i = 0; i < resampledLength; i++) {
-				const outputIdx = outputStartSample + i;
-				if (outputIdx < 0 || outputIdx >= totalSamples) continue;
+				const resampledLength = Math.floor(channelData.length * resampleRatio);
+				for (let i = 0; i < resampledLength; i++) {
+					const outputIdx = outputStartSample + i;
+					if (outputIdx < 0 || outputIdx >= totalSamples) continue;
 
-				const sourceIdx = Math.floor(i / resampleRatio);
-				if (sourceIdx < channelData.length) {
-					outputChannel[outputIdx] += channelData[sourceIdx];
+					const sourceIdx = Math.floor(i / resampleRatio);
+					if (sourceIdx < channelData.length) {
+						outputChannel[outputIdx] += channelData[sourceIdx];
+					}
 				}
 			}
 		}
+	} finally {
+		input.dispose();
 	}
 }
 
