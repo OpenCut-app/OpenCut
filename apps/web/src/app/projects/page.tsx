@@ -47,6 +47,13 @@ import {
 import { OcVideoIcon } from "@opencut/ui/icons";
 import { Label } from "@/components/ui/label";
 import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
@@ -622,9 +629,8 @@ function ProjectItem({
 
 	const listContent = (
 		<div
-			className={`flex items-center gap-4 py-2 px-4 border-b border-border/50 ${
-				isSelected ? "bg-primary/5" : ""
-			}`}
+			className={`flex items-center gap-4 py-2 px-4 border-b border-border/50 ${isSelected ? "bg-primary/5" : ""
+				}`}
 		>
 			<Checkbox
 				checked={isSelected}
@@ -635,7 +641,7 @@ function ProjectItem({
 						shiftKey: event.shiftKey,
 					});
 				}}
-				onCheckedChange={() => {}}
+				onCheckedChange={() => { }}
 				className="size-5 shrink-0"
 			/>
 
@@ -657,44 +663,130 @@ function ProjectItem({
 	const cardContent = isGridView ? gridContent : listContent;
 
 	if (!isGridView) {
-		return <div className="group relative">{listContent}</div>;
+		return (
+			<ContextMenu>
+				<ContextMenuTrigger asChild>
+					<div className="group relative">{listContent}</div>
+				</ContextMenuTrigger>
+				<ProjectContextMenuContent project={project} />
+			</ContextMenu>
+		);
 	}
 
 	return (
-		<div className="group relative">
-			<Link href={`/editor/${project.id}`} className="block">
-				{cardContent}
-			</Link>
+		<ContextMenu>
+			<ContextMenuTrigger asChild>
+				<div className="group relative">
+					<Link href={`/editor/${project.id}`} className="block">
+						{cardContent}
+					</Link>
 
-			{isGridView && (
-				<>
-					<Checkbox
-						checked={isSelected}
-						onMouseDown={(event) => event.preventDefault()}
-						onClick={(event) => {
-							handleCheckboxChange({
-								checked: !isSelected,
-								shiftKey: event.shiftKey,
-							});
-						}}
-						onCheckedChange={() => {}}
-						className={`absolute z-10 size-5 top-3 left-3 ${
-							isSelected || isDropdownOpen
-								? "opacity-100"
-								: "opacity-0 group-hover:opacity-100"
-						}`}
-					/>
+					{isGridView && (
+						<>
+							<Checkbox
+								checked={isSelected}
+								onMouseDown={(event) => event.preventDefault()}
+								onClick={(event) => {
+									handleCheckboxChange({
+										checked: !isSelected,
+										shiftKey: event.shiftKey,
+									});
+								}}
+								onCheckedChange={() => { }}
+								className={`absolute z-10 size-5 top-3 left-3 ${isSelected || isDropdownOpen
+										? "opacity-100"
+										: "opacity-0 group-hover:opacity-100"
+									}`}
+							/>
 
-					{!isMultiSelect && (
-						<ProjectMenu
-							isOpen={isDropdownOpen}
-							onOpenChange={setIsDropdownOpen}
-							project={project}
-						/>
+							{!isMultiSelect && (
+								<ProjectMenu
+									isOpen={isDropdownOpen}
+									onOpenChange={setIsDropdownOpen}
+									project={project}
+								/>
+							)}
+						</>
 					)}
-				</>
-			)}
-		</div>
+				</div>
+			</ContextMenuTrigger>
+			<ProjectContextMenuContent project={project} />
+		</ContextMenu>
+	);
+}
+
+function ProjectContextMenuContent({ project }: { project: TProjectMetadata }) {
+	const editor = useEditor();
+	const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
+
+	const handleRename = () => setIsRenameDialogOpen(true);
+	const handleDuplicate = async () => {
+		await duplicateProjects({ editor, ids: [project.id] });
+	};
+	const handleDeleteClick = () => setIsDeleteDialogOpen(true);
+	const handleInfoClick = () => setIsInfoDialogOpen(true);
+
+	const handleDeleteConfirm = async () => {
+		await deleteProjects({ editor, ids: [project.id] });
+		setIsDeleteDialogOpen(false);
+	};
+
+	return (
+		<>
+			<ContextMenuContent>
+				<ContextMenuItem
+					icon={<HugeiconsIcon icon={Edit03Icon} />}
+					onClick={handleRename}
+				>
+					Rename
+				</ContextMenuItem>
+				<ContextMenuItem
+					icon={<HugeiconsIcon icon={Copy01Icon} />}
+					onClick={handleDuplicate}
+				>
+					Duplicate
+				</ContextMenuItem>
+				<ContextMenuItem
+					icon={<HugeiconsIcon icon={InformationCircleIcon} />}
+					onClick={handleInfoClick}
+				>
+					Info
+				</ContextMenuItem>
+				<ContextMenuSeparator />
+				<ContextMenuItem
+					variant="destructive"
+					icon={<HugeiconsIcon icon={Delete02Icon} />}
+					onClick={handleDeleteClick}
+				>
+					Delete
+				</ContextMenuItem>
+			</ContextMenuContent>
+
+			<RenameProjectDialog
+				isOpen={isRenameDialogOpen}
+				onOpenChange={setIsRenameDialogOpen}
+				projectName={project.name}
+				onConfirm={async (newName) => {
+					await renameProject({ editor, id: project.id, name: newName });
+					setIsRenameDialogOpen(false);
+				}}
+			/>
+
+			<DeleteProjectDialog
+				isOpen={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+				projectNames={[project.name]}
+				onConfirm={handleDeleteConfirm}
+			/>
+
+			<ProjectInfoDialog
+				isOpen={isInfoDialogOpen}
+				onOpenChange={setIsInfoDialogOpen}
+				project={project}
+			/>
+		</>
 	);
 }
 
