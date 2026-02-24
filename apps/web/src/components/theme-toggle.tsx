@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { useTheme } from "next-themes";
 import { cn } from "@/utils/ui";
@@ -18,6 +19,25 @@ export function ThemeToggle({
 	onToggle,
 }: ThemeToggleProps) {
 	const { theme, setTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Prevent hydration mismatch by not rendering theme-dependent content until mounted
+	if (!mounted) {
+		return (
+			<Button
+				size="icon"
+				variant="ghost"
+				className={cn("size-8", className)}
+			>
+				<span className={cn("!size-[1.1rem]", iconClassName)} />
+				<span className="sr-only">Toggle theme</span>
+			</Button>
+		);
+	}
 
 	return (
 		<Button
