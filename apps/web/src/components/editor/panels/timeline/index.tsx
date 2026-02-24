@@ -23,7 +23,7 @@ import { TimelinePlayhead } from "./timeline-playhead";
 import { SelectionBox } from "../../selection-box";
 import { useSelectionBox } from "@/hooks/timeline/use-selection-box";
 import { SnapIndicator } from "./snap-indicator";
-import type { SnapPoint } from "@/hooks/timeline/use-timeline-snapping";
+import type { SnapPoint } from "@/lib/timeline/snap-utils";
 import type { TimelineTrack } from "@/types/timeline";
 import {
 	TIMELINE_CONSTANTS,
@@ -47,6 +47,8 @@ import { useTimelineSeek } from "@/hooks/timeline/use-timeline-seek";
 import { useTimelineDragDrop } from "@/hooks/timeline/use-timeline-drag-drop";
 import { TimelineRuler } from "./timeline-ruler";
 import { TimelineBookmarksRow } from "./bookmarks";
+import { useBookmarkDrag } from "@/hooks/timeline/use-bookmark-drag";
+import { useEdgeAutoScroll } from "@/hooks/timeline/use-edge-auto-scroll";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { useEditor } from "@/hooks/use-editor";
 import { useTimelinePlayhead } from "@/hooks/timeline/use-timeline-playhead";
@@ -126,6 +128,17 @@ export function Timeline() {
 		onSnapPointChange: handleSnapPointChange,
 	});
 
+	const {
+		dragState: bookmarkDragState,
+		handleBookmarkMouseDown,
+		lastMouseXRef: bookmarkLastMouseXRef,
+	} = useBookmarkDrag({
+		zoomLevel,
+		scrollRef: tracksScrollRef,
+		snappingEnabled,
+		onSnapPointChange: handleSnapPointChange,
+	});
+
 	const { handleRulerMouseDown: handlePlayheadRulerMouseDown } =
 		useTimelinePlayhead({
 			zoomLevel,
@@ -168,10 +181,18 @@ export function Timeline() {
 		containerWidth,
 	);
 
+	useEdgeAutoScroll({
+		isActive: bookmarkDragState.isDragging,
+		getMouseClientX: () => bookmarkLastMouseXRef.current,
+		rulerScrollRef: tracksScrollRef,
+		tracksScrollRef,
+		contentWidth: dynamicTimelineWidth,
+	});
+
 	const showSnapIndicator =
 		snappingEnabled &&
 		currentSnapPoint !== null &&
-		(dragState.isDragging || isResizing);
+		(dragState.isDragging || bookmarkDragState.isDragging || isResizing);
 
 	const {
 		handleTracksMouseDown,
@@ -351,7 +372,7 @@ export function Timeline() {
 							>
 								<div
 									ref={timelineHeaderRef}
-									className="bg-background sticky top-0 z-30 flex flex-col"
+									className="bg-background sticky top-0 flex flex-col"
 								>
 									<TimelineRuler
 										zoomLevel={zoomLevel}
@@ -366,6 +387,8 @@ export function Timeline() {
 									<TimelineBookmarksRow
 										zoomLevel={zoomLevel}
 										dynamicTimelineWidth={dynamicTimelineWidth}
+										dragState={bookmarkDragState}
+										onBookmarkMouseDown={handleBookmarkMouseDown}
 										handleWheel={handleWheel}
 										handleTimelineContentClick={handleRulerClick}
 										handleRulerTrackingMouseDown={handleRulerMouseDown}
@@ -433,7 +456,7 @@ export function Timeline() {
 														/>
 													</div>
 												</ContextMenuTrigger>
-												<ContextMenuContent className="z-200 w-40">
+												<ContextMenuContent className="w-40">
 													<ContextMenuItem
 														icon={<HugeiconsIcon icon={TaskAdd02Icon} />}
 														onClick={(e) => {

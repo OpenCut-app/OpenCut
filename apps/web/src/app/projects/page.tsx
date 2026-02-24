@@ -304,7 +304,6 @@ function ProjectsToolbar({ projectIds }: { projectIds: string[] }) {
 					</Button>
 				</SortDropdown>
 				<Button
-					type="button"
 					variant="text"
 					className="text-muted-foreground"
 					onClick={() =>
@@ -827,7 +826,6 @@ function ProjectMenu({
 			<DropdownMenu open={isOpen} onOpenChange={onOpenChange}>
 				<DropdownMenuTrigger asChild>
 					<Button
-						type="button"
 						variant="background"
 						className={
 							isGrid

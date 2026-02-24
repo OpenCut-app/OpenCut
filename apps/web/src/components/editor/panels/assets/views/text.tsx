@@ -1,5 +1,5 @@
 import { DraggableItem } from "@/components/editor/panels/assets/draggable-item";
-import { PanelBaseView as BaseView } from "@/components/editor/panels/panel-base-view";
+import { PanelView } from "@/components/editor/panels/assets/views/base-view";
 import { useEditor } from "@/hooks/use-editor";
 import { DEFAULT_TEXT_ELEMENT } from "@/constants/text-constants";
 import { buildTextElement } from "@/lib/timeline/element-utils";
@@ -23,7 +23,7 @@ export function TextView() {
 	};
 
 	return (
-		<BaseView>
+		<PanelView title="Text">
 			<DraggableItem
 				name="Default text"
 				preview={
@@ -41,6 +41,6 @@ export function TextView() {
 				onAddToTimeline={handleAddToTimeline}
 				shouldShowLabel={false}
 			/>
-		</BaseView>
+		</PanelView>
 	);
 }

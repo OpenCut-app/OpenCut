@@ -163,8 +163,8 @@ export class InsertElementCommand extends Command {
 			return false;
 		}
 
-		if (element.type === "sticker" && !element.iconName) {
-			console.error("Sticker element must have iconName");
+		if (element.type === "sticker" && !element.stickerId) {
+			console.error("Sticker element must have stickerId");
 			return false;
 		}
 

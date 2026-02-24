@@ -1,10 +1,7 @@
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/constants/site-constants";
-import {
-	GithubIcon,
-	Link04Icon,
-} from "@hugeicons/core-free-icons";
+import { GithubIcon, Link04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 export function GitHubContributeSection({

@@ -163,7 +163,9 @@ export function DraggableItem({
 						<div className="size-6 flex-shrink-0 overflow-hidden rounded-[0.35rem]">
 							{preview}
 						</div>
-						<span className="w-full flex-1 truncate text-sm text-left">{name}</span>
+						<span className="w-full flex-1 truncate text-sm text-left">
+							{name}
+						</span>
 					</button>
 				</div>
 			)}

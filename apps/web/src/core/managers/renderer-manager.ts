@@ -1,9 +1,12 @@
 import type { EditorCore } from "@/core";
 import type { RootNode } from "@/services/renderer/nodes/root-node";
 import type { ExportOptions, ExportResult } from "@/types/export";
+import { CanvasRenderer } from "@/services/renderer/canvas-renderer";
 import { SceneExporter } from "@/services/renderer/scene-exporter";
 import { buildScene } from "@/services/renderer/scene-builder";
 import { createTimelineAudioBuffer } from "@/lib/media/audio";
+import { formatTimeCode, getLastFrameTime } from "@/lib/time";
+import { downloadBlob } from "@/utils/browser";
 
 export class RendererManager {
 	private renderTree: RootNode | null = null;
@@ -18,6 +21,69 @@ export class RendererManager {
 
 	getRenderTree(): RootNode | null {
 		return this.renderTree;
+	}
+
+	async saveSnapshot(): Promise<{ success: boolean; error?: string }> {
+		try {
+			const renderTree = this.getRenderTree();
+			const activeProject = this.editor.project.getActive();
+
+			if (!renderTree || !activeProject) {
+				return { success: false, error: "No project or scene to capture" };
+			}
+
+			const duration = this.editor.timeline.getTotalDuration();
+			if (duration === 0) {
+				return { success: false, error: "Project is empty" };
+			}
+
+			const { canvasSize, fps } = activeProject.settings;
+			const currentTime = this.editor.playback.getCurrentTime();
+			const lastFrameTime = getLastFrameTime({ duration, fps });
+			const renderTime = Math.min(currentTime, lastFrameTime);
+
+			const renderer = new CanvasRenderer({
+				width: canvasSize.width,
+				height: canvasSize.height,
+				fps,
+			});
+
+			const tempCanvas = document.createElement("canvas");
+			tempCanvas.width = canvasSize.width;
+			tempCanvas.height = canvasSize.height;
+
+			await renderer.renderToCanvas({
+				node: renderTree,
+				time: renderTime,
+				targetCanvas: tempCanvas,
+			});
+
+			const blob = await new Promise<Blob | null>((resolve) => {
+				tempCanvas.toBlob((result) => resolve(result), "image/png");
+			});
+
+			if (!blob) {
+				return { success: false, error: "Failed to create image" };
+			}
+
+			const timecode = formatTimeCode({
+				timeInSeconds: renderTime,
+				fps,
+			}).replace(/:/g, "-");
+			const safeName = activeProject.metadata.name
+				.replace(/[<>:"/\\|?*]/g, "-")
+				.trim() || "snapshot";
+			const filename = `${safeName}-${timecode}.png`;
+
+			downloadBlob({ blob, filename });
+			return { success: true };
+		} catch (error) {
+			console.error("Save snapshot failed:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
 	}
 
 	async exportProject({

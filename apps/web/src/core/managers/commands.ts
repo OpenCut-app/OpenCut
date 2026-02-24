@@ -11,6 +11,11 @@ export class CommandManager {
 		return command;
 	}
 
+	push({ command }: { command: Command }): void {
+		this.history.push(command);
+		this.redoStack = [];
+	}
+
 	undo(): void {
 		if (this.history.length === 0) return;
 		const command = this.history.pop();

@@ -9,6 +9,7 @@ import {
 	useKeybindingDisabler,
 } from "@/hooks/use-keybindings";
 import { useEditorActions } from "@/hooks/actions/use-editor-actions";
+import { prefetchFontAtlas } from "@/lib/fonts/google-fonts";
 
 interface EditorProviderProps {
 	projectId: string;
@@ -42,6 +43,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 				if (cancelled) return;
 
 				setIsLoading(false);
+				prefetchFontAtlas();
 			} catch (err) {
 				if (cancelled) return;
 

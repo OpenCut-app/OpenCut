@@ -53,10 +53,7 @@ export function InputWithBack({
 				transition={smoothTransition}
 				onClick={() => setIsExpanded(!isExpanded)}
 			>
-				<Button
-					variant="outline"
-					className="bg-accent !size-9 rounded-full"
-				>
+				<Button variant="outline" className="bg-accent !size-9 rounded-full">
 					<ArrowLeft />
 				</Button>
 			</motion.div>

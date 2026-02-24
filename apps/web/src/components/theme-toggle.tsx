@@ -29,7 +29,10 @@ export function ThemeToggle({
 				onToggle?.(e);
 			}}
 		>
-			<HugeiconsIcon icon={Sun03Icon} className={cn("!size-[1.1rem]", iconClassName)} />
+			<HugeiconsIcon
+				icon={Sun03Icon}
+				className={cn("!size-[1.1rem]", iconClassName)}
+			/>
 			<span className="sr-only">{theme === "dark" ? "Light" : "Dark"}</span>
 		</Button>
 	);

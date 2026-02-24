@@ -1,5 +1,6 @@
 import type { CanvasRenderer } from "../canvas-renderer";
 import { BaseNode } from "./base-node";
+import type { BlendMode } from "@/types/rendering";
 import type { Transform } from "@/types/timeline";
 
 const VISUAL_EPSILON = 1 / 1000;
@@ -11,6 +12,7 @@ export interface VisualNodeParams {
 	trimEnd: number;
 	transform: Transform;
 	opacity: number;
+	blendMode?: BlendMode;
 }
 
 export abstract class VisualNode<
@@ -51,6 +53,11 @@ export abstract class VisualNode<
 		const x = renderer.width / 2 + transform.position.x - scaledWidth / 2;
 		const y = renderer.height / 2 + transform.position.y - scaledHeight / 2;
 
+		renderer.context.globalCompositeOperation = (
+			this.params.blendMode && this.params.blendMode !== "normal"
+				? this.params.blendMode
+				: "source-over"
+		) as GlobalCompositeOperation;
 		renderer.context.globalAlpha = opacity;
 
 		if (transform.rotate !== 0) {

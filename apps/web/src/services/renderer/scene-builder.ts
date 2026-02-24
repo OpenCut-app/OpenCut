@@ -11,12 +11,15 @@ import type { TBackground, TCanvasSize } from "@/types/project";
 import { DEFAULT_BLUR_INTENSITY } from "@/constants/project-constants";
 import { isMainTrack } from "@/lib/timeline";
 
+const PREVIEW_MAX_IMAGE_SIZE = 2048;
+
 export type BuildSceneParams = {
 	canvasSize: TCanvasSize;
 	tracks: TimelineTrack[];
 	mediaAssets: MediaAsset[];
 	duration: number;
 	background: TBackground;
+	isPreview?: boolean;
 };
 
 export function buildScene(params: BuildSceneParams) {
@@ -66,6 +69,7 @@ export function buildScene(params: BuildSceneParams) {
 							trimEnd: element.trimEnd,
 							transform: element.transform,
 							opacity: element.opacity,
+							blendMode: element.blendMode,
 						}),
 					);
 				}
@@ -79,6 +83,10 @@ export function buildScene(params: BuildSceneParams) {
 							trimEnd: element.trimEnd,
 							transform: element.transform,
 							opacity: element.opacity,
+							blendMode: element.blendMode,
+							...(params.isPreview && {
+								maxSourceSize: PREVIEW_MAX_IMAGE_SIZE,
+							}),
 						}),
 					);
 				}
@@ -98,14 +106,14 @@ export function buildScene(params: BuildSceneParams) {
 			if (element.type === "sticker") {
 				contentNodes.push(
 					new StickerNode({
-						iconName: element.iconName,
+						stickerId: element.stickerId,
 						duration: element.duration,
 						timeOffset: element.startTime,
 						trimStart: element.trimStart,
 						trimEnd: element.trimEnd,
 						transform: element.transform,
 						opacity: element.opacity,
-						color: element.color,
+						blendMode: element.blendMode,
 					}),
 				);
 			}

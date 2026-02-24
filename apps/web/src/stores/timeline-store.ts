@@ -4,6 +4,7 @@
  */
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { ClipboardItem } from "@/types/timeline";
 
 interface TimelineStore {
@@ -21,24 +22,35 @@ interface TimelineStore {
 	) => void;
 }
 
-export const useTimelineStore = create<TimelineStore>((set) => ({
-	snappingEnabled: true,
+export const useTimelineStore = create<TimelineStore>()(
+	persist(
+		(set) => ({
+			snappingEnabled: true,
 
-	toggleSnapping: () => {
-		set((state) => ({ snappingEnabled: !state.snappingEnabled }));
-	},
+			toggleSnapping: () => {
+				set((state) => ({ snappingEnabled: !state.snappingEnabled }));
+			},
 
-	rippleEditingEnabled: false,
+			rippleEditingEnabled: false,
 
-	toggleRippleEditing: () => {
-		set((state) => ({
-			rippleEditingEnabled: !state.rippleEditingEnabled,
-		}));
-	},
+			toggleRippleEditing: () => {
+				set((state) => ({
+					rippleEditingEnabled: !state.rippleEditingEnabled,
+				}));
+			},
 
-	clipboard: null,
+			clipboard: null,
 
-	setClipboard: (clipboard) => {
-		set({ clipboard });
-	},
-}));
+			setClipboard: (clipboard) => {
+				set({ clipboard });
+			},
+		}),
+		{
+			name: "timeline-store",
+			partialize: (state) => ({
+				snappingEnabled: state.snappingEnabled,
+				rippleEditingEnabled: state.rippleEditingEnabled,
+			}),
+		},
+	),
+);

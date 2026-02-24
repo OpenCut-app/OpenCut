@@ -13,10 +13,8 @@ import {
 	QUALITY_VERY_HIGH,
 } from "mediabunny";
 import type { RootNode } from "./nodes/root-node";
+import type { ExportFormat, ExportQuality } from "@/types/export";
 import { CanvasRenderer } from "./canvas-renderer";
-
-export type ExportFormat = "mp4" | "webm";
-export type ExportQuality = "low" | "medium" | "high" | "very_high";
 
 type ExportParams = {
 	width: number;

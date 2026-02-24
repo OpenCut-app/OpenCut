@@ -4,7 +4,7 @@ import { useElementSelection } from "@/hooks/timeline/element/use-element-select
 import { TimelineElement } from "./timeline-element";
 import type { TimelineTrack } from "@/types/timeline";
 import type { TimelineElement as TimelineElementType } from "@/types/timeline";
-import type { SnapPoint } from "@/hooks/timeline/use-timeline-snapping";
+import type { SnapPoint } from "@/lib/timeline/snap-utils";
 import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 import { useEdgeAutoScroll } from "@/hooks/timeline/use-edge-auto-scroll";
 import type { ElementDragState } from "@/types/timeline";

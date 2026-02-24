@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { AlertTriangle } from "lucide-react";
 import { cn } from "@/utils/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert02Icon } from "@hugeicons/core-free-icons";
@@ -32,7 +31,10 @@ const Alert = React.forwardRef<
 		{...props}
 	>
 		{variant === "destructive" && (
-			<HugeiconsIcon icon={Alert02Icon} className="size-5 text-destructive mt-0.5" />
+			<HugeiconsIcon
+				icon={Alert02Icon}
+				className="size-5 text-destructive mt-0.5"
+			/>
 		)}
 		{children}
 	</div>
@@ -45,7 +47,10 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<h5
 		ref={ref}
-		className={cn("mb-2 text-base leading-none font-semibold tracking-tight", className)}
+		className={cn(
+			"mb-2 text-base leading-none font-semibold tracking-tight",
+			className,
+		)}
 		{...props}
 	/>
 ));

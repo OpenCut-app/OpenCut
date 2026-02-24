@@ -7,10 +7,7 @@ import { getDefaultShortcuts } from "@/lib/actions";
 import { isTypableDOMElement } from "@/utils/browser";
 import { isAppleDevice } from "@/utils/platform";
 import type { KeybindingConfig, ShortcutKey } from "@/types/keybinding";
-import {
-	runMigrations,
-	CURRENT_VERSION,
-} from "./keybindings/migrations";
+import { runMigrations, CURRENT_VERSION } from "./keybindings/migrations";
 
 export const defaultKeybindings: KeybindingConfig = getDefaultShortcuts();
 

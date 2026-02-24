@@ -14,6 +14,7 @@ import { EditorHeader } from "@/components/editor/editor-header";
 import { EditorProvider } from "@/components/providers/editor-provider";
 import { MigrationDialog } from "@/components/editor/dialogs/migration-dialog";
 import { usePanelStore } from "@/stores/panel-store";
+import { usePasteMedia } from "@/hooks/use-paste-media";
 
 export default function Editor() {
 	const params = useParams();
@@ -33,6 +34,7 @@ export default function Editor() {
 }
 
 function EditorLayout() {
+	usePasteMedia();
 	const { panels, setPanel } = usePanelStore();
 
 	return (

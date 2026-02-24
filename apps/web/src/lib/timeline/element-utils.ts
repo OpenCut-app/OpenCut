@@ -1,5 +1,10 @@
 import { DEFAULT_TEXT_ELEMENT } from "@/constants/text-constants";
-import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+import {
+	DEFAULT_BLEND_MODE,
+	DEFAULT_OPACITY,
+	DEFAULT_TRANSFORM,
+	TIMELINE_CONSTANTS,
+} from "@/constants/timeline-constants";
 import type {
 	CreateTimelineElement,
 	CreateVideoElement,
@@ -16,11 +21,23 @@ import type {
 	StickerElement,
 	UploadAudioElement,
 } from "@/types/timeline";
+import type { MediaType } from "@/types/assets";
 
 export function canElementHaveAudio(
 	element: TimelineElement,
 ): element is AudioElement | VideoElement {
 	return element.type === "audio" || element.type === "video";
+}
+
+export function isVisualElement(
+	element: TimelineElement,
+): element is VideoElement | ImageElement | TextElement | StickerElement {
+	return (
+		element.type === "video" ||
+		element.type === "image" ||
+		element.type === "text" ||
+		element.type === "sticker"
+	);
 }
 
 export function canElementBeHidden(
@@ -142,28 +159,36 @@ export function buildTextElement({
 		fontWeight: t.fontWeight ?? DEFAULT_TEXT_ELEMENT.fontWeight,
 		fontStyle: t.fontStyle ?? DEFAULT_TEXT_ELEMENT.fontStyle,
 		textDecoration: t.textDecoration ?? DEFAULT_TEXT_ELEMENT.textDecoration,
+		letterSpacing: t.letterSpacing ?? DEFAULT_TEXT_ELEMENT.letterSpacing,
+		lineHeight: t.lineHeight ?? DEFAULT_TEXT_ELEMENT.lineHeight,
 		transform: t.transform ?? DEFAULT_TEXT_ELEMENT.transform,
 		opacity: t.opacity ?? DEFAULT_TEXT_ELEMENT.opacity,
+		blendMode: t.blendMode ?? DEFAULT_BLEND_MODE,
 	};
 }
 
 export function buildStickerElement({
-	iconName,
+	stickerId,
+	name,
 	startTime,
 }: {
-	iconName: string;
+	stickerId: string;
+	name?: string;
 	startTime: number;
 }): CreateStickerElement {
+	const stickerNameFromId =
+		stickerId.split(":").slice(1).pop()?.replaceAll("-", " ") ?? stickerId;
 	return {
 		type: "sticker",
-		name: iconName.split(":")[1] || iconName,
-		iconName,
+		name: name ?? stickerNameFromId,
+		stickerId,
 		duration: TIMELINE_CONSTANTS.DEFAULT_ELEMENT_DURATION,
 		startTime,
 		trimStart: 0,
 		trimEnd: 0,
-		transform: { scale: 1, position: { x: 0, y: 0 }, rotate: 0 },
-		opacity: 1,
+		transform: { ...DEFAULT_TRANSFORM },
+		opacity: DEFAULT_OPACITY,
+		blendMode: DEFAULT_BLEND_MODE,
 	};
 }
 
@@ -188,8 +213,9 @@ export function buildVideoElement({
 		trimEnd: 0,
 		muted: false,
 		hidden: false,
-		transform: { scale: 1, position: { x: 0, y: 0 }, rotate: 0 },
-		opacity: 1,
+		transform: { ...DEFAULT_TRANSFORM },
+		opacity: DEFAULT_OPACITY,
+		blendMode: DEFAULT_BLEND_MODE,
 	};
 }
 
@@ -213,8 +239,9 @@ export function buildImageElement({
 		trimStart: 0,
 		trimEnd: 0,
 		hidden: false,
-		transform: { scale: 1, position: { x: 0, y: 0 }, rotate: 0 },
-		opacity: 1,
+		transform: { ...DEFAULT_TRANSFORM },
+		opacity: DEFAULT_OPACITY,
+		blendMode: DEFAULT_BLEND_MODE,
 	};
 }
 
@@ -247,6 +274,37 @@ export function buildUploadAudioElement({
 		element.buffer = buffer;
 	}
 	return element;
+}
+
+export function buildElementFromMedia({
+	mediaId,
+	mediaType,
+	name,
+	duration,
+	startTime,
+	buffer,
+}: {
+	mediaId: string;
+	mediaType: MediaType;
+	name: string;
+	duration: number;
+	startTime: number;
+	buffer?: AudioBuffer;
+}): CreateTimelineElement {
+	switch (mediaType) {
+		case "audio":
+			return buildUploadAudioElement({
+				mediaId,
+				name,
+				duration,
+				startTime,
+				buffer,
+			});
+		case "video":
+			return buildVideoElement({ mediaId, name, duration, startTime });
+		case "image":
+			return buildImageElement({ mediaId, name, duration, startTime });
+	}
 }
 
 export function buildLibraryAudioElement({
@@ -301,4 +359,20 @@ export function getElementsAtTime({
 	}
 
 	return result;
+}
+
+export function collectFontFamilies({
+	tracks,
+}: {
+	tracks: TimelineTrack[];
+}): string[] {
+	const families = new Set<string>();
+	for (const track of tracks) {
+		for (const element of track.elements) {
+			if (element.type === "text" && element.fontFamily) {
+				families.add(element.fontFamily);
+			}
+		}
+	}
+	return [...families];
 }

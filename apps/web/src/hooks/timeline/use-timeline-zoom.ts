@@ -57,6 +57,8 @@ export function useTimelineZoom({
 	const previousZoomRef = useRef(zoomLevel);
 	const hasRestoredScrollRef = useRef(false);
 	const preZoomScrollLeftRef = useRef(0);
+	const prePlayheadAnchorScrollLeftRef = useRef(0);
+	const isInPlayheadAnchorModeRef = useRef(false);
 
 	const setZoomLevel = useCallback(
 		(updater: number | ((prev: number) => number)) => {
@@ -89,8 +91,6 @@ export function useTimelineZoom({
 					);
 					return nextZoom;
 				});
-				// for horizontal scrolling (when shift is held or horizontal wheel movement),
-				// let the event bubble up to allow ScrollArea to handle it
 				return;
 			}
 		},
@@ -143,6 +143,36 @@ export function useTimelineZoom({
 		const currentScrollLeft = preZoomScrollLeftRef.current;
 		const playheadTime = editor.playback.getCurrentTime();
 		const sliderPercent = zoomToSlider({ zoomLevel, minZoom });
+		const previousSliderPercent = zoomToSlider({
+			zoomLevel: previousZoom,
+			minZoom,
+		});
+		const isCrossingThresholdUp =
+			previousSliderPercent <
+				TIMELINE_CONSTANTS.ZOOM_ANCHOR_PLAYHEAD_THRESHOLD &&
+			sliderPercent >= TIMELINE_CONSTANTS.ZOOM_ANCHOR_PLAYHEAD_THRESHOLD;
+		const isCrossingThresholdDown =
+			previousSliderPercent >=
+				TIMELINE_CONSTANTS.ZOOM_ANCHOR_PLAYHEAD_THRESHOLD &&
+			sliderPercent < TIMELINE_CONSTANTS.ZOOM_ANCHOR_PLAYHEAD_THRESHOLD;
+
+		const syncScroll = (scrollLeft: number) => {
+			scrollElement.scrollLeft = scrollLeft;
+			if (rulerScrollRef.current) {
+				rulerScrollRef.current.scrollLeft = scrollLeft;
+			}
+		};
+
+		const clampScrollLeft = (scrollLeft: number) => {
+			const maxScrollLeft =
+				scrollElement.scrollWidth - scrollElement.clientWidth;
+			return Math.max(0, Math.min(maxScrollLeft, scrollLeft));
+		};
+
+		if (isCrossingThresholdUp) {
+			prePlayheadAnchorScrollLeftRef.current = currentScrollLeft;
+			isInPlayheadAnchorModeRef.current = true;
+		}
 
 		if (sliderPercent >= TIMELINE_CONSTANTS.ZOOM_ANCHOR_PLAYHEAD_THRESHOLD) {
 			const playheadPixelsBefore =
@@ -153,17 +183,10 @@ export function useTimelineZoom({
 			const viewportOffset = playheadPixelsBefore - currentScrollLeft;
 			const newScrollLeft = playheadPixelsAfter - viewportOffset;
 
-			const maxScrollLeft =
-				scrollElement.scrollWidth - scrollElement.clientWidth;
-			const clampedScrollLeft = Math.max(
-				0,
-				Math.min(maxScrollLeft, newScrollLeft),
-			);
-
-			scrollElement.scrollLeft = clampedScrollLeft;
-			if (rulerScrollRef.current) {
-				rulerScrollRef.current.scrollLeft = clampedScrollLeft;
-			}
+			syncScroll(clampScrollLeft(newScrollLeft));
+		} else if (isCrossingThresholdDown && isInPlayheadAnchorModeRef.current) {
+			syncScroll(clampScrollLeft(prePlayheadAnchorScrollLeftRef.current));
+			isInPlayheadAnchorModeRef.current = false;
 		}
 
 		previousZoomRef.current = zoomLevel;
@@ -217,7 +240,6 @@ export function useTimelineZoom({
 			const observer = new ResizeObserver(() => {
 				if (scrollElement.scrollWidth > 0) {
 					restoreScroll();
-					hasRestoredScrollRef.current = true;
 					observer.disconnect();
 				}
 			});

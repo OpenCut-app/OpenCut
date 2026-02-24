@@ -171,7 +171,7 @@ function SceneSelector() {
 				<SplitButtonLeft>{currentScene?.name || "No Scene"}</SplitButtonLeft>
 				<SplitButtonSeparator />
 				<ScenesView>
-					<SplitButtonRight onClick={() => {}} type="button">
+					<SplitButtonRight onClick={() => {}}>
 						<HugeiconsIcon icon={Layers01Icon} className="size-4" />
 					</SplitButtonRight>
 				</ScenesView>
@@ -222,7 +222,6 @@ function ToolbarRightSection({
 				<Button
 					variant="text"
 					size="icon"
-					type="button"
 					onClick={() => onZoom({ direction: "out" })}
 				>
 					<HugeiconsIcon icon={SearchMinusIcon} />
@@ -240,7 +239,6 @@ function ToolbarRightSection({
 				<Button
 					variant="text"
 					size="icon"
-					type="button"
 					onClick={() => onZoom({ direction: "in" })}
 				>
 					<HugeiconsIcon icon={SearchAddIcon} />
@@ -269,7 +267,6 @@ function ToolbarButton({
 				<Button
 					variant={isActive ? "secondary" : "text"}
 					size="icon"
-					type="button"
 					onClick={(event) => onClick({ event })}
 					className={cn(
 						"rounded-sm",

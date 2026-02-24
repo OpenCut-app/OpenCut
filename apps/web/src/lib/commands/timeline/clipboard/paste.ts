@@ -130,7 +130,9 @@ export class PasteCommand extends Command {
 		if (this.savedState) {
 			const editor = EditorCore.getInstance();
 			editor.timeline.updateTracks(this.savedState);
-			editor.selection.setSelectedElements({ elements: this.previousSelection });
+			editor.selection.setSelectedElements({
+				elements: this.previousSelection,
+			});
 		}
 	}
 

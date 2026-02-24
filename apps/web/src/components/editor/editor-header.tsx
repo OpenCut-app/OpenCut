@@ -19,7 +19,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { DEFAULT_LOGO_URL, SOCIAL_LINKS } from "@/constants/site-constants";
 import { toast } from "sonner";
 import { useEditor } from "@/hooks/use-editor";
-import { ArrowLeft02Icon, CommandIcon } from "@hugeicons/core-free-icons";
+import { CommandIcon, Logout05Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ShortcutsDialog } from "./dialogs/shortcuts-dialog";
 import Image from "next/image";
@@ -166,32 +166,30 @@ function ProjectDropdown() {
 						/>
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start" className="z-100 w-52">
+				<DropdownMenuContent align="start" className="z-100 w-44">
 					<DropdownMenuItem
-						className="flex items-center gap-1.5"
 						onClick={handleExit}
 						disabled={isExiting}
+						icon={<HugeiconsIcon icon={Logout05Icon} />}
 					>
-						<HugeiconsIcon icon={ArrowLeft02Icon} className="size-4" />
 						Exit project
 					</DropdownMenuItem>
 
-					<DropdownMenuSeparator />
 					<DropdownMenuItem
-						className="flex items-center gap-1.5"
 						onClick={() => setOpenDialog("shortcuts")}
+						icon={<HugeiconsIcon icon={CommandIcon} />}
 					>
-						<HugeiconsIcon icon={CommandIcon} className="size-4" />
-						Keyboard shortcuts
+						Shortcuts
 					</DropdownMenuItem>
-					<DropdownMenuItem asChild>
+
+					<DropdownMenuSeparator />
+
+					<DropdownMenuItem asChild icon={<FaDiscord className="!size-4" />}>
 						<Link
 							href={SOCIAL_LINKS.discord}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="flex items-center gap-1.5"
 						>
-							<FaDiscord className="size-4" />
 							Discord
 						</Link>
 					</DropdownMenuItem>

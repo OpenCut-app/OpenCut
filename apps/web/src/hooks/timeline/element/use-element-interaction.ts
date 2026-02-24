@@ -7,21 +7,26 @@ import {
 	type RefObject,
 } from "react";
 import { useEditor } from "@/hooks/use-editor";
+import { useShiftKey } from "@/hooks/use-shift-key";
 import { useElementSelection } from "@/hooks/timeline/element/use-element-selection";
-import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+import {
+	DRAG_THRESHOLD_PX,
+	TIMELINE_CONSTANTS,
+} from "@/constants/timeline-constants";
 import { snapTimeToFrame } from "@/lib/time";
 import { computeDropTarget } from "@/lib/timeline/drop-utils";
+import { getMouseTimeFromClientX } from "@/lib/timeline/drag-utils";
 import { generateUUID } from "@/utils/id";
-import { useTimelineSnapping } from "@/hooks/timeline/use-timeline-snapping";
+import {
+	snapElementEdge,
+	type SnapPoint,
+} from "@/lib/timeline/snap-utils";
 import type {
 	DropTarget,
 	ElementDragState,
 	TimelineElement,
 	TimelineTrack,
 } from "@/types/timeline";
-import type { SnapPoint } from "@/hooks/timeline/use-timeline-snapping";
-
-const DRAG_THRESHOLD_PX = 5;
 
 interface UseElementInteractionProps {
 	zoomLevel: number;
@@ -52,24 +57,6 @@ interface PendingDragState {
 	startMouseY: number;
 	startElementTime: number;
 	clickOffsetTime: number;
-}
-
-function getMouseTimeFromClientX({
-	clientX,
-	containerRect,
-	zoomLevel,
-	scrollLeft,
-}: {
-	clientX: number;
-	containerRect: DOMRect;
-	zoomLevel: number;
-	scrollLeft: number;
-}): number {
-	const mouseX = clientX - containerRect.left + scrollLeft;
-	return Math.max(
-		0,
-		mouseX / (TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel),
-	);
 }
 
 function getClickOffsetTime({
@@ -175,8 +162,8 @@ export function useElementInteraction({
 	onSnapPointChange,
 }: UseElementInteractionProps) {
 	const editor = useEditor();
+	const isShiftHeldRef = useShiftKey();
 	const tracks = editor.timeline.getTracks();
-	const { snapElementEdge } = useTimelineSnapping();
 	const {
 		isElementSelected,
 		selectElement,
@@ -230,7 +217,8 @@ export function useElementInteraction({
 			frameSnappedTime: number;
 			movingElement: TimelineElement | null | undefined;
 		}) => {
-			if (!snappingEnabled || !movingElement) {
+			const shouldSnap = snappingEnabled && !isShiftHeldRef.current;
+			if (!shouldSnap || !movingElement) {
 				return { snappedTime: frameSnappedTime, snapPoint: null };
 			}
 
@@ -268,7 +256,7 @@ export function useElementInteraction({
 				snapPoint: snapResult.snapPoint,
 			};
 		},
-		[snappingEnabled, editor.playback, snapElementEdge, tracks, zoomLevel],
+		[snappingEnabled, editor.playback, tracks, zoomLevel, isShiftHeldRef],
 	);
 
 	useEffect(() => {

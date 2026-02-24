@@ -1,4 +1,5 @@
-import { v2ToV3 } from './v2-to-v3';
+import { v2ToV3 } from "./v2-to-v3";
+import { v3ToV4 } from "./v3-to-v4";
 
 type MigrationFn = ({ state }: { state: unknown }) => unknown;
 
@@ -8,9 +9,10 @@ type MigrationFn = ({ state }: { state: unknown }) => unknown;
  */
 const migrations: Record<number, MigrationFn> = {
 	2: v2ToV3,
+	3: v3ToV4,
 };
 
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 export function runMigrations({
 	state,

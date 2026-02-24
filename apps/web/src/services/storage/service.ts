@@ -14,7 +14,30 @@ import {
 	migrations,
 	runStorageMigrations,
 } from "@/services/storage/migrations";
-import type { TimelineTrack, TScene } from "@/types/timeline";
+import type { Bookmark, TimelineTrack, TScene } from "@/types/timeline";
+
+function normalizeBookmarks({ raw }: { raw: unknown }): Bookmark[] {
+	if (!Array.isArray(raw)) return [];
+	return raw
+		.map((item): Bookmark | null => {
+			if (typeof item === "number") return { time: item };
+			const obj = item as Record<string, unknown>;
+			if (
+				typeof obj !== "object" ||
+				obj === null ||
+				typeof obj.time !== "number"
+			) {
+				return null;
+			}
+			return {
+				time: obj.time,
+				...(typeof obj.note === "string" && { note: obj.note }),
+				...(typeof obj.color === "string" && { color: obj.color }),
+				...(typeof obj.duration === "number" && { duration: obj.duration }),
+			};
+		})
+		.filter((b): b is Bookmark => b !== null);
+}
 
 class StorageService {
 	private projectsAdapter: IndexedDBAdapter<SerializedProject>;
@@ -137,7 +160,7 @@ class StorageService {
 						? { ...track, isMain: track.isMain ?? false } // legacy: isMain was optional
 						: track,
 				),
-				bookmarks: scene.bookmarks ?? [],
+				bookmarks: normalizeBookmarks({ raw: scene.bookmarks }),
 				createdAt: new Date(scene.createdAt),
 				updatedAt: new Date(scene.updatedAt),
 			})) ?? [];
