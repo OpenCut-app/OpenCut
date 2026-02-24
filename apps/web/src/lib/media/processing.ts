@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import type { MediaAsset } from "@/types/assets";
 import { getMediaTypeFromFile } from "@/lib/media/media-utils";
+import { getFileSizeLimitError } from "@/lib/media/file-size-validation";
 import { getVideoInfo } from "./mediabunny";
 import { Input, ALL_FORMATS, BlobSource, VideoSampleSink } from "mediabunny";
 
@@ -163,6 +164,16 @@ export async function processMediaAssets({
 
 		if (!fileType) {
 			toast.error(`Unsupported file type: ${file.name}`);
+			continue;
+		}
+
+		const fileSizeLimitError = getFileSizeLimitError({
+			fileName: file.name,
+			fileSize: file.size,
+			mediaType: fileType,
+		});
+		if (fileSizeLimitError) {
+			toast.error(fileSizeLimitError);
 			continue;
 		}
 
