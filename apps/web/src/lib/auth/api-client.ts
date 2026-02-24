@@ -147,6 +147,7 @@ export const backendAuthApi = {
 			body: { username, password },
 		}),
 	register: ({
+		username,
 		email,
 		firstname,
 		lastname,
@@ -154,6 +155,7 @@ export const backendAuthApi = {
 		role = 1,
 		organisation_name,
 	}: {
+		username: string;
 		email: string;
 		firstname: string;
 		lastname: string;
@@ -164,7 +166,7 @@ export const backendAuthApi = {
 		request<{ message: string; token: string; user: TBackendUser }>({
 			path: "/auth/user/register",
 			method: "POST",
-			body: { email, firstname, lastname, password, role, organisation_name },
+			body: { username, email, firstname, lastname, password, role, organisation_name },
 		}),
 	refresh: () =>
 		request<{ token: string; user: TBackendUser }>({

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const PUBLIC_PATH_PREFIXES = ["/auth", "/privacy", "/terms"];
 const PUBLIC_EXACT_PATHS = ["/robots.txt", "/sitemap.xml", "/manifest.json"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const isPublicPath =
 		PUBLIC_EXACT_PATHS.includes(pathname) ||

@@ -363,8 +363,16 @@ class StorageService {
 	}
 
 	async clearAllData(): Promise<void> {
-		await this.projectsAdapter.clear();
-		// project-specific media and timelines cleaned up when projects are deleted
+		const projectIds = await this.projectsAdapter.list();
+
+		await Promise.all(
+			projectIds.map((projectId) => this.deleteProjectMedia({ projectId })),
+		);
+
+		await Promise.all([
+			this.projectsAdapter.clear(),
+			this.savedSoundsAdapter.clear(),
+		]);
 	}
 
 	async getStorageInfo(): Promise<{

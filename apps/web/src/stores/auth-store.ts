@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { backendAuthApi, type TBackendUser } from "@/lib/auth/api-client";
 import { authSession } from "@/lib/auth/session";
+import { storageService } from "@/services/storage/service";
 
 type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated";
 
@@ -125,6 +126,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 		} catch {
 			// Clear local state even if backend logout is unavailable/misconfigured.
 		} finally {
+			try {
+				await storageService.clearAllData();
+			} catch (error) {
+				console.error("Failed to clear local data during logout:", error);
+			}
 			clearAuthState({ set });
 		}
 	},

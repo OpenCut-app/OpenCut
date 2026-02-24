@@ -24,7 +24,7 @@ import {
 	SelectContent,
 	SelectItem,
 } from "@/components/ui/select";
-import { OcFontWeightIcon } from "@opencut/ui/icons";
+import { OcFontWeightIcon } from "@/ui/icons";
 import { Label } from "@/components/ui/label";
 
 export function TextProperties({

@@ -84,7 +84,15 @@ const VIEW_MODE_OPTIONS = [
 ];
 
 export default function ProjectsPage() {
-	const { searchQuery, sortKey, sortOrder, viewMode } = useProjectsStore();
+	const {
+		searchQuery,
+		sortKey,
+		sortOrder,
+		viewMode,
+		selectedProjectIds,
+		setSelectedProjects,
+		clearSelectedProjects,
+	} = useProjectsStore();
 	const editor = useEditor();
 	const authStatus = useAuthStore((state) => state.status);
 
@@ -106,6 +114,31 @@ export default function ProjectsPage() {
 
 	const isLoading = editor.project.getIsLoading();
 	const isInitialized = editor.project.getIsInitialized();
+
+	useEffect(() => {
+		if (authStatus !== "authenticated") {
+			clearSelectedProjects();
+			return;
+		}
+
+		if (isLoading || !isInitialized) {
+			return;
+		}
+
+		if (selectedProjectIds.length > 0 || projectsToDisplay.length === 0) {
+			return;
+		}
+
+		setSelectedProjects({ projectIds: [projectsToDisplay[0].id] });
+	}, [
+		authStatus,
+		clearSelectedProjects,
+		isInitialized,
+		isLoading,
+		projectsToDisplay,
+		selectedProjectIds.length,
+		setSelectedProjects,
+	]);
 
 	return (
 		<div className="bg-background min-h-screen">

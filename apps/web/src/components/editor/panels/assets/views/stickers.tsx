@@ -34,7 +34,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { OcSlidersVerticalIcon } from "@opencut/ui/icons";
+import { OcSlidersVerticalIcon } from "@/ui/icons";
 import type { StickerCategory } from "@/types/stickers";
 import { STICKER_CATEGORIES } from "@/constants/sticker-constants";
 import { parseStickerId } from "@/lib/stickers/sticker-id";
