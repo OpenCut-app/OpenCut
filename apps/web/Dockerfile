@@ -6,6 +6,7 @@ WORKDIR /app
 
 ARG FREESOUND_CLIENT_ID
 ARG FREESOUND_API_KEY
+ARG MARBLE_WORKSPACE_KEY
 
 COPY package.json package.json
 COPY bun.lock bun.lock
@@ -31,7 +32,7 @@ ENV UPSTASH_REDIS_REST_URL="http://localhost:8079"
 ENV UPSTASH_REDIS_REST_TOKEN="example_token"
 ENV NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ENV NEXT_PUBLIC_MARBLE_API_URL="https://api.marblecms.com"
-ENV MARBLE_WORKSPACE_KEY="build-placeholder"
+ENV MARBLE_WORKSPACE_KEY=${MARBLE_WORKSPACE_KEY:-cmd4iw9mm0006l804kwqv0k46}
 ENV CLOUDFLARE_ACCOUNT_ID="build-placeholder"
 ENV R2_ACCESS_KEY_ID="build-placeholder"
 ENV R2_SECRET_ACCESS_KEY="build-placeholder"
