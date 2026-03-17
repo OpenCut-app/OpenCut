@@ -504,17 +504,15 @@ function AudioItem({ sound, isPlaying, onPlay }: AudioItemProps) {
 		onPlay({ sound });
 	};
 
-	const handleSaveClick = ({
-		stopPropagation,
-	}: React.MouseEvent<HTMLButtonElement>) => {
-		stopPropagation();
+	const handleSaveClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+		e.stopPropagation();
 		toggleSavedSound({ soundEffect: sound });
 	};
 
-	const handleAddToTimeline = async ({
-		stopPropagation,
-	}: React.MouseEvent<HTMLButtonElement>) => {
-		stopPropagation();
+	const handleAddToTimeline = async (
+		e: React.MouseEvent<HTMLButtonElement>,
+	) => {
+		e.stopPropagation();
 		await addSoundToTimeline({ sound });
 	};
 
