@@ -2,8 +2,15 @@ import { SITE_URL } from "@/constants/site-constants";
 import { getPosts } from "@/lib/blog/query";
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const data = await getPosts();
+	let data: Awaited<ReturnType<typeof getPosts>> | null = null;
+	try {
+		data = await getPosts();
+	} catch {
+		// CMS unavailable (e.g. during build), skip blog posts in sitemap
+	}
 
 	const postPages: MetadataRoute.Sitemap =
 		data?.posts?.map((post) => ({

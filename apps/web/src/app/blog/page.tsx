@@ -5,6 +5,8 @@ import { Separator } from "@/components/ui/separator";
 import { getPosts } from "@/lib/blog/query";
 import type { Post } from "@/types/blog";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
 	title: "Blog - OpenCut",
 	description:

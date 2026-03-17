@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { getPosts, getSinglePost, processHtmlContent } from "@/lib/blog/query";
 import type { Author, Post } from "@/types/blog";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -56,12 +58,16 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-	const data = await getPosts();
-	if (!data || !data.posts.length) return [];
+	try {
+		const data = await getPosts();
+		if (!data || !data.posts.length) return [];
 
-	return data.posts.map((post) => ({
-		slug: post.slug,
-	}));
+		return data.posts.map((post) => ({
+			slug: post.slug,
+		}));
+	} catch {
+		return [];
+	}
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
