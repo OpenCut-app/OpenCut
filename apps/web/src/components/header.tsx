@@ -68,8 +68,11 @@ export function Header() {
 							<ContextMenuItem
 								onClick={async () => {
 									try {
-										const res = await fetch(DEFAULT_LOGO_URL);
-										const svg = await res.text();
+										const response = await fetch(DEFAULT_LOGO_URL);
+										if (!response.ok) {
+											throw new Error(`Failed to fetch SVG: ${response.status}`);
+										}
+										const svg = await response.text();
 										await navigator.clipboard.writeText(svg);
 										toast.success("SVG copied to clipboard");
 									} catch {
