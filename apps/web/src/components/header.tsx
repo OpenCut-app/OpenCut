@@ -23,6 +23,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "./ui/context-menu";
+import { toast } from "sonner";
 
 export function Header() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -66,9 +67,14 @@ export function Header() {
 						<ContextMenuContent>
 							<ContextMenuItem
 								onClick={async () => {
-									const res = await fetch(DEFAULT_LOGO_URL);
-									const svg = await res.text();
-									await navigator.clipboard.writeText(svg);
+									try {
+										const res = await fetch(DEFAULT_LOGO_URL);
+										const svg = await res.text();
+										await navigator.clipboard.writeText(svg);
+										toast.success("SVG copied to clipboard");
+									} catch {
+										toast.error("Failed to copy SVG to clipboard");
+									}
 								}}
 							>
 								<HugeiconsIcon icon={Copy01Icon} />
