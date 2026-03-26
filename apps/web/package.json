@@ -61,7 +61,7 @@
     "pg": "^8.16.2",
     "postgres": "^3.4.5",
     "radix-ui": "^1.4.3",
-    "react": "^19.0.0",
+    "react": "19.2.4",
     "react-day-picker": "^8.10.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.0",

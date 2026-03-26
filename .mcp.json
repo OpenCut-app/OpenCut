@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "opencut": {
+      "command": "bun",
+      "args": ["run", "packages/mcp-server/src/index.ts"],
+      "env": {
+        "PATH": "/Users/yamauchirintarou/.bun/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}
