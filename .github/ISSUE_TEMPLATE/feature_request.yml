@@ -5,7 +5,7 @@ labels: enhancement
 body:
   - type: markdown
     attributes:
-      value: Please make sure that no duplicated issues has already been delivered.
+      value: Please make sure that no duplicate issues have already been submitted.
   - type: textarea
     id: problem
     attributes:
