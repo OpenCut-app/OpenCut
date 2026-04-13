@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { KeyboardEvent, MouseEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { EditorCore } from "@/core";
 import { MigrationDialog } from "@/components/editor/dialogs/migration-dialog";
@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEditor } from "@/hooks/use-editor";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { useProjectsStore } from "./store";
 import type {
 	TProjectMetadata,
@@ -532,45 +533,37 @@ function NewProjectButton() {
 function ImportProjectButton() {
 	const editor = useEditor();
 	const router = useRouter();
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
-		if (!file) return;
+	const { openFilePicker, fileInputProps } = useFileUpload({
+		accept: ".json,.opencut.json",
+		multiple: false,
+		onFilesSelected: async (files) => {
+			const file = files[0];
+			if (!file) return;
 
-		try {
-			const json = await file.text();
-			const projectId = await editor.project.importProjectFromJSON({ json });
-			if (projectId) {
-				router.push(`/editor/${projectId}`);
+			try {
+				const json = await file.text();
+				const projectId = await editor.project.importProjectFromJSON({ json });
+				if (projectId) {
+					router.push(`/editor/${projectId}`);
+				}
+			} catch (error) {
+				toast.error("Failed to read file", {
+					description:
+						error instanceof Error ? error.message : "Please try again",
+				});
 			}
-		} catch (error) {
-			toast.error("Failed to read file", {
-				description:
-					error instanceof Error ? error.message : "Please try again",
-			});
-		}
-
-		// Reset the input so the same file can be re-selected
-		if (fileInputRef.current) {
-			fileInputRef.current.value = "";
-		}
-	};
+		},
+	});
 
 	return (
 		<>
-			<input
-				ref={fileInputRef}
-				type="file"
-				accept=".json,.opencut.json"
-				className="hidden"
-				onChange={handleImport}
-			/>
+			<input {...fileInputProps} />
 			<Button
 				size="lg"
 				variant="outline"
 				className="flex px-5 md:px-6"
-				onClick={() => fileInputRef.current?.click()}
+				onClick={openFilePicker}
 			>
 				<HugeiconsIcon icon={Upload01Icon} className="size-4" />
 				<span className="text-sm font-medium hidden md:block">Import</span>

@@ -715,7 +715,9 @@ export class ProjectManager {
 				timelineViewState: project.timelineViewState,
 			};
 
-			const mediaAssets = this.editor.media.getAssets();
+			const mediaAssets = await storageService.loadAllMediaAssets({
+				projectId: project.metadata.id,
+			});
 			const mediaManifest: ExportedMediaManifestEntry[] = mediaAssets.map(
 				(asset) => ({
 					mediaId: asset.id,
@@ -864,10 +866,18 @@ export class ProjectManager {
 			if (
 				!parsed.project ||
 				!parsed.project.metadata ||
-				!parsed.project.scenes
+				!parsed.project.scenes ||
+				parsed.project.scenes.length === 0
 			) {
 				toast.error("Invalid project file", {
 					description: "The file does not contain a valid OpenCut project.",
+				});
+				return null;
+			}
+
+			if (parsed.schema_version !== EXPORT_SCHEMA_VERSION) {
+				toast.error("Incompatible project file", {
+					description: `Unsupported schema version ${parsed.schema_version}, expected ${EXPORT_SCHEMA_VERSION}.`,
 				});
 				return null;
 			}
