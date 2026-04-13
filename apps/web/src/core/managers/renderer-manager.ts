@@ -136,7 +136,7 @@ export class RendererManager {
 		onProgress?: ({ progress }: { progress: number }) => void;
 		onCancel?: () => boolean;
 	}): Promise<ExportResult> {
-		const { format, quality, fps, includeAudio } = options;
+		const { format, quality, fps, includeAudio, width: overrideWidth, height: overrideHeight } = options;
 
 		try {
 			const tracks = this.editor.scenes.getActiveScene().tracks;
@@ -153,7 +153,10 @@ export class RendererManager {
 			}
 
 			const exportFps = fps ?? activeProject.settings.fps;
-			const canvasSize = activeProject.settings.canvasSize;
+			const canvasSize = {
+				width: overrideWidth ?? activeProject.settings.canvasSize.width,
+				height: overrideHeight ?? activeProject.settings.canvasSize.height,
+			};
 
 			let audioBuffer: AudioBuffer | null = null;
 			if (includeAudio) {

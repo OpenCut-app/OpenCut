@@ -23,8 +23,11 @@ import { Check, Copy, Download, RotateCcw } from "lucide-react";
 import {
 	EXPORT_FORMAT_VALUES,
 	EXPORT_QUALITY_VALUES,
+	PLATFORM_PRESET_VALUES,
+	PLATFORM_PRESETS,
 	type ExportFormat,
 	type ExportQuality,
+	type PlatformPreset,
 } from "@/lib/export";
 import {
 	Section,
@@ -41,6 +44,12 @@ function isExportFormat(value: string): value is ExportFormat {
 
 function isExportQuality(value: string): value is ExportQuality {
 	return EXPORT_QUALITY_VALUES.some((qualityValue) => qualityValue === value);
+}
+
+function isPlatformPreset(value: string): value is PlatformPreset {
+	return PLATFORM_PRESET_VALUES.some(
+		(presetValue) => presetValue === value,
+	);
 }
 
 export function ExportButton() {
@@ -101,6 +110,8 @@ function ExportPopover({
 	const activeProject = useEditor((e) => e.project.getActive());
 	const exportState = useEditor((e) => e.project.getExportState());
 	const { isExporting, progress, result: exportResult } = exportState;
+	const [platformPreset, setPlatformPreset] =
+		useState<PlatformPreset>("custom");
 	const [format, setFormat] = useState<ExportFormat>(
 		DEFAULT_EXPORT_OPTIONS.format,
 	);
@@ -111,8 +122,23 @@ function ExportPopover({
 		DEFAULT_EXPORT_OPTIONS.includeAudio ?? true,
 	);
 
+	const handlePlatformPresetChange = (value: string) => {
+		if (!isPlatformPreset(value)) return;
+		setPlatformPreset(value);
+		if (value !== "custom") {
+			const preset = PLATFORM_PRESETS[value];
+			setFormat(preset.format);
+			setQuality(preset.quality);
+		}
+	};
+
 	const handleExport = async () => {
 		if (!activeProject) return;
+
+		const presetConfig =
+			platformPreset !== "custom"
+				? PLATFORM_PRESETS[platformPreset]
+				: undefined;
 
 		const result = await editor.project.export({
 			options: {
@@ -120,6 +146,8 @@ function ExportPopover({
 				quality,
 				fps: activeProject.settings.fps,
 				includeAudio: shouldIncludeAudio,
+				width: presetConfig?.width,
+				height: presetConfig?.height,
 			},
 		});
 
@@ -165,6 +193,63 @@ function ExportPopover({
 								<div className="flex flex-col">
 									<Section
 										collapsible
+										defaultOpen
+										showTopBorder={false}
+									>
+										<SectionHeader>
+											<SectionTitle>Platform</SectionTitle>
+										</SectionHeader>
+										<SectionContent>
+											<RadioGroup
+												value={platformPreset}
+												onValueChange={handlePlatformPresetChange}
+											>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="custom" id="custom" />
+													<Label htmlFor="custom">Custom</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="youtube" id="youtube" />
+													<Label htmlFor="youtube">
+														{PLATFORM_PRESETS.youtube.label}
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="tiktok" id="tiktok" />
+													<Label htmlFor="tiktok">
+														{PLATFORM_PRESETS.tiktok.label}
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem
+														value="instagram_reels"
+														id="instagram_reels"
+													/>
+													<Label htmlFor="instagram_reels">
+														{PLATFORM_PRESETS.instagram_reels.label}
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem
+														value="instagram_post"
+														id="instagram_post"
+													/>
+													<Label htmlFor="instagram_post">
+														{PLATFORM_PRESETS.instagram_post.label}
+													</Label>
+												</div>
+												<div className="flex items-center space-x-2">
+													<RadioGroupItem value="twitter" id="twitter" />
+													<Label htmlFor="twitter">
+														{PLATFORM_PRESETS.twitter.label}
+													</Label>
+												</div>
+											</RadioGroup>
+										</SectionContent>
+									</Section>
+
+									<Section
+										collapsible
 										defaultOpen={false}
 										showTopBorder={false}
 									>
@@ -177,6 +262,7 @@ function ExportPopover({
 												onValueChange={(value) => {
 													if (isExportFormat(value)) {
 														setFormat(value);
+														setPlatformPreset("custom");
 													}
 												}}
 											>
@@ -206,6 +292,7 @@ function ExportPopover({
 												onValueChange={(value) => {
 													if (isExportQuality(value)) {
 														setQuality(value);
+														setPlatformPreset("custom");
 													}
 												}}
 											>
