@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { KeyboardEvent, MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { EditorCore } from "@/core";
 import { MigrationDialog } from "@/components/editor/dialogs/migration-dialog";
@@ -45,6 +45,8 @@ import {
 	Edit03Icon,
 	ArrowDown02Icon,
 	InformationCircleIcon,
+	Download04Icon,
+	Upload04Icon,
 } from "@hugeicons/core-free-icons";
 import { OcVideoIcon } from "@/components/icons";
 import { Label } from "@/components/ui/label";
@@ -183,6 +185,7 @@ function ProjectsHeader() {
 
 				<div className="flex items-center gap-3 md:gap-4">
 					<SearchBar className="hidden md:block" />
+					<ImportProjectButton />
 					<NewProjectButton />
 				</div>
 			</div>
@@ -526,6 +529,44 @@ function NewProjectButton() {
 	);
 }
 
+function ImportProjectButton() {
+	const editor = useEditor();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		await editor.project.importProjectFromFile({ file });
+
+		// Reset the input so the same file can be imported again
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
+	};
+
+	return (
+		<>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept=".opencut"
+				onChange={handleImport}
+				className="hidden"
+			/>
+			<Button
+				size="lg"
+				variant="outline"
+				className="flex px-5 md:px-6"
+				onClick={() => fileInputRef.current?.click()}
+			>
+				<HugeiconsIcon icon={Upload04Icon} className="size-4" />
+				<span className="text-sm font-medium hidden md:block">Import</span>
+			</Button>
+		</>
+	);
+}
+
 function ProjectItem({
 	project,
 	allProjectIds,
@@ -554,6 +595,9 @@ function ProjectItem({
 	const handleRename = () => setIsRenameDialogOpen(true);
 	const handleDuplicate = async () => {
 		await duplicateProjects({ editor, ids: [project.id] });
+	};
+	const handleExport = async () => {
+		await editor.project.exportProjectToFile({ id: project.id });
 	};
 	const handleDeleteClick = () => setIsDeleteDialogOpen(true);
 	const handleInfoClick = () => setIsInfoDialogOpen(true);
@@ -674,6 +718,7 @@ function ProjectItem({
 					variant="list"
 					onRenameClick={handleRename}
 					onDuplicateClick={handleDuplicate}
+					onExportClick={handleExport}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
 				/>
@@ -715,6 +760,7 @@ function ProjectItem({
 										onOpenChange={setIsDropdownOpen}
 										onRenameClick={handleRename}
 										onDuplicateClick={handleDuplicate}
+										onExportClick={handleExport}
 										onDeleteClick={handleDeleteClick}
 										onInfoClick={handleInfoClick}
 									/>
@@ -728,6 +774,7 @@ function ProjectItem({
 				<ProjectContextMenuContent
 					onRenameClick={handleRename}
 					onDuplicateClick={handleDuplicate}
+					onExportClick={handleExport}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
 				/>
@@ -762,11 +809,13 @@ function ProjectItem({
 function ProjectContextMenuContent({
 	onRenameClick,
 	onDuplicateClick,
+	onExportClick,
 	onDeleteClick,
 	onInfoClick,
 }: {
 	onRenameClick: () => void;
 	onDuplicateClick: () => void;
+	onExportClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
 }) {
@@ -783,6 +832,12 @@ function ProjectContextMenuContent({
 				onClick={onDuplicateClick}
 			>
 				Duplicate
+			</ContextMenuItem>
+			<ContextMenuItem
+				icon={<HugeiconsIcon icon={Download04Icon} />}
+				onClick={onExportClick}
+			>
+				Export
 			</ContextMenuItem>
 			<ContextMenuItem
 				icon={<HugeiconsIcon icon={InformationCircleIcon} />}
@@ -808,6 +863,7 @@ function ProjectMenu({
 	variant = "grid",
 	onRenameClick,
 	onDuplicateClick,
+	onExportClick,
 	onDeleteClick,
 	onInfoClick,
 }: {
@@ -816,6 +872,7 @@ function ProjectMenu({
 	variant?: "grid" | "list";
 	onRenameClick: () => void;
 	onDuplicateClick: () => void;
+	onExportClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
 }) {
@@ -847,6 +904,11 @@ function ProjectMenu({
 
 	const handleDuplicate = () => {
 		onDuplicateClick();
+		onOpenChange(false);
+	};
+
+	const handleExport = () => {
+		onExportClick();
 		onOpenChange(false);
 	};
 
@@ -901,6 +963,10 @@ function ProjectMenu({
 				<DropdownMenuItem onClick={handleDuplicate}>
 					<HugeiconsIcon icon={Copy01Icon} />
 					Duplicate
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={handleExport}>
+					<HugeiconsIcon icon={Download04Icon} />
+					Export
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={handleInfoClick}>
 					<HugeiconsIcon icon={InformationCircleIcon} />
