@@ -13,11 +13,73 @@ export const EXPORT_FORMAT_VALUES = ["mp4", "webm"] as const;
 export type ExportFormat = (typeof EXPORT_FORMAT_VALUES)[number];
 export type ExportQuality = (typeof EXPORT_QUALITY_VALUES)[number];
 
+export const PLATFORM_PRESET_VALUES = [
+	"custom",
+	"youtube",
+	"tiktok",
+	"instagram_reels",
+	"instagram_post",
+	"twitter",
+] as const;
+
+export type PlatformPreset = (typeof PLATFORM_PRESET_VALUES)[number];
+
+export interface PlatformPresetConfig {
+	label: string;
+	width: number;
+	height: number;
+	format: ExportFormat;
+	quality: ExportQuality;
+}
+
+export const PLATFORM_PRESETS: Record<
+	Exclude<PlatformPreset, "custom">,
+	PlatformPresetConfig
+> = {
+	youtube: {
+		label: "YouTube (1920x1080)",
+		width: 1920,
+		height: 1080,
+		format: "mp4",
+		quality: "very_high",
+	},
+	tiktok: {
+		label: "TikTok (1080x1920)",
+		width: 1080,
+		height: 1920,
+		format: "mp4",
+		quality: "high",
+	},
+	instagram_reels: {
+		label: "Instagram Reels (1080x1920)",
+		width: 1080,
+		height: 1920,
+		format: "mp4",
+		quality: "high",
+	},
+	instagram_post: {
+		label: "Instagram Post (1080x1080)",
+		width: 1080,
+		height: 1080,
+		format: "mp4",
+		quality: "high",
+	},
+	twitter: {
+		label: "Twitter/X (1280x720)",
+		width: 1280,
+		height: 720,
+		format: "mp4",
+		quality: "high",
+	},
+};
+
 export interface ExportOptions {
 	format: ExportFormat;
 	quality: ExportQuality;
 	fps?: FrameRate;
 	includeAudio?: boolean;
+	width?: number;
+	height?: number;
 }
 
 export interface ExportResult {
