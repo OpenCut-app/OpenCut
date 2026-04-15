@@ -20,6 +20,16 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTimelineZoom } from "@/hooks/timeline/use-timeline-zoom";
 import {
 	useCallback,
@@ -758,6 +768,7 @@ function TimelineTrackRows({
 		[scene],
 	);
 	const { selectedElements } = useElementSelection();
+	const [trackToDelete, setTrackToDelete] = useState<TimelineTrack | null>(null);
 	const tracksWithSelection = useMemo(
 		() => new Set(selectedElements.map((el) => el.trackId)),
 		[selectedElements],
@@ -864,7 +875,7 @@ function TimelineTrackRows({
 								icon={<HugeiconsIcon icon={Delete02Icon} />}
 								onClick={(event: React.MouseEvent) => {
 									event.stopPropagation();
-									timeline.removeTrack({ trackId: track.id });
+									setTrackToDelete(track);
 								}}
 								variant="destructive"
 							>
@@ -874,6 +885,30 @@ function TimelineTrackRows({
 					</ContextMenuContent>
 				</ContextMenu>
 			))}
+			{trackToDelete && (
+				<AlertDialog open onOpenChange={(open) => !open && setTrackToDelete(null)}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete track?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will remove {trackToDelete.elements.length} element{trackToDelete.elements.length === 1 ? "" : "s"}.
+								This action cannot be undone.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={() => {
+									timeline.removeTrack({ trackId: trackToDelete.id });
+									setTrackToDelete(null);
+								}}
+							>
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			)}
 		</>
 	);
 }
