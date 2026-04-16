@@ -6,10 +6,20 @@ import { generateUUID } from "@/utils/id";
 import { videoCache } from "@/services/video-cache/service";
 import { BatchCommand, RemoveMediaAssetCommand } from "@/lib/commands";
 
+const FRAME_CACHE_MAX_SIZE = 8;
+
+interface CachedFrame {
+	frame: ImageBitmap;
+	assetId: string;
+	timeMs: number;
+	lastAccessed: number;
+}
+
 export class MediaManager {
 	private assets: MediaAsset[] = [];
 	private isLoading = false;
 	private listeners = new Set<() => void>();
+	private frameCache: CachedFrame[] = [];
 
 	constructor(private editor: EditorCore) {}
 
@@ -120,6 +130,7 @@ export class MediaManager {
 
 	clearAllAssets(): void {
 		videoCache.clearAll();
+		this.evictAllFrames();
 
 		this.assets.forEach((asset) => {
 			if (asset.url) {
@@ -145,6 +156,70 @@ export class MediaManager {
 
 	isLoadingMedia(): boolean {
 		return this.isLoading;
+	}
+
+	/**
+	 * Returns a cached ImageBitmap for the given asset and time, or decodes and
+	 * caches a new one. The caller must NOT close the returned bitmap — the cache
+	 * owns its lifetime. Old entries are evicted (and closed) when the cache
+	 * exceeds FRAME_CACHE_MAX_SIZE.
+	 */
+	async getFrameAt({
+		assetId,
+		timeMs,
+		decode,
+	}: {
+		assetId: string;
+		timeMs: number;
+		decode: () => Promise<ImageBitmap>;
+	}): Promise<ImageBitmap> {
+		const existing = this.frameCache.find(
+			(c) => c.assetId === assetId && c.timeMs === timeMs,
+		);
+		if (existing) {
+			existing.lastAccessed = Date.now();
+			return existing.frame;
+		}
+
+		const frame = await decode();
+
+		if (this.frameCache.length >= FRAME_CACHE_MAX_SIZE) {
+			this.evictLruFrame();
+		}
+
+		this.frameCache.push({ frame, assetId, timeMs, lastAccessed: Date.now() });
+		return frame;
+	}
+
+	evictFramesForAsset({ assetId }: { assetId: string }): void {
+		const remaining: CachedFrame[] = [];
+		for (const entry of this.frameCache) {
+			if (entry.assetId === assetId) {
+				entry.frame.close();
+			} else {
+				remaining.push(entry);
+			}
+		}
+		this.frameCache = remaining;
+	}
+
+	private evictLruFrame(): void {
+		if (this.frameCache.length === 0) return;
+		let lruIndex = 0;
+		for (let i = 1; i < this.frameCache.length; i++) {
+			if (this.frameCache[i].lastAccessed < this.frameCache[lruIndex].lastAccessed) {
+				lruIndex = i;
+			}
+		}
+		this.frameCache[lruIndex].frame.close();
+		this.frameCache.splice(lruIndex, 1);
+	}
+
+	private evictAllFrames(): void {
+		for (const entry of this.frameCache) {
+			entry.frame.close();
+		}
+		this.frameCache = [];
 	}
 
 	subscribe(listener: () => void): () => void {
