@@ -11,6 +11,7 @@ struct LayerUniforms {
     opacity: f32,
     flip_x: f32,
     flip_y: f32,
+    _padding: vec2f, // pad to 48 bytes for universal 16-byte alignment
 }
 
 @group(0) @binding(0) var source_texture: texture_2d<f32>;
