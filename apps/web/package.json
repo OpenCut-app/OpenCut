@@ -93,6 +93,7 @@
     "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.4",
+    "patch-package": "^8.0.1",
     "postcss": "^8",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",

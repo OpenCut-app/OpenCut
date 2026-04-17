@@ -57,7 +57,13 @@ struct LayerUniformBuffer {
     opacity: f32,
     flip_x: f32,
     flip_y: f32,
+    _padding: [f32; 2], // pad to 48 bytes for 16-byte alignment (wgpu universal requirement)
 }
+
+const _: () = assert!(
+    std::mem::size_of::<LayerUniformBuffer>() % 16 == 0,
+    "LayerUniformBuffer must be 16-byte aligned for cross-device wgpu compatibility"
+);
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -549,6 +555,7 @@ impl Compositor {
                         opacity: layer.opacity,
                         flip_x: if layer.transform.flip_x { 1.0 } else { 0.0 },
                         flip_y: if layer.transform.flip_y { 1.0 } else { 0.0 },
+                        _padding: [0.0; 2],
                     }),
                     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 });
