@@ -29,6 +29,29 @@ import { DEFAULTS } from "@/lib/timeline/defaults";
 import { getElementFontFamilies } from "@/lib/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/lib/fps/utils";
 import type { MediaAsset } from "@/lib/media/types";
+import type { SerializedProject } from "@/services/storage/types";
+
+/** Schema version for the JSON export format. Increment when the format changes. */
+const EXPORT_SCHEMA_VERSION = 1;
+
+/** Manifest entry describing a media asset referenced by the project. */
+export interface ExportedMediaManifestEntry {
+	mediaId: string;
+	filename: string;
+	type: string;
+	size: number;
+	width?: number;
+	height?: number;
+	duration?: number;
+}
+
+/** Top-level shape of an exported OpenCut project JSON file. */
+export interface ExportedProjectJSON {
+	schema_version: number;
+	exported_at: string;
+	project: SerializedProject;
+	media: ExportedMediaManifestEntry[];
+}
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -636,6 +659,280 @@ export class ProjectManager {
 	setActiveProject({ project }: { project: TProject }): void {
 		this.active = project;
 		this.notify();
+	}
+
+	/**
+	 * Exports the active project as a JSON file and triggers a browser download.
+	 *
+	 * The exported file includes the full serialized project data and a media
+	 * manifest listing every media asset referenced by the project (filename,
+	 * type, dimensions, duration). Media file blobs are **not** included -- the
+	 * manifest allows users to re-link media after import.
+	 */
+	async exportProjectAsJSON(): Promise<void> {
+		if (!this.active) {
+			toast.error("No active project to export");
+			return;
+		}
+
+		try {
+			const scenes = this.editor.scenes.getScenes();
+			const project = {
+				...this.active,
+				scenes,
+				metadata: {
+					...this.active.metadata,
+					duration: getProjectDurationFromScenes({ scenes }),
+					updatedAt: new Date(),
+				},
+			};
+
+			const serializedScenes = project.scenes.map((scene) => ({
+				id: scene.id,
+				name: scene.name,
+				isMain: scene.isMain,
+				tracks: scene.tracks,
+				bookmarks: scene.bookmarks,
+				createdAt: scene.createdAt.toISOString(),
+				updatedAt: scene.updatedAt.toISOString(),
+			}));
+
+			const serializedProject: SerializedProject = {
+				metadata: {
+					id: project.metadata.id,
+					name: project.metadata.name,
+					thumbnail: project.metadata.thumbnail,
+					duration: project.metadata.duration,
+					createdAt: project.metadata.createdAt.toISOString(),
+					updatedAt: project.metadata.updatedAt.toISOString(),
+				},
+				scenes: serializedScenes,
+				currentSceneId: project.currentSceneId,
+				settings: project.settings,
+				version: project.version,
+				timelineViewState: project.timelineViewState,
+			};
+
+			const mediaAssets = await storageService.loadAllMediaAssets({
+				projectId: project.metadata.id,
+			});
+			const mediaManifest: ExportedMediaManifestEntry[] = mediaAssets.map(
+				(asset) => ({
+					mediaId: asset.id,
+					filename: asset.name,
+					type: asset.type,
+					size: asset.file.size,
+					width: asset.width,
+					height: asset.height,
+					duration: asset.duration,
+				}),
+			);
+
+			const exported: ExportedProjectJSON = {
+				schema_version: EXPORT_SCHEMA_VERSION,
+				exported_at: new Date().toISOString(),
+				project: serializedProject,
+				media: mediaManifest,
+			};
+
+			const json = JSON.stringify(exported, null, 2);
+			const blob = new Blob([json], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `${project.metadata.name.replace(/[^a-zA-Z0-9_-]/g, "_")}.opencut.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			toast.success("Project exported successfully");
+		} catch (error) {
+			console.error("Failed to export project:", error);
+			toast.error("Failed to export project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+		}
+	}
+
+	/**
+	 * Exports any project (by ID) as a JSON file and triggers a browser download.
+	 *
+	 * Unlike {@link exportProjectAsJSON}, this does not require the project to be
+	 * active. It loads the project data directly from storage.
+	 */
+	async exportProjectByIdAsJSON({ id }: { id: string }): Promise<void> {
+		try {
+			const result = await storageService.loadProject({ id });
+			if (!result) {
+				toast.error("Project not found");
+				return;
+			}
+
+			const project = result.project;
+
+			const serializedScenes = project.scenes.map((scene) => ({
+				id: scene.id,
+				name: scene.name,
+				isMain: scene.isMain,
+				tracks: scene.tracks,
+				bookmarks: scene.bookmarks,
+				createdAt: scene.createdAt.toISOString(),
+				updatedAt: scene.updatedAt.toISOString(),
+			}));
+
+			const serializedProject: SerializedProject = {
+				metadata: {
+					id: project.metadata.id,
+					name: project.metadata.name,
+					thumbnail: project.metadata.thumbnail,
+					duration: project.metadata.duration,
+					createdAt: project.metadata.createdAt.toISOString(),
+					updatedAt: project.metadata.updatedAt.toISOString(),
+				},
+				scenes: serializedScenes,
+				currentSceneId: project.currentSceneId,
+				settings: project.settings,
+				version: project.version,
+				timelineViewState: project.timelineViewState,
+			};
+
+			const mediaAssets = await storageService.loadAllMediaAssets({
+				projectId: id,
+			});
+			const mediaManifest: ExportedMediaManifestEntry[] = mediaAssets.map(
+				(asset) => ({
+					mediaId: asset.id,
+					filename: asset.name,
+					type: asset.type,
+					size: asset.file.size,
+					width: asset.width,
+					height: asset.height,
+					duration: asset.duration,
+				}),
+			);
+
+			const exported: ExportedProjectJSON = {
+				schema_version: EXPORT_SCHEMA_VERSION,
+				exported_at: new Date().toISOString(),
+				project: serializedProject,
+				media: mediaManifest,
+			};
+
+			const json = JSON.stringify(exported, null, 2);
+			const blob = new Blob([json], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `${project.metadata.name.replace(/[^a-zA-Z0-9_-]/g, "_")}.opencut.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			toast.success("Project exported successfully");
+		} catch (error) {
+			console.error("Failed to export project:", error);
+			toast.error("Failed to export project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+		}
+	}
+
+	/**
+	 * Imports a project from a JSON string previously created by {@link exportProjectAsJSON}.
+	 *
+	 * A new project is created with a fresh ID and timestamps. The timeline
+	 * structure (scenes, tracks, elements) is fully restored. Media files are
+	 * **not** included in the export, so elements that reference media assets
+	 * will need their media re-imported by the user.
+	 *
+	 * @returns The new project ID, or `null` if the import failed.
+	 */
+	async importProjectFromJSON({
+		json,
+	}: {
+		json: string;
+	}): Promise<string | null> {
+		try {
+			const parsed = JSON.parse(json) as ExportedProjectJSON;
+
+			if (
+				!parsed.project ||
+				!parsed.project.metadata ||
+				!parsed.project.scenes ||
+				parsed.project.scenes.length === 0
+			) {
+				toast.error("Invalid project file", {
+					description: "The file does not contain a valid OpenCut project.",
+				});
+				return null;
+			}
+
+			if (parsed.schema_version !== EXPORT_SCHEMA_VERSION) {
+				toast.error("Incompatible project file", {
+					description: `Unsupported schema version ${parsed.schema_version}, expected ${EXPORT_SCHEMA_VERSION}.`,
+				});
+				return null;
+			}
+
+			const imported = parsed.project;
+
+			const newProjectId = generateUUID();
+			const now = new Date();
+
+			const scenes = imported.scenes.map((scene) => ({
+				id: scene.id,
+				name: scene.name,
+				isMain: scene.isMain,
+				tracks: scene.tracks,
+				bookmarks: scene.bookmarks ?? [],
+				createdAt: now,
+				updatedAt: now,
+			}));
+
+			const newProject: TProject = {
+				metadata: {
+					id: newProjectId,
+					name: imported.metadata.name,
+					duration:
+						imported.metadata.duration ??
+						getProjectDurationFromScenes({ scenes }),
+					createdAt: now,
+					updatedAt: now,
+				},
+				scenes,
+				currentSceneId: imported.currentSceneId || scenes[0]?.id || "",
+				settings: imported.settings,
+				version: CURRENT_PROJECT_VERSION,
+				timelineViewState: imported.timelineViewState,
+			};
+
+			await storageService.saveProject({ project: newProject });
+			this.updateMetadata(newProject);
+
+			const mediaCount = parsed.media?.length ?? 0;
+			if (mediaCount > 0) {
+				toast.success("Project imported", {
+					description: `${mediaCount} media file(s) need to be re-imported.`,
+				});
+			} else {
+				toast.success("Project imported successfully");
+			}
+
+			return newProjectId;
+		} catch (error) {
+			console.error("Failed to import project:", error);
+			toast.error("Failed to import project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+			return null;
+		}
 	}
 
 	subscribe(listener: () => void): () => void {

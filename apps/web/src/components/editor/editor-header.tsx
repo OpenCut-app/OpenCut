@@ -21,7 +21,7 @@ import { DEFAULT_LOGO_URL } from "@/lib/site/brand";
 import { SOCIAL_LINKS } from "@/lib/site/social";
 import { toast } from "sonner";
 import { useEditor } from "@/hooks/use-editor";
-import { CommandIcon, Logout05Icon } from "@hugeicons/core-free-icons";
+import { CommandIcon, Download01Icon, Logout05Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ShortcutsDialog } from "./dialogs/shortcuts-dialog";
 import Image from "next/image";
@@ -128,6 +128,13 @@ function ProjectDropdown() {
 						icon={<HugeiconsIcon icon={Logout05Icon} />}
 					>
 						Exit project
+					</DropdownMenuItem>
+
+					<DropdownMenuItem
+						onClick={() => editor.project.exportProjectAsJSON()}
+						icon={<HugeiconsIcon icon={Download01Icon} />}
+					>
+						Export as JSON
 					</DropdownMenuItem>
 
 					<DropdownMenuItem

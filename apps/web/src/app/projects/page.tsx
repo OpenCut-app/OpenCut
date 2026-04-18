@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEditor } from "@/hooks/use-editor";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { useProjectsStore } from "./store";
 import type {
 	TProjectMetadata,
@@ -45,6 +46,8 @@ import {
 	Edit03Icon,
 	ArrowDown02Icon,
 	InformationCircleIcon,
+	Download01Icon,
+	Upload01Icon,
 } from "@hugeicons/core-free-icons";
 import { OcVideoIcon } from "@/components/icons";
 import { Label } from "@/components/ui/label";
@@ -184,6 +187,7 @@ function ProjectsHeader() {
 
 				<div className="flex items-center gap-3 md:gap-4">
 					<SearchBar className="hidden md:block" />
+					<ImportProjectButton />
 					<NewProjectButton />
 				</div>
 			</div>
@@ -527,6 +531,48 @@ function NewProjectButton() {
 	);
 }
 
+function ImportProjectButton() {
+	const editor = useEditor();
+	const router = useRouter();
+
+	const { openFilePicker, fileInputProps } = useFileUpload({
+		accept: ".json,.opencut.json",
+		multiple: false,
+		onFilesSelected: async (files) => {
+			const file = files[0];
+			if (!file) return;
+
+			try {
+				const json = await file.text();
+				const projectId = await editor.project.importProjectFromJSON({ json });
+				if (projectId) {
+					router.push(`/editor/${projectId}`);
+				}
+			} catch (error) {
+				toast.error("Failed to read file", {
+					description:
+						error instanceof Error ? error.message : "Please try again",
+				});
+			}
+		},
+	});
+
+	return (
+		<>
+			<input {...fileInputProps} />
+			<Button
+				size="lg"
+				variant="outline"
+				className="flex px-5 md:px-6"
+				onClick={openFilePicker}
+			>
+				<HugeiconsIcon icon={Upload01Icon} className="size-4" />
+				<span className="text-sm font-medium hidden md:block">Import</span>
+			</Button>
+		</>
+	);
+}
+
 function ProjectItem({
 	project,
 	allProjectIds,
@@ -558,6 +604,9 @@ function ProjectItem({
 	};
 	const handleDeleteClick = () => setIsDeleteDialogOpen(true);
 	const handleInfoClick = () => setIsInfoDialogOpen(true);
+	const handleExportJSON = async () => {
+		await editor.project.exportProjectByIdAsJSON({ id: project.id });
+	};
 	const handleDeleteConfirm = async () => {
 		await deleteProjects({ editor, ids: [project.id] });
 		setIsDeleteDialogOpen(false);
@@ -677,6 +726,7 @@ function ProjectItem({
 					onDuplicateClick={handleDuplicate}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
+					onExportJSONClick={handleExportJSON}
 				/>
 			)}
 		</div>
@@ -718,6 +768,7 @@ function ProjectItem({
 										onDuplicateClick={handleDuplicate}
 										onDeleteClick={handleDeleteClick}
 										onInfoClick={handleInfoClick}
+										onExportJSONClick={handleExportJSON}
 									/>
 								)}
 							</>
@@ -731,6 +782,7 @@ function ProjectItem({
 					onDuplicateClick={handleDuplicate}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
+					onExportJSONClick={handleExportJSON}
 				/>
 			</ContextMenu>
 
@@ -765,11 +817,13 @@ function ProjectContextMenuContent({
 	onDuplicateClick,
 	onDeleteClick,
 	onInfoClick,
+	onExportJSONClick,
 }: {
 	onRenameClick: () => void;
 	onDuplicateClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
+	onExportJSONClick: () => void;
 }) {
 	return (
 		<ContextMenuContent>
@@ -784,6 +838,12 @@ function ProjectContextMenuContent({
 				onClick={onDuplicateClick}
 			>
 				Duplicate
+			</ContextMenuItem>
+			<ContextMenuItem
+				icon={<HugeiconsIcon icon={Download01Icon} />}
+				onClick={onExportJSONClick}
+			>
+				Export as JSON
 			</ContextMenuItem>
 			<ContextMenuItem
 				icon={<HugeiconsIcon icon={InformationCircleIcon} />}
@@ -811,6 +871,7 @@ function ProjectMenu({
 	onDuplicateClick,
 	onDeleteClick,
 	onInfoClick,
+	onExportJSONClick,
 }: {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -819,6 +880,7 @@ function ProjectMenu({
 	onDuplicateClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
+	onExportJSONClick: () => void;
 }) {
 	const handleMenuClick = ({
 		event,
@@ -858,6 +920,11 @@ function ProjectMenu({
 
 	const handleInfoClick = () => {
 		onInfoClick();
+		onOpenChange(false);
+	};
+
+	const handleExportJSON = () => {
+		onExportJSONClick();
 		onOpenChange(false);
 	};
 
@@ -902,6 +969,10 @@ function ProjectMenu({
 				<DropdownMenuItem onClick={handleDuplicate}>
 					<HugeiconsIcon icon={Copy01Icon} />
 					Duplicate
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={handleExportJSON}>
+					<HugeiconsIcon icon={Download01Icon} />
+					Export as JSON
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={handleInfoClick}>
 					<HugeiconsIcon icon={InformationCircleIcon} />
