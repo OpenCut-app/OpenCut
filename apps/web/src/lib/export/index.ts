@@ -31,6 +31,9 @@ export interface ExportState {
 	isExporting: boolean;
 	progress: number;
 	result: ExportResult | null;
+	totalFrames?: number;
+	currentFrame?: number;
+	elapsedMs?: number;
 }
 
 export function getExportMimeType({

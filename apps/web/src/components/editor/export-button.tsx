@@ -34,6 +34,8 @@ import {
 } from "@/components/section";
 import { useEditor } from "@/hooks/use-editor";
 import { DEFAULT_EXPORT_OPTIONS } from "@/lib/export/defaults";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import type React from "react";
 
 function isExportFormat(value: string): value is ExportFormat {
 	return EXPORT_FORMAT_VALUES.some((formatValue) => formatValue === value);
@@ -89,6 +91,51 @@ export function ExportButton() {
 			</PopoverTrigger>
 			{hasProject && <ExportPopover onOpenChange={setIsExportPopoverOpen} />}
 		</Popover>
+	);
+}
+
+function formatDuration(ms: number): string {
+	const totalSeconds = Math.floor(ms / 1000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function ExportCancelDialog({
+	onConfirm,
+	trigger,
+}: {
+	onConfirm: () => void;
+	trigger: React.ReactNode;
+}) {
+	const [open, setOpen] = useState(false);
+
+	const handleConfirm = () => {
+		onConfirm();
+		setOpen(false);
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>{trigger}</DialogTrigger>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Cancel export?</DialogTitle>
+					<DialogDescription>
+						The video file is not yet complete. If you cancel now, you will not
+						get an output file. This cannot be undone.
+					</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<Button variant="outline" onClick={() => setOpen(false)}>
+						Continue exporting
+					</Button>
+					<Button variant="destructive" onClick={handleConfirm}>
+						Cancel export
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -261,27 +308,47 @@ function ExportPopover({
 							</>
 						)}
 
-						{isExporting && (
-							<div className="space-y-4 p-3">
-								<div className="flex flex-col gap-2">
-									<div className="flex items-center justify-between text-center">
-										<p className="text-muted-foreground text-sm">
-											{Math.round(progress * 100)}%
-										</p>
-										<p className="text-muted-foreground text-sm">100%</p>
-									</div>
-									<Progress value={progress * 100} className="w-full" />
-								</div>
+						{isExporting && (() => {
+							const { totalFrames = 0, currentFrame = 0, elapsedMs = 0 } = exportState;
+							const etaMs = progress > 0 && progress < 1
+								? Math.round((elapsedMs / progress) - elapsedMs)
+								: 0;
 
-								<Button
-									variant="outline"
-									className="w-full rounded-md"
-									onClick={handleCancel}
-								>
-									Cancel
-								</Button>
-							</div>
-						)}
+							return (
+								<div className="space-y-4 p-3">
+									<div className="flex flex-col gap-2">
+										<div className="flex items-center justify-between text-center">
+											<p className="text-muted-foreground text-sm">
+												{Math.round(progress * 100)}%
+											</p>
+											<p className="text-muted-foreground text-sm">100%</p>
+										</div>
+										<Progress value={progress * 100} className="w-full" />
+									</div>
+
+									<div className="flex flex-col gap-1 text-xs text-muted-foreground">
+										{totalFrames > 0 && (
+											<span>
+												Frame {currentFrame.toLocaleString()} / {totalFrames.toLocaleString()}
+											</span>
+										)}
+										<div className="flex justify-between">
+											<span>Elapsed {formatDuration(elapsedMs)}</span>
+											{etaMs > 0 && <span>~{formatDuration(etaMs)} remaining</span>}
+										</div>
+									</div>
+
+									<ExportCancelDialog
+										onConfirm={handleCancel}
+										trigger={
+											<Button variant="outline" className="w-full rounded-md">
+												Cancel
+											</Button>
+										}
+									/>
+								</div>
+							);
+						})()}
 					</div>
 				</>
 			)}

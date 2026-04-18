@@ -55,8 +55,12 @@ export class ProjectManager {
 		isExporting: false,
 		progress: 0,
 		result: null,
+		totalFrames: 0,
+		currentFrame: 0,
+		elapsedMs: 0,
 	};
 	private exportCancelRequested = false;
+	private exportStartTime = 0;
 
 	constructor(private editor: EditorCore) {}
 
@@ -207,13 +211,33 @@ export class ProjectManager {
 
 	async export({ options }: { options: ExportOptions }): Promise<ExportResult> {
 		this.exportCancelRequested = false;
-		this.exportState = { isExporting: true, progress: 0, result: null };
+		const activeProject = this.editor.project.getActive();
+		const duration = this.editor.timeline.getTotalDuration();
+		const exportFps = options.fps ?? activeProject.settings.fps;
+		const totalFrames = Math.round((duration / 1000) * exportFps);
+
+		this.exportStartTime = Date.now();
+		this.exportState = {
+			isExporting: true,
+			progress: 0,
+			result: null,
+			totalFrames,
+			currentFrame: 0,
+			elapsedMs: 0,
+		};
 		this.notify();
 
 		const result = await this.editor.renderer.exportProject({
 			options,
 			onProgress: ({ progress }) => {
-				this.exportState = { ...this.exportState, progress };
+				const elapsedMs = Date.now() - this.exportStartTime;
+				const currentFrame = Math.floor(progress * totalFrames);
+				this.exportState = {
+					...this.exportState,
+					progress,
+					currentFrame,
+					elapsedMs,
+				};
 				this.notify();
 			},
 			onCancel: () => this.exportCancelRequested,
@@ -223,6 +247,9 @@ export class ProjectManager {
 			isExporting: false,
 			progress: this.exportState.progress,
 			result,
+			totalFrames: this.exportState.totalFrames,
+			currentFrame: this.exportState.totalFrames,
+			elapsedMs: this.exportState.elapsedMs,
 		};
 		this.notify();
 
