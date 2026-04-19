@@ -26,7 +26,9 @@ import { PREVIEW_ZOOM_PRESETS } from "@/lib/preview/zoom";
 import { usePreviewViewport } from "./preview-viewport";
 import { GridPopover } from "./guide-popover";
 import { usePreviewStore } from "@/stores/preview-store";
-
+import { useKeyboardShortcutsHelp } from "@/hooks/use-keyboard-shortcuts-help";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Kbd } from "@/components/ui/kbd";
 export function PreviewToolbar({
 	onToggleFullscreen,
 }: {
@@ -135,14 +137,32 @@ function ZoomSelect() {
 
 function PlayPauseButton() {
 	const isPlaying = useEditor((e) => e.playback.getIsPlaying());
-
+	const { shortcuts } = useKeyboardShortcutsHelp();
+	const togglePlay = shortcuts.find(
+	item => item.action === "toggle-play"
+	);	
 	return (
-		<Button
-			variant="text"
-			size="icon"
-			onClick={() => invokeAction("toggle-play")}
-		>
-			<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
-		</Button>
+		<TooltipProvider duration={500}>
+			<Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="text"
+            size="icon"
+            onClick={() => invokeAction("toggle-play")}
+          >
+            <HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
+          </Button>
+        </TooltipTrigger>
+
+        <TooltipContent className="flex items-center gap-2">
+			<span> {togglePlay?.description} </span>
+			<div className="flex gap-1">
+				<Kbd>
+					{togglePlay?.keys?.join(" / ")}
+				</Kbd>
+			</div>
+		</TooltipContent>
+      </Tooltip>
+		</TooltipProvider>
 	);
 }
