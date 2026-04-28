@@ -137,7 +137,7 @@ export function TextEditOverlay({
 					textAlign: element.textAlign,
 					letterSpacing: `${canvasLetterSpacing}px`,
 					lineHeight,
-					color: "transparent",
+					color: element.color,
 					caretColor: element.color,
 					backgroundColor: shouldShowBackground ? bg.color : "transparent",
 					minHeight: lineHeightPx,
