@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { ThemeToggle } from "./theme-toggle";
+import { PaletteSelector } from "./palette-selector";
 import {
 	Copy01Icon,
 	Download01Icon,
@@ -57,7 +57,7 @@ export function Header() {
 							<Link href="/" className="flex items-center gap-3">
 								<Image
 									src={DEFAULT_LOGO_URL}
-									alt="OpenCut Logo"
+									alt="NeuralCut Logo"
 									className="invert dark:invert-0"
 									width={32}
 									height={32}
@@ -79,7 +79,7 @@ export function Header() {
 								onClick={() => {
 									const a = document.createElement("a");
 									a.href = DEFAULT_LOGO_URL;
-									a.download = "opencut-logo.svg";
+									a.download = "neuralcut-logo.svg";
 									a.click();
 								}}
 							>
@@ -130,7 +130,7 @@ export function Header() {
 								<ArrowRight className="size-4" />
 							</Button>
 						</Link>
-						<ThemeToggle />
+						<PaletteSelector />
 					</div>
 				</div>
 				<div
@@ -182,13 +182,8 @@ export function Header() {
 								</motion.div>
 							))}
 						</nav>
-						<ThemeToggle
-							className="absolute right-8 bottom-8 size-10"
-							iconClassName="!size-[1.2rem]"
-							onToggle={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-							}}
+						<PaletteSelector
+							className="absolute right-8 bottom-8 [&>button]:size-10 [&_.hugeicons-icon]:!size-[1.2rem]"
 						/>
 					</div>
 				</div>

@@ -17,7 +17,7 @@ export const baseMetaData: Metadata = {
 				url: SITE_INFO.openGraphImage,
 				width: 1200,
 				height: 630,
-				alt: "OpenCut Wordmark",
+				alt: "NeuralCut Wordmark",
 			},
 		],
 	},
@@ -25,7 +25,7 @@ export const baseMetaData: Metadata = {
 		card: "summary_large_image",
 		title: SITE_INFO.title,
 		description: SITE_INFO.description,
-		creator: "@opencutapp",
+		creator: "@neuralcut",
 		images: [SITE_INFO.twitterImage],
 	},
 	pinterest: {

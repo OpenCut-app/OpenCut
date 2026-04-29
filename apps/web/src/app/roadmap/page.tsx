@@ -51,7 +51,7 @@ const roadmapItems: RoadmapItem[] = [
 	{
 		title: "Native app (mobile/desktop)",
 		description:
-			"Native OpenCut apps for Mac, Windows, Linux, and iOS/Android.",
+			"Native NeuralCut apps for Mac, Windows, Linux, and iOS/Android.",
 		status: {
 			text: "Not started",
 			type: "default",
@@ -60,28 +60,28 @@ const roadmapItems: RoadmapItem[] = [
 ];
 
 export const metadata: Metadata = {
-	title: "Roadmap - OpenCut",
+	title: "Roadmap - NeuralCut",
 	description:
-		"See what's coming next for OpenCut - the free, open-source video editor that respects your privacy.",
+		"See what's coming next for NeuralCut - the free, open-source video editor that respects your privacy.",
 	openGraph: {
-		title: "OpenCut Roadmap - What's Coming Next",
+		title: "NeuralCut Roadmap - What's Coming Next",
 		description:
-			"See what's coming next for OpenCut - the free, open-source video editor that respects your privacy.",
+			"See what's coming next for NeuralCut - the free, open-source video editor that respects your privacy.",
 		type: "website",
 		images: [
 			{
 				url: "/open-graph/roadmap.jpg",
 				width: 1200,
 				height: 630,
-				alt: "OpenCut Roadmap",
+				alt: "NeuralCut Roadmap",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "OpenCut Roadmap - What's Coming Next",
+		title: "NeuralCut Roadmap - What's Coming Next",
 		description:
-			"See what's coming next for OpenCut - the free, open-source video editor that respects your privacy.",
+			"See what's coming next for NeuralCut - the free, open-source video editor that respects your privacy.",
 		images: ["/open-graph/roadmap.jpg"],
 	},
 };
@@ -90,7 +90,7 @@ export default function RoadmapPage() {
 	return (
 		<BasePage
 			title="Roadmap"
-			description={`What's coming next for OpenCut (last updated: ${LAST_UPDATED})`}
+			description={`What's coming next for NeuralCut (last updated: ${LAST_UPDATED})`}
 		>
 			<div className="mx-auto flex max-w-4xl flex-col gap-16">
 				<div className="flex flex-col gap-6">
@@ -100,7 +100,7 @@ export default function RoadmapPage() {
 				</div>
 				<GitHubContributeSection
 					title="Want to help?"
-					description="OpenCut is open source and built by the community. Every contribution,
+					description="NeuralCut is open source and built by the community. Every contribution,
           no matter how small, helps us build the best free video editor
           possible."
 				/>

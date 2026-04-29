@@ -47,6 +47,54 @@
   --sidebar-border: hsl(0 0% 85.1%);
   --sidebar-ring: hsl(0 0% 16.9%);
   --sidebar: hsl(0 0% 98%);
+  --export-ring: hsl(199, 89%, 60%);
+  --export-gradient-from: hsl(215, 85%, 54%);
+  --export-gradient-to: hsl(199, 91%, 59%);
+}
+
+[data-palette="neuralcut"] {
+  --background: hsl(220, 20%, 97%);
+  --foreground: hsl(217, 23%, 14%);
+  --card: hsl(220, 18%, 99%);
+  --card-foreground: hsl(217, 23%, 14%);
+  --popover: hsl(220, 18%, 99%);
+  --popover-hover: hsl(220, 15%, 94%);
+  --popover-foreground: hsl(217, 23%, 14%);
+  --primary: hsl(342, 89%, 64%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(342, 40%, 95%);
+  --secondary-border: hsl(342, 40%, 90%);
+  --secondary-foreground: hsl(342, 80%, 45%);
+  --muted: hsl(220, 10%, 85%);
+  --muted-foreground: hsl(220, 10%, 48%);
+  --accent: hsl(220, 15%, 94%);
+  --accent-foreground: hsl(217, 23%, 14%);
+  --destructive: hsl(0, 83%, 50%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --constructive: hsl(141, 71%, 48%);
+  --constructive-foreground: hsl(0, 0%, 100%);
+  --caution: hsl(38, 92%, 50%);
+  --caution-foreground: hsl(0, 0%, 10%);
+  --border: hsl(220, 12%, 90%);
+  --input: hsl(0, 0%, 100%);
+  --ring: hsl(342, 89%, 64%);
+  --chart-1: hsl(342 80% 55%);
+  --chart-2: hsl(217 40% 45%);
+  --chart-3: hsl(30 80% 55%);
+  --chart-4: hsl(308 31% 45%);
+  --chart-5: hsl(38 92% 55%);
+  --sidebar-background: hsl(220, 18%, 96%);
+  --sidebar-foreground: hsl(217, 23%, 14%);
+  --sidebar-primary: hsl(217, 23%, 14%);
+  --sidebar-primary-foreground: hsl(220, 12%, 90%);
+  --sidebar-accent: hsl(220, 10%, 90%);
+  --sidebar-accent-foreground: hsl(217, 23%, 14%);
+  --sidebar-border: hsl(220, 10%, 90%);
+  --sidebar-ring: hsl(217, 23%, 30%);
+  --sidebar: hsl(220, 20%, 98%);
+  --export-ring: hsl(342, 70%, 75%);
+  --export-gradient-from: hsl(342, 89%, 50%);
+  --export-gradient-to: hsl(342, 80%, 68%);
 }
 
 .panel {
@@ -97,6 +145,43 @@
   --sidebar-border: hsl(0 0% 20%);
   --sidebar-ring: hsl(0 0% 83.1%);
   --sidebar: hsl(0 0% 6%);
+  --export-ring: hsl(199, 89%, 60%);
+  --export-gradient-from: hsl(215, 85%, 54%);
+  --export-gradient-to: hsl(199, 91%, 59%);
+}
+
+.dark[data-palette="neuralcut"] {
+  --background: hsl(217, 23%, 14%);
+  --foreground: hsl(220, 20%, 93%);
+  --card: hsl(217, 20%, 17%);
+  --card-foreground: hsl(220, 20%, 93%);
+  --popover: hsl(217, 20%, 15%);
+  --popover-hover: hsl(217, 18%, 22%);
+  --popover-foreground: hsl(220, 20%, 95%);
+  --secondary: hsl(342, 25%, 18%);
+  --secondary-border: hsl(342, 25%, 23%);
+  --secondary-foreground: hsl(342, 80%, 72%);
+  --muted: hsl(217, 15%, 25%);
+  --muted-foreground: hsl(220, 10%, 55%);
+  --accent: hsl(217, 18%, 20%);
+  --accent-foreground: hsl(220, 20%, 93%);
+  --border: hsl(217, 18%, 22%);
+  --input: hsl(217, 20%, 16%);
+  --ring: hsl(342, 89%, 64%);
+  --caution: hsl(38, 92%, 60%);
+  --caution-foreground: hsl(0, 0%, 10%);
+  --sidebar-background: hsl(217, 22%, 11%);
+  --sidebar-foreground: hsl(220, 20%, 93%);
+  --sidebar-primary: hsl(342, 89%, 64%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(217, 15%, 20%);
+  --sidebar-accent-foreground: hsl(220, 20%, 93%);
+  --sidebar-border: hsl(217, 15%, 20%);
+  --sidebar-ring: hsl(342, 89%, 64%);
+  --sidebar: hsl(217, 22%, 12%);
+  --export-ring: hsl(342, 70%, 75%);
+  --export-gradient-from: hsl(342, 89%, 50%);
+  --export-gradient-to: hsl(342, 80%, 68%);
 }
 
 .dark .panel {
@@ -113,6 +198,42 @@
   --border: hsl(0 0% 18%);
   --input: hsl(0 0% 22%);
   --ring: hsl(0, 0%, 52%);
+}
+
+[data-palette="neuralcut"] .panel {
+  --background: hsl(220, 18%, 95%);
+  --foreground: hsl(217, 23%, 14%);
+  --card: hsl(220, 16%, 96%);
+  --card-foreground: hsl(217, 23%, 14%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(342, 35%, 93%);
+  --secondary-border: hsl(342, 35%, 88%);
+  --secondary-foreground: hsl(342, 80%, 42%);
+  --muted: hsl(220, 10%, 83%);
+  --muted-foreground: hsl(220, 10%, 45%);
+  --accent: hsl(220, 12%, 92%);
+  --accent-foreground: hsl(217, 23%, 14%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --constructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(220, 10%, 88%);
+  --input: hsl(220, 12%, 92%);
+  --ring: hsl(342, 89%, 64%);
+}
+
+.dark[data-palette="neuralcut"] .panel {
+  --background: hsl(217, 20%, 18%);
+  --foreground: hsl(220, 18%, 90%);
+  --card: hsl(217, 18%, 19%);
+  --card-foreground: hsl(220, 18%, 90%);
+  --secondary: hsl(342, 30%, 15%);
+  --secondary-border: hsl(342, 30%, 20%);
+  --secondary-foreground: hsl(342, 80%, 68%);
+  --muted: hsl(217, 12%, 28%);
+  --accent: hsl(217, 15%, 22%);
+  --accent-foreground: hsl(220, 18%, 90%);
+  --border: hsl(217, 15%, 24%);
+  --input: hsl(217, 15%, 24%);
+  --ring: hsl(342, 89%, 64%);
 }
 
 @layer base {
@@ -216,6 +337,10 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-export-ring: var(--export-ring);
+  --color-export-gradient-from: var(--export-gradient-from);
+  --color-export-gradient-to: var(--export-gradient-to);
 
   /* Animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;

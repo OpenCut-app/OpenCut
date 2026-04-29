@@ -18,7 +18,7 @@ export const SPONSORS: Sponsor[] = [
 		name: "Vercel",
 		url: "https://vercel.com?utm_source=opencut",
 		logo: "/logos/others/vercel.svg",
-		description: "Platform where we deploy and host OpenCut.",
+		description: "Platform where we deploy and host NeuralCut.",
 		invertOnDark: true,
 	},
 ];

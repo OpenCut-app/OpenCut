@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { FaDiscord } from "react-icons/fa6";
 import { ExportButton } from "./export-button";
 import { FeedbackPopover } from "@/lib/feedback/components/feedback-popover";
-import { ThemeToggle } from "../theme-toggle";
+import { PaletteSelector } from "../palette-selector";
 import { DEFAULT_LOGO_URL } from "@/lib/site/brand";
 import { SOCIAL_LINKS } from "@/lib/site/social";
 import { toast } from "sonner";
@@ -37,7 +37,7 @@ export function EditorHeader() {
 			<nav className="flex items-center gap-2">
 				<FeedbackPopover />
 				<ExportButton />
-				<ThemeToggle />
+				<PaletteSelector />
 			</nav>
 		</header>
 	);
