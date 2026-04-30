@@ -1,4 +1,3 @@
-import { ThemeProvider } from "next-themes";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "../components/ui/sonner";
@@ -8,6 +7,7 @@ import { baseMetaData } from "./metadata";
 import { BotIdClient } from "botid/client";
 import { webEnv } from "@/lib/env/web";
 import { Inter } from "next/font/google";
+import { NeuralCutThemeProvider } from "@/lib/themes/theme-provider";
 
 const siteFont = Inter({ subsets: ["latin"] });
 
@@ -40,11 +40,7 @@ export default function RootLayout({
 				)}
 			</head>
 			<body className={`${siteFont.className} font-sans antialiased`}>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="system"
-					disableTransitionOnChange={true}
-				>
+				<NeuralCutThemeProvider>
 					<TooltipProvider>
 						<Toaster />
 						<Script
@@ -61,7 +57,7 @@ export default function RootLayout({
 						/>
 						{children}
 					</TooltipProvider>
-				</ThemeProvider>
+				</NeuralCutThemeProvider>
 			</body>
 		</html>
 	);

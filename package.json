@@ -1,25 +1,25 @@
 {
-  "name": "opencut",
+  "name": "neuralcut",
   "packageManager": "bun@1.2.18",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "build:tools": "turbo run build --filter=@opencut/tools",
+    "build:tools": "turbo run build --filter=@neuralcut/tools",
     "build:wasm": "wasm-pack build rust/wasm --target bundler --out-dir pkg",
-    "build:web": "turbo run build --filter=@opencut/web",
-    "deploy:web": "turbo run deploy --filter=@opencut/web",
-    "dev:tools": "turbo run dev --filter=@opencut/tools",
+    "build:web": "turbo run build --filter=@neuralcut/web",
+    "deploy:web": "turbo run deploy --filter=@neuralcut/web",
+    "dev:tools": "turbo run dev --filter=@neuralcut/tools",
     "dev:wasm": "cargo watch -w rust/crates -w rust/wasm/src -s 'wasm-pack build rust/wasm --target bundler --out-dir pkg'",
-    "dev:web": "turbo run dev --filter=@opencut/web",
+    "dev:web": "turbo run dev --filter=@neuralcut/web",
     "format:web": "biome format apps/web/src/services/renderer --write --max-diagnostics=1000",
     "generate:fonts": "npx tsx apps/web/scripts/generate-font-sprites.ts",
     "lint:web": "biome lint apps/web/src --max-diagnostics=1000",
     "lint:web:fix": "biome lint apps/web/src --write --unsafe --max-diagnostics=1000",
-    "preview:web": "turbo run preview --filter=@opencut/web",
+    "preview:web": "turbo run preview --filter=@neuralcut/web",
     "publish:wasm": "bun run build:wasm && npm publish rust/wasm/pkg --access public",
-    "start:tools": "turbo run start --filter=@opencut/tools",
+    "start:tools": "turbo run start --filter=@neuralcut/tools",
     "test": "bun test"
   },
   "dependencies": {

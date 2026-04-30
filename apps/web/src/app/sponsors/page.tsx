@@ -9,13 +9,13 @@ import { LinkSquare02Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/utils/ui";
 
 export const metadata: Metadata = {
-	title: "Sponsors - OpenCut",
+	title: "Sponsors - NeuralCut",
 	description:
-		"Support OpenCut and help us build the future of free and open-source video editing.",
+		"Support NeuralCut and help us build the future of free and open-source video editing.",
 	openGraph: {
-		title: "Sponsors - OpenCut",
+		title: "Sponsors - NeuralCut",
 		description:
-			"Support OpenCut and help us build the future of free and open-source video editing.",
+			"Support NeuralCut and help us build the future of free and open-source video editing.",
 		type: "website",
 	},
 };
@@ -28,7 +28,7 @@ export default function SponsorsPage() {
 					Sponsors
 				</h1>
 				<p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed text-pretty">
-					Support OpenCut and help us build the future of privacy-first video
+					Support NeuralCut and help us build the future of privacy-first video
 					editing.
 				</p>
 			</div>

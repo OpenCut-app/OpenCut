@@ -1,7 +1,7 @@
-export const SITE_URL = "https://opencut.app";
+export const SITE_URL = "https://neuralcut.app";
 
 export const SITE_INFO = {
-	title: "OpenCut",
+	title: "NeuralCut",
 	description:
 		"A simple but powerful video editor that gets the job done. In your browser.",
 	url: SITE_URL,
