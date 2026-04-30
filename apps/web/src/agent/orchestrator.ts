@@ -33,6 +33,14 @@ const WRITE_TOOLS = new Set([
 	"update_keyframe_curve",
 ]);
 
+const PLAN_ONLY_TOOLS = new Set([
+	"submit_plan",
+	"ask_user",
+	"request_plan_approval",
+]);
+
+const EXECUTE_ONLY_TOOLS = new Set(["update_plan_step"]);
+
 interface APIResponse {
 	content: string;
 	toolCalls?: ToolCall[];
@@ -57,10 +65,16 @@ export async function run(
 		while (iterations < MAX_ITERATIONS) {
 			iterations++;
 
+			const liveMode = useAgentStore.getState().mode;
+			const liveContext: AgentContext = { ...context, mode: liveMode };
+
 			const response = await fetch("/api/agent/chat", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ messages: workingMessages, context }),
+				body: JSON.stringify({
+					messages: workingMessages,
+					context: liveContext,
+				}),
 			});
 
 			if (!response.ok) {
@@ -207,12 +221,43 @@ async function resolveToolCalls(
 ): Promise<ToolResult[]> {
 	const agentStore = useAgentStore.getState();
 	const results: ToolResult[] = [];
+	const currentMode = useAgentStore.getState().mode;
 
 	for (const tc of toolCalls) {
 		useAgentStore.getState().setActiveTool(tc.name);
 
-		const currentMode = useAgentStore.getState().permissionMode;
-		if (currentMode === "ask" && WRITE_TOOLS.has(tc.name)) {
+		if (currentMode === "plan" && WRITE_TOOLS.has(tc.name)) {
+			results.push({
+				toolCallId: tc.id,
+				name: tc.name,
+				result: null,
+				error: `Cannot use '${tc.name}' in plan mode. This tool modifies the timeline. Use submit_plan to finalize your plan, then request_plan_approval to switch to execute mode.`,
+			});
+			continue;
+		}
+
+		if (currentMode === "plan" && EXECUTE_ONLY_TOOLS.has(tc.name)) {
+			results.push({
+				toolCallId: tc.id,
+				name: tc.name,
+				result: null,
+				error: `Cannot use '${tc.name}' in plan mode. This tool is only available during execution.`,
+			});
+			continue;
+		}
+
+		if (currentMode === "execute" && PLAN_ONLY_TOOLS.has(tc.name)) {
+			results.push({
+				toolCallId: tc.id,
+				name: tc.name,
+				result: null,
+				error: `Cannot use '${tc.name}' in execute mode. This tool is only available during planning.`,
+			});
+			continue;
+		}
+
+		const currentPermissionMode = useAgentStore.getState().permissionMode;
+		if (currentPermissionMode === "ask" && WRITE_TOOLS.has(tc.name)) {
 			const approved = await requestApproval(tc);
 			if (!approved) {
 				results.push({

@@ -63,6 +63,7 @@ const chatRequestSchema = z.object({
 			)
 			.optional(),
 		playbackTimeMs: z.number(),
+		mode: z.enum(["plan", "execute"]).optional(),
 	}) satisfies z.ZodType<AgentContext>,
 });
 
@@ -89,7 +90,8 @@ export async function POST(request: NextRequest) {
 
 	const { messages, context } = result.data;
 
-	// Resolve provider config from LLM_* env vars
+	const mode = context.mode;
+
 	const provider = process.env.LLM_PROVIDER;
 	const apiKey = process.env.LLM_API_KEY;
 	const model = process.env.LLM_MODEL;
@@ -107,8 +109,7 @@ export async function POST(request: NextRequest) {
 
 	const config: ProviderConfig = { provider, apiKey, model, baseUrl };
 
-	// Build system prompt with tool guidance
-	const systemPrompt = buildSystemPrompt(context, providerToolSchemas);
+	const systemPrompt = buildSystemPrompt(context, providerToolSchemas, mode);
 
 	// Delegate to provider adapter
 	try {

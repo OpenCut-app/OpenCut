@@ -5,12 +5,45 @@ export type ExecutionState =
 	| "responding"
 	| "error";
 
+export type AgentMode = "plan" | "execute";
+
+export type PlanStepStatus = "pending" | "in_progress" | "done" | "skipped";
+export type PlanStatus =
+	| "drafting"
+	| "awaiting_approval"
+	| "approved"
+	| "executing"
+	| "completed";
+
+export interface PlanStep {
+	id: string;
+	description: string;
+	tools: string[];
+	status: PlanStepStatus;
+	result?: string;
+}
+
+export interface Plan {
+	id: string;
+	summary: string;
+	steps: PlanStep[];
+	questions?: string[];
+	status: PlanStatus;
+	createdAt: number;
+}
+
+export interface AgentQuestion {
+	id: string;
+	question: string;
+	options?: Array<{ label: string; description?: string }>;
+	answer?: string;
+}
+
 export interface ChatMessage {
 	id: string;
 	role: "system" | "user" | "assistant" | "tool_result";
 	content: string;
 	toolCalls?: ToolCall[];
-	/** Associates a tool_result message with the ToolCall it answers. */
 	toolCallId?: string;
 	timestamp: number;
 }
@@ -41,6 +74,7 @@ export interface AgentContext {
 	}>;
 	timelineTracks?: AgentTimelineTrack[];
 	playbackTimeMs: number;
+	mode?: AgentMode;
 }
 
 export type AgentTimelineTrack = {
