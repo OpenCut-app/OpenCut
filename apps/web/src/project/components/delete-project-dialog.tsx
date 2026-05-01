@@ -10,6 +10,9 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
+
+const REQUIRED_CONFIRMATION_TEXT = "DELETE";
 
 export function DeleteProjectDialog({
 	isOpen,
@@ -25,6 +28,8 @@ export function DeleteProjectDialog({
 	const count = projectNames.length;
 	const isSingle = count === 1;
 	const singleName = isSingle ? projectNames[0] : null;
+	
+	const [confirmationInput, setConfirmationInput] = useState<string>("");
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -60,11 +65,13 @@ export function DeleteProjectDialog({
 					</Alert>
 					<div className="flex flex-col gap-3">
 						<Label className="text-xs font-semibold text-slate-500">
-							Type "DELETE" to confirm
+							{`Type "${REQUIRED_CONFIRMATION_TEXT}" to confirm`}
 						</Label>
 						<Input
+							onChange={(e) => {setConfirmationInput(e.target.value)}}
+							value={confirmationInput}
 							type="text"
-							placeholder="DELETE"
+							placeholder={REQUIRED_CONFIRMATION_TEXT}
 							size="lg"
 							variant="destructive"
 						/>
@@ -74,7 +81,7 @@ export function DeleteProjectDialog({
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						Cancel
 					</Button>
-					<Button variant="destructive" onClick={onConfirm}>
+					<Button variant="destructive" onClick={onConfirm} disabled={confirmationInput != REQUIRED_CONFIRMATION_TEXT}>
 						Delete project
 					</Button>
 				</DialogFooter>
