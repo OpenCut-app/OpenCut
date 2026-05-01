@@ -9,6 +9,7 @@ import { toolRegistry } from "@/agent/tools/registry";
 import "@/agent/tools";
 import { useChatStore } from "@/stores/chat-store";
 import { useAgentStore } from "@/stores/agent-store";
+import { usePlanStore } from "@/stores/plan-store";
 
 const MAX_ITERATIONS = 20;
 
@@ -31,12 +32,6 @@ const WRITE_TOOLS = new Set([
 	"upsert_keyframe",
 	"remove_keyframe",
 	"update_keyframe_curve",
-]);
-
-const PLAN_ONLY_TOOLS = new Set([
-	"submit_plan",
-	"ask_user",
-	"request_plan_approval",
 ]);
 
 const EXECUTE_ONLY_TOOLS = new Set(["update_plan_step"]);
@@ -221,10 +216,25 @@ async function resolveToolCalls(
 ): Promise<ToolResult[]> {
 	const agentStore = useAgentStore.getState();
 	const results: ToolResult[] = [];
-	const currentMode = useAgentStore.getState().mode;
 
 	for (const tc of toolCalls) {
 		useAgentStore.getState().setActiveTool(tc.name);
+		const currentMode = useAgentStore.getState().mode;
+		const currentPlan = usePlanStore.getState().plan;
+
+		if (
+			WRITE_TOOLS.has(tc.name) &&
+			currentPlan?.status === "awaiting_approval"
+		) {
+			results.push({
+				toolCallId: tc.id,
+				name: tc.name,
+				result: null,
+				error:
+					"Cannot edit while a plan is awaiting user approval. Call request_plan_approval and wait for the user to choose Go edit.",
+			});
+			continue;
+		}
 
 		if (currentMode === "plan" && WRITE_TOOLS.has(tc.name)) {
 			results.push({
@@ -242,16 +252,6 @@ async function resolveToolCalls(
 				name: tc.name,
 				result: null,
 				error: `Cannot use '${tc.name}' in plan mode. This tool is only available during execution.`,
-			});
-			continue;
-		}
-
-		if (currentMode === "execute" && PLAN_ONLY_TOOLS.has(tc.name)) {
-			results.push({
-				toolCallId: tc.id,
-				name: tc.name,
-				result: null,
-				error: `Cannot use '${tc.name}' in execute mode. This tool is only available during planning.`,
 			});
 			continue;
 		}

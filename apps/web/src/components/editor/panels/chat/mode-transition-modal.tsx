@@ -82,7 +82,7 @@ export function ModeTransitionModal() {
 								className="mr-2 size-4"
 								strokeWidth={1.5}
 							/>
-							Start editing
+							Go edit
 						</Button>
 						<Button
 							variant="outline"
@@ -95,7 +95,7 @@ export function ModeTransitionModal() {
 								className="mr-2 size-4"
 								strokeWidth={1.5}
 							/>
-							Continue planning
+							Keep planning
 						</Button>
 					</div>
 				</div>

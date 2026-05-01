@@ -308,7 +308,7 @@ export const loadSkillSchema: ToolSchema = {
 export const submitPlanSchema: ToolSchema = {
 	name: "submit_plan",
 	description:
-		"Submits a structured editing plan with steps. Use ONLY in plan mode after analyzing the footage and understanding the user's request. Each step should describe a specific action with the tools to use. After submission, the user reviews and approves or requests changes before execution begins.",
+		"Submits a structured editing plan with steps. Use this before complex edits, even from execute mode. Each step should describe a specific action with the tools to use. After submission, call request_plan_approval and wait for the user before any write tools.",
 	parameters: [
 		{ key: "summary", type: "string", required: true },
 		{ key: "steps", type: "array", required: true },
@@ -319,7 +319,7 @@ export const submitPlanSchema: ToolSchema = {
 export const askUserSchema: ToolSchema = {
 	name: "ask_user",
 	description:
-		"Asks the user a question during plan mode. Use when you need clarification about their intent, preferences, or content details before finalizing the plan. Optionally provide quick-reply options for common answers. The user can also type a free-form response.",
+		"Asks the user a question before or during planning. Use when you need clarification about their intent, preferences, or content details before finalizing the plan. Optionally provide quick-reply options for common answers. The user can also type a free-form response.",
 	parameters: [
 		{ key: "question", type: "string", required: true },
 		{ key: "options", type: "array", required: false },
@@ -329,7 +329,7 @@ export const askUserSchema: ToolSchema = {
 export const requestPlanApprovalSchema: ToolSchema = {
 	name: "request_plan_approval",
 	description:
-		"Requests user approval to switch from plan mode to execute mode. The user sees a modal with 'Continue planning' and 'Start editing' options. ALWAYS requires explicit user approval — there is no auto-approve. Use this when the plan is ready for execution.",
+		"Requests user approval to switch from planning to editing. The user sees a modal with Keep planning and Go edit options. ALWAYS requires explicit user approval — there is no auto-approve. Use immediately after submit_plan succeeds.",
 	parameters: [],
 };
 

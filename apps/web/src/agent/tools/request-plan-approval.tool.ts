@@ -18,12 +18,8 @@ const requestPlanApprovalTool: ToolDefinition = {
 			};
 		}
 
-		const agentStore = useAgentStore.getState();
-		if (agentStore.mode !== "plan") {
-			return { error: "Already in execute mode. No transition needed." };
-		}
-
-		planStore.updatePlanStatus("approved");
+		useAgentStore.getState().setMode("plan");
+		planStore.updatePlanStatus("awaiting_approval");
 
 		return new Promise((resolve) => {
 			useAgentStore.getState().setPendingModeTransition({
@@ -32,6 +28,10 @@ const requestPlanApprovalTool: ToolDefinition = {
 					useAgentStore.getState().setPendingModeTransition(null);
 					if (approved) {
 						useAgentStore.getState().setMode("execute");
+						usePlanStore.getState().updatePlanStatus("executing");
+					} else {
+						useAgentStore.getState().setMode("plan");
+						usePlanStore.getState().updatePlanStatus("awaiting_approval");
 					}
 					resolve({
 						approved,
