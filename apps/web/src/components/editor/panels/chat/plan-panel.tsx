@@ -5,7 +5,7 @@ import {
 	CheckmarkCircle02Icon,
 	CancelCircleIcon,
 	Loading03Icon,
-	MinusSign01Icon,
+	MinusSignIcon,
 	PlanChartIcon,
 } from "@hugeicons/core-free-icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<
 	{ icon: typeof CheckmarkCircle02Icon; className: string }
 > = {
 	pending: {
-		icon: MinusSign01Icon,
+		icon: MinusSignIcon,
 		className: "text-muted-foreground",
 	},
 	in_progress: {
