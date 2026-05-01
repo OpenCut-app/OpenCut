@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { QuestionExchangeIcon } from "@hugeicons/core-free-icons";
+import { QuestionIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { usePlanStore } from "@/stores/plan-store";
 
@@ -42,7 +42,7 @@ export function AskUserPrompt() {
 		<div className="flex flex-col gap-2 rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2.5">
 			<div className="flex items-center gap-2">
 				<HugeiconsIcon
-					icon={QuestionExchangeIcon}
+					icon={QuestionIcon}
 					className="size-4 shrink-0 text-blue-400"
 					strokeWidth={1.5}
 				/>

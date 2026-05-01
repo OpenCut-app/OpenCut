@@ -6,7 +6,7 @@ import {
 	CancelCircleIcon,
 	Loading03Icon,
 	MinusSignIcon,
-	PlanChartIcon,
+	CheckListIcon,
 } from "@hugeicons/core-free-icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePlanStore } from "@/stores/plan-store";
@@ -77,7 +77,7 @@ export function PlanPanel() {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-2 p-4">
 				<HugeiconsIcon
-					icon={PlanChartIcon}
+					icon={CheckListIcon}
 					className="text-muted-foreground/50 size-8"
 					strokeWidth={1}
 				/>

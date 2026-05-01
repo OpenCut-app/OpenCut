@@ -6,7 +6,7 @@ import {
 	Sent02Icon,
 	FlashIcon,
 	Shield01Icon,
-	PlanChartIcon,
+	CheckListIcon,
 	Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 					}
 				>
 					<HugeiconsIcon
-						icon={isPlanMode ? PlanChartIcon : Edit02Icon}
+						icon={isPlanMode ? CheckListIcon : Edit02Icon}
 						className={cn("size-4", isPlanMode && "text-blue-400")}
 						strokeWidth={1.5}
 					/>

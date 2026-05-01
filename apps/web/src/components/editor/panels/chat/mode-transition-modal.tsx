@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlanChartIcon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { CheckListIcon, Edit02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { useAgentStore } from "@/stores/agent-store";
 import { usePlanStore } from "@/stores/plan-store";
@@ -91,7 +91,7 @@ export function ModeTransitionModal() {
 							className="w-full"
 						>
 							<HugeiconsIcon
-								icon={PlanChartIcon}
+								icon={CheckListIcon}
 								className="mr-2 size-4"
 								strokeWidth={1.5}
 							/>
