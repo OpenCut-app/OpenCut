@@ -305,6 +305,45 @@ export const loadSkillSchema: ToolSchema = {
 	parameters: [{ key: "skillId", type: "string", required: true }],
 };
 
+export const submitPlanSchema: ToolSchema = {
+	name: "submit_plan",
+	description:
+		"Submits a structured editing plan with steps and waits for user approval through a plan card with Go edit and Keep planning actions. Use this before complex edits, even from execute mode. Each step should describe a specific action with the tools to use. If approved=true is returned, continue executing the plan. If approved=false is returned, keep refining the plan with the user.",
+	parameters: [
+		{ key: "summary", type: "string", required: true },
+		{ key: "steps", type: "array", required: true },
+		{ key: "questions", type: "array", required: false },
+	],
+};
+
+export const askUserSchema: ToolSchema = {
+	name: "ask_user",
+	description:
+		"Asks the user a question before or during planning. Use when you need clarification about their intent, preferences, or content details before finalizing the plan. Optionally provide quick-reply options for common answers. The user can also type a free-form response.",
+	parameters: [
+		{ key: "question", type: "string", required: true },
+		{ key: "options", type: "array", required: false },
+	],
+};
+
+export const requestPlanApprovalSchema: ToolSchema = {
+	name: "request_plan_approval",
+	description:
+		"Requests user approval to switch from planning to editing for an already submitted plan. Usually you do not need this because submit_plan already waits for approval. The user sees a plan card with Keep planning and Go edit options.",
+	parameters: [],
+};
+
+export const updatePlanStepSchema: ToolSchema = {
+	name: "update_plan_step",
+	description:
+		"Updates the status of a plan step during execution. Call this after completing each step to track progress. The plan panel updates in real-time. Use status 'done' for successful completion, 'skipped' if the step was unnecessary, or 'in_progress' if starting.",
+	parameters: [
+		{ key: "stepId", type: "string", required: true },
+		{ key: "status", type: "string", required: true },
+		{ key: "result", type: "string", required: false },
+	],
+};
+
 /**
  * The exact list of schemas exposed to the LLM.
  * Excludes internal-only tools (transcribe_video, mock).
@@ -338,4 +377,8 @@ export const providerToolSchemas: ToolSchema[] = [
 	listAnimatablePropertiesSchema,
 	listSkillsSchema,
 	loadSkillSchema,
+	submitPlanSchema,
+	askUserSchema,
+	requestPlanApprovalSchema,
+	updatePlanStepSchema,
 ];

@@ -11,6 +11,8 @@ import { useAgentStore } from "@/stores/agent-store";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
 import { ToolPermissionRequest } from "./tool-permission-request";
+import { AskUserPrompt } from "./ask-user-prompt";
+import { PlanApprovalCard } from "./plan-approval-card";
 import { run as orchestratorRun } from "@/agent/orchestrator";
 import { EditorContextAdapter } from "@/agent/context";
 
@@ -24,13 +26,11 @@ export function ChatPanel() {
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	// Auto-scroll on new messages or loading state change
-	// biome-ignore lint/correctness/useExhaustiveDependencies: re-scroll when messages or loading change
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [messages, loading]);
+	});
 
 	const handleSend = useCallback(
 		async (content: string) => {
@@ -80,6 +80,8 @@ export function ChatPanel() {
 								</span>
 							</div>
 						)}
+						<PlanApprovalCard />
+						<AskUserPrompt />
 						{pendingApproval && (
 							<ToolPermissionRequest pending={pendingApproval} />
 						)}

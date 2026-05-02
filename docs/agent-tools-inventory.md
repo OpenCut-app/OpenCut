@@ -1,6 +1,6 @@
 # NeuralCut — Agent Tools Inventory
 
-Complete inventory of all tools, effects, masks, and animatable properties available to the video editor agent.
+Complete inventory of all tools, skills, effects, masks, and animatable properties available to the video editor agent.
 
 **Source of truth**: `apps/web/src/agent/tools/schemas.ts` — the `providerToolSchemas` array defines what gets sent to the LLM.  
 **Execution**: `apps/web/src/agent/context.ts` (EditorContextAdapter).  
@@ -8,7 +8,7 @@ Complete inventory of all tools, effects, masks, and animatable properties avail
 
 ---
 
-## 25 Provider-Facing Tools
+## 31 Provider-Facing Tools
 
 ### Context & Perception (read-only)
 
@@ -74,6 +74,23 @@ Complete inventory of all tools, effects, masks, and animatable properties avail
 | Tool | Description | Schema | Implementation |
 |------|-------------|--------|----------------|
 | `undo` | Undoes the last editing action. Returns remaining undo depth. | `schemas.ts:195` | `undo.tool.ts` |
+| `redo` | Redoes the last undone action. Only works after an undo. Returns whether there are more actions to redo. | `schemas.ts:174` | `redo.tool.ts` |
+
+### Skills (recipe-based editing)
+
+| Tool | Description | Schema | Implementation |
+|------|-------------|--------|----------------|
+| `list_skills` | Lists available editing skill recipes — pre-built workflows for common patterns like viral shorts, pitch videos. Returns skill id, name, and description. | `schemas.ts:294` | `skills/list-skills.tool.ts` |
+| `load_skill` | Loads full instructions for a specific skill by id. Contains recipe with sections, timing rules, text styles, effect parameters, and quality checklist. | `schemas.ts:301` | `skills/load-skill.tool.ts` |
+
+### Plan Mode (structured workflow)
+
+| Tool | Description | Schema | Implementation |
+|------|-------------|--------|----------------|
+| `submit_plan` | Submits a structured editing plan with steps. Use ONLY in plan mode after analyzing footage. Each step describes a specific action with tools to use. User reviews and approves before execution. | `schemas.ts:308` | `submit-plan.tool.ts` |
+| `ask_user` | Asks the user a question during plan mode. Use when clarification is needed about intent, preferences, or content details. Optionally provides quick-reply options. | `schemas.ts:319` | `ask-user.tool.ts` |
+| `request_plan_approval` | Requests user approval to switch from plan mode to execute mode. Shows modal with 'Continue planning' and 'Start editing' options. Requires explicit user approval. | `schemas.ts:329` | `request-plan-approval.tool.ts` |
+| `update_plan_step` | Updates the status of a plan step during execution. Call after completing each step to track progress. Use status 'done', 'skipped', or 'in_progress'. | `schemas.ts:336` | `update-plan-step.tool.ts` |
 
 ---
 
@@ -84,7 +101,16 @@ Complete inventory of all tools, effects, masks, and animatable properties avail
 | `transcribe_video` | Transcribes audio using Whisper (local). Returns structured transcript with segments/timestamps. Registered in toolRegistry but excluded from `providerToolSchemas` (`schemas.ts:296-297`). Used internally by the agent orchestrator. | `transcribe-video.tool.ts` |
 | `echo_context` | Debug tool that returns a summary of the current editor context. Registered in toolRegistry but not in `providerToolSchemas`. | `mock.tool.ts` |
 
-> **Note**: `redo` has a schema (`schemas.ts:174`) and implementation (`redo.tool.ts`) but is **NOT** included in `providerToolSchemas`.
+---
+
+## 2 Built-in Skills
+
+Defined in `apps/web/src/agent/skills/builtin/`.
+
+| Skill ID | Name | Description |
+|----------|------|-------------|
+| `viral-short` | Viral Short | Creates a short-form viral video with hook, clips, text overlays, and effects |
+| `pitch-video` | Pitch Video | Creates a professional pitch video with intro, key points, transitions, and outro |
 
 ---
 
@@ -200,6 +226,8 @@ Dynamic path types for extension:
 | `apps/web/src/agent/tools/schemas.ts` | Single source of truth for all tool schemas + `providerToolSchemas` array |
 | `apps/web/src/agent/tools/index.ts` | Barrel that registers all tools via side-effect imports |
 | `apps/web/src/agent/tools/registry.ts` | Generic `DefinitionRegistry<string, ToolDefinition>` |
+| `apps/web/src/agent/skills/index.ts` | Barrel that registers all skills via side-effect imports |
+| `apps/web/src/agent/skills/registry.ts` | Skill definition registry |
 | `apps/web/src/agent/orchestrator.ts` | Agent loop: sends to LLM, resolves tool calls, up to 20 iterations |
 | `apps/web/src/agent/context.ts` | `EditorContextAdapter` — the ONLY file that imports EditorCore. All tool execution logic. |
 | `apps/web/src/agent/system-prompt.ts` | Builds system prompt from context + tool summaries |
@@ -214,3 +242,5 @@ Dynamic path types for extension:
 4. **Agent must call `list_project_assets` and `list_timeline` before editing** when it lacks concrete IDs.
 5. **Gemini handles multimodal understanding**; editing is deterministic via tools.
 6. **`split` does NOT delete** — compose `split` + `delete_timeline_elements` for range removal.
+7. **Plan mode** enables structured workflow: submit_plan → request_plan_approval → update_plan_step for execution tracking.
+8. **Skills** provide pre-built recipes for common editing patterns, composable with standard tools.
