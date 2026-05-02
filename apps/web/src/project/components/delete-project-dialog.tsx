@@ -81,7 +81,7 @@ export function DeleteProjectDialog({
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						Cancel
 					</Button>
-					<Button variant="destructive" onClick={onConfirm} disabled={confirmationInput != REQUIRED_CONFIRMATION_TEXT}>
+					<Button variant="destructive" onClick={onConfirm} disabled={confirmationInput !== REQUIRED_CONFIRMATION_TEXT}>
 						Delete project
 					</Button>
 				</DialogFooter>
