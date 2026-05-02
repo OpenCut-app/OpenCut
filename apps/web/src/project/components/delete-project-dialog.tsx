@@ -64,10 +64,11 @@ export function DeleteProjectDialog({
 						</AlertDescription>
 					</Alert>
 					<div className="flex flex-col gap-3">
-						<Label className="text-xs font-semibold text-slate-500">
+						<Label htmlFor="confirmation-input" className="text-xs font-semibold text-slate-500">
 							{`Type "${REQUIRED_CONFIRMATION_TEXT}" to confirm`}
 						</Label>
 						<Input
+							id={"confirmation-input"}
 							onChange={(e) => {setConfirmationInput(e.target.value)}}
 							value={confirmationInput}
 							type="text"
