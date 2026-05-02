@@ -308,7 +308,7 @@ export const loadSkillSchema: ToolSchema = {
 export const submitPlanSchema: ToolSchema = {
 	name: "submit_plan",
 	description:
-		"Submits a structured editing plan with steps. Use this before complex edits, even from execute mode. Each step should describe a specific action with the tools to use. After submission, call request_plan_approval and wait for the user before any write tools.",
+		"Submits a structured editing plan with steps and waits for user approval through a plan card with Go edit and Keep planning actions. Use this before complex edits, even from execute mode. Each step should describe a specific action with the tools to use. If approved=true is returned, continue executing the plan. If approved=false is returned, keep refining the plan with the user.",
 	parameters: [
 		{ key: "summary", type: "string", required: true },
 		{ key: "steps", type: "array", required: true },
@@ -329,7 +329,7 @@ export const askUserSchema: ToolSchema = {
 export const requestPlanApprovalSchema: ToolSchema = {
 	name: "request_plan_approval",
 	description:
-		"Requests user approval to switch from planning to editing. The user sees a modal with Keep planning and Go edit options. ALWAYS requires explicit user approval — there is no auto-approve. Use immediately after submit_plan succeeds.",
+		"Requests user approval to switch from planning to editing for an already submitted plan. Usually you do not need this because submit_plan already waits for approval. The user sees a plan card with Keep planning and Go edit options.",
 	parameters: [],
 };
 

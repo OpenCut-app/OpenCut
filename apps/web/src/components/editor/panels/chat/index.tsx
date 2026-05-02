@@ -8,13 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useChatStore } from "@/stores/chat-store";
 import { useAgentStore } from "@/stores/agent-store";
-import { usePlanStore } from "@/stores/plan-store";
 import { MessageBubble } from "./message-bubble";
 import { ChatInput } from "./chat-input";
 import { ToolPermissionRequest } from "./tool-permission-request";
-import { PlanPanel } from "./plan-panel";
-import { ModeTransitionModal } from "./mode-transition-modal";
 import { AskUserPrompt } from "./ask-user-prompt";
+import { PlanApprovalCard } from "./plan-approval-card";
 import { run as orchestratorRun } from "@/agent/orchestrator";
 import { EditorContextAdapter } from "@/agent/context";
 
@@ -25,8 +23,6 @@ export function ChatPanel() {
 	const sendMessage = useChatStore((s) => s.sendMessage);
 	const setError = useChatStore((s) => s.setError);
 	const pendingApproval = useAgentStore((s) => s.pendingApproval);
-	const pendingTransition = useAgentStore((s) => s.pendingModeTransition);
-	const plan = usePlanStore((s) => s.plan);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -56,12 +52,6 @@ export function ChatPanel() {
 
 	return (
 		<div className="flex h-full flex-col">
-			{plan && (
-				<div className="max-h-48 shrink-0 overflow-hidden border-b">
-					<PlanPanel />
-				</div>
-			)}
-
 			{messages.length === 0 && !loading && !error ? (
 				<div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
 					<HugeiconsIcon
@@ -90,6 +80,7 @@ export function ChatPanel() {
 								</span>
 							</div>
 						)}
+						<PlanApprovalCard />
 						<AskUserPrompt />
 						{pendingApproval && (
 							<ToolPermissionRequest pending={pendingApproval} />
@@ -121,8 +112,6 @@ export function ChatPanel() {
 			)}
 
 			<ChatInput onSend={handleSend} disabled={loading} />
-
-			{pendingTransition && <ModeTransitionModal />}
 		</div>
 	);
 }

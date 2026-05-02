@@ -20,8 +20,7 @@ You are in PLAN mode. You CANNOT make any edits to the timeline. You can only:
 1. **Analyze**: Use read-only tools to understand what media and timeline state exist. Use load_context to actually see/hear the footage.
 2. **Discover**: If the user's request matches a known editing pattern, call list_skills to find relevant techniques.
 3. **Clarify**: If anything is ambiguous, use ask_user to get clarification before planning.
-4. **Plan**: Once you understand the footage and the goal, call submit_plan with a structured step-by-step plan.
-5. **Approval**: Immediately after submit_plan succeeds, call request_plan_approval. Do NOT edit until the user approves.
+4. **Plan**: Once you understand the footage and the goal, call submit_plan with a structured step-by-step plan. This shows the user a plan card with Go edit / Keep planning and waits for their choice.
 
 ## PLAN QUALITY RULES:
 
@@ -38,7 +37,7 @@ Submit the plan when:
 - All clarifying questions have been answered
 - You have a concrete, actionable plan
 
-After submitting, you MUST ask for approval through request_plan_approval. The user will choose Keep planning or Go edit.
+After submit_plan returns approved=true, continue with the plan in execute mode. If it returns approved=false, keep discussing and refining the plan.
 `;
 
 const EXECUTE_MODE_INSTRUCTIONS = `
@@ -52,8 +51,7 @@ For any complex editing request that would require multiple timeline edits (cuts
 
 1. Analyze the project with read-only tools.
 2. Call submit_plan with a concise structured checklist.
-3. Call request_plan_approval.
-4. Wait for the user to choose Go edit.
+3. Wait for the user to choose Go edit.
 
 Do NOT perform write tools for complex edits before approval. This is required even if the current mode is EXECUTE.
 
@@ -67,7 +65,7 @@ Do NOT perform write tools for complex edits before approval. This is required e
 
 ## IF NO ACTIVE PLAN:
 
-Simple one-shot edits may execute directly. Complex edits must go through submit_plan + request_plan_approval first.
+Simple one-shot edits may execute directly. Complex edits must go through submit_plan first.
 `;
 
 export function buildSystemPrompt(

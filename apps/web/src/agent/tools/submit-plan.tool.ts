@@ -3,6 +3,7 @@ import { toolRegistry } from "@/agent/tools/registry";
 import { submitPlanSchema } from "@/agent/tools/schemas";
 import { usePlanStore, createPlanFromSteps } from "@/stores/plan-store";
 import { useAgentStore } from "@/stores/agent-store";
+import type { AgentMode } from "@/agent/types";
 
 type SubmittedStep = { description: string; tools: string[] };
 
@@ -15,7 +16,8 @@ const submitPlanTool: ToolDefinition = {
 		| {
 				planId: string;
 				stepCount: number;
-				nextAction: "request_plan_approval";
+				approved: boolean;
+				mode: AgentMode;
 		  }
 		| { error: string }
 	> => {
@@ -49,11 +51,27 @@ const submitPlanTool: ToolDefinition = {
 		usePlanStore.getState().setPlan(plan);
 		useAgentStore.getState().setMode("plan");
 
-		return {
-			planId: plan.id,
-			stepCount: plan.steps.length,
-			nextAction: "request_plan_approval",
-		};
+		return new Promise((resolve) => {
+			useAgentStore.getState().setPendingModeTransition({
+				targetMode: "execute",
+				resolve: (approved) => {
+					useAgentStore.getState().setPendingModeTransition(null);
+					if (approved) {
+						useAgentStore.getState().setMode("execute");
+						usePlanStore.getState().updatePlanStatus("executing");
+					} else {
+						useAgentStore.getState().setMode("plan");
+						usePlanStore.getState().updatePlanStatus("awaiting_approval");
+					}
+					resolve({
+						planId: plan.id,
+						stepCount: plan.steps.length,
+						approved,
+						mode: approved ? "execute" : "plan",
+					});
+				},
+			});
+		});
 	},
 };
 
