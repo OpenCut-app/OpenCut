@@ -16,18 +16,18 @@ const updatePlanStepTool: ToolDefinition = {
 	execute: async (
 		args: Record<string, unknown>,
 		_context: AgentContext,
-	):
-		| { success: boolean; stepId: string; status: string }
-		| { error: string } => {
+	): Promise<
+		| { success: boolean; step: number; stepId: string; status: string }
+		| { error: string }
+	> => {
 		const { stepId, status, result } = args as {
-			stepId: string;
+			step?: number;
+			stepId?: string;
 			status: string;
 			result?: string;
 		};
 
-		if (!stepId || typeof stepId !== "string") {
-			return { error: "stepId is required" };
-		}
+		const stepNumber = args.step as number | undefined;
 
 		if (!VALID_STATUSES.includes(status as PlanStepStatus)) {
 			return {
@@ -41,16 +41,37 @@ const updatePlanStepTool: ToolDefinition = {
 			return { error: "No active plan" };
 		}
 
-		const step = plan.steps.find((s) => s.id === stepId);
+		let resolvedStepId: string | undefined;
+
+		if (stepNumber !== undefined && stepNumber !== null) {
+			const index = Math.floor(stepNumber) - 1;
+			if (index < 0 || index >= plan.steps.length) {
+				return {
+					error: `Step ${stepNumber} out of range. Plan has ${plan.steps.length} steps (1-${plan.steps.length}).`,
+				};
+			}
+			resolvedStepId = plan.steps[index].id;
+		} else if (stepId && typeof stepId === "string") {
+			resolvedStepId = stepId;
+		} else {
+			return { error: "Pass step (1-based number) or stepId" };
+		}
+
+		const step = plan.steps.find((s) => s.id === resolvedStepId);
 		if (!step) {
 			return {
-				error: `Step not found: ${stepId}. Available: ${plan.steps.map((s) => s.id).join(", ")}`,
+				error: `Step not found. Use step number (1-${plan.steps.length}) instead.`,
 			};
 		}
 
-		planStore.updateStepStatus(stepId, status as PlanStepStatus, result);
+		planStore.updateStepStatus(resolvedStepId, status as PlanStepStatus, result);
 
-		return { success: true, stepId, status };
+		return {
+			success: true,
+			step: plan.steps.findIndex((s) => s.id === resolvedStepId) + 1,
+			stepId: resolvedStepId,
+			status,
+		};
 	},
 };
 

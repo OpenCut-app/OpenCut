@@ -11,6 +11,7 @@
  */
 
 import "@/agent/tools/load-context.tool";
+import "@/agent/tools/transcribe-audio.tool";
 import "@/agent/tools/list-project-assets.tool";
 import "@/agent/tools/list-timeline.tool";
 import "@/agent/tools/get-element.tool";

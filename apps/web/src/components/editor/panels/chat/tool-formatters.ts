@@ -209,6 +209,13 @@ const TOOL_CALL_FORMATTERS: Record<
 			description: lang ? `language: ${lang}` : "Transcribing audio",
 		};
 	},
+	transcribe_audio: (args) => {
+		const lang = args.language ? String(args.language) : null;
+		return {
+			label: "Transcribe Audio",
+			description: lang ? `language: ${lang}` : "Getting precise audio context",
+		};
+	},
 };
 
 const TOOL_RESULT_FORMATTERS: Record<
@@ -355,6 +362,19 @@ const TOOL_RESULT_FORMATTERS: Record<
 		return {
 			label: "Transcript",
 			description: `${data.assetName ?? "audio"} · ${data.segmentCount ?? 0} segments`,
+		};
+	},
+	transcribe_audio: (parsed) => {
+		const data = parsed as {
+			assetName?: string;
+			wordCount?: number;
+			utteranceCount?: number;
+			timingGranularity?: string;
+		} | null;
+		if (!data) return null;
+		return {
+			label: "Audio Context",
+			description: `${data.assetName ?? "audio"} · ${data.wordCount ?? 0} words · ${data.timingGranularity ?? "timed"}`,
 		};
 	},
 	list_keyframes: (parsed) => {

@@ -14,13 +14,23 @@ import type { ToolSchema } from "@/agent/types";
 export const loadContextSchema: ToolSchema = {
 	name: "load_context",
 	description:
-		"Loads the actual Gemini multimodal context for a project asset or timeline element. Use this before answering questions about visible objects, colors, scenes, speech, silence, or timestamps in media. Use targetType='asset' with assetId/id for media, or targetType='timeline_element' with trackId and elementId/id for captions, text, or timeline media elements.",
+		"Loads Gemini multimodal context for a project asset or timeline element. For media: targetType='asset' with assetId. For timeline elements (text, clips): targetType='timeline_element' with elementId — trackId is optional, the element will be found across all tracks automatically.",
 	parameters: [
 		{ key: "targetType", type: "string", required: true },
 		{ key: "id", type: "string", required: false },
 		{ key: "assetId", type: "string", required: false },
 		{ key: "trackId", type: "string", required: false },
 		{ key: "elementId", type: "string", required: false },
+	],
+};
+
+export const transcribeAudioSchema: ToolSchema = {
+	name: "transcribe_audio",
+	description:
+		"Transcribes a video or audio asset with precise word-level timing. Returns full text, per-word start/end times, confidence scores, and utterance segments. Use this when you need exact spoken words, timestamps for subtitles, or silence detection. Pass assetId to target a specific asset, or omit to auto-select the first video/audio asset.",
+	parameters: [
+		{ key: "assetId", type: "string", required: false },
+		{ key: "language", type: "string", required: false },
 	],
 };
 
@@ -93,7 +103,7 @@ export const updateTimelineElementTimingSchema: ToolSchema = {
 export const addTextSchema: ToolSchema = {
 	name: "add_text",
 	description:
-		"Adds visual text to the active timeline. Use for titles, hooks, labels, and simple subtitle blocks. start and end are timeline seconds. position must be top, center, or bottom; style may be plain, subtitle, hook, or label. Override style defaults with color (hex), fontSize (scaled units), fontFamily, fontWeight (normal/bold), fontStyle (normal/italic), textAlign (left/center/right), letterSpacing, positionX/positionY (offset from -50 to 50), or background ({ enabled, color?, cornerRadius?, padding? }).",
+		"Adds visual text to the active timeline. start and end are seconds. position must be exactly one of: 'top', 'center', or 'bottom'. style: 'plain', 'subtitle' (white on black bg), 'hook' (large bold), or 'label'. Override defaults with color (hex), fontSize, fontFamily, fontWeight, fontStyle, textAlign, letterSpacing, positionX/positionY (-50 to 50), or background.",
 	parameters: [
 		{ key: "text", type: "string", required: true },
 		{ key: "start", type: "number", required: true },
@@ -116,7 +126,7 @@ export const addTextSchema: ToolSchema = {
 export const updateTextSchema: ToolSchema = {
 	name: "update_text",
 	description:
-		"Updates visual properties of existing text elements. Pass elementIds (from list_timeline) and any combination of text style overrides. Only text elements are updated; non-text elements are skipped. All listed text elements receive the same overrides — use for bulk styling subtitle blocks.",
+		"Updates visual properties of existing text elements. Pass elementIds (from list_timeline) and any properties to change. All listed elements receive the same overrides — use for bulk styling. Non-text elements in the list are skipped.",
 	parameters: [
 		// "array" (not "string[]") so the orchestrator validator stays
 		// tolerant of CSV-string fallback handled by resolveElementIds.
@@ -308,7 +318,7 @@ export const loadSkillSchema: ToolSchema = {
 export const submitPlanSchema: ToolSchema = {
 	name: "submit_plan",
 	description:
-		"Submits a structured editing plan with steps and waits for user approval through a plan card with Go edit and Keep planning actions. Use this before complex edits, even from execute mode. Each step should describe a specific action with the tools to use. If approved=true is returned, continue executing the plan. If approved=false is returned, keep refining the plan with the user.",
+		"Submits a structured editing plan with numbered steps for user approval. Returns step IDs — use update_plan_step with the step number (1, 2, 3...) to track progress. Each step needs a description and tools array.",
 	parameters: [
 		{ key: "summary", type: "string", required: true },
 		{ key: "steps", type: "array", required: true },
@@ -336,9 +346,10 @@ export const requestPlanApprovalSchema: ToolSchema = {
 export const updatePlanStepSchema: ToolSchema = {
 	name: "update_plan_step",
 	description:
-		"Updates the status of a plan step during execution. Call this after completing each step to track progress. The plan panel updates in real-time. Use status 'done' for successful completion, 'skipped' if the step was unnecessary, or 'in_progress' if starting.",
+		"Updates the status of a plan step during execution. Prefer using step (1-based number matching plan order) over stepId. The plan panel updates in real-time. Use status 'in_progress' when starting, 'done' for successful completion, or 'skipped' if unnecessary.",
 	parameters: [
-		{ key: "stepId", type: "string", required: true },
+		{ key: "step", type: "number", required: false },
+		{ key: "stepId", type: "string", required: false },
 		{ key: "status", type: "string", required: true },
 		{ key: "result", type: "string", required: false },
 	],
@@ -350,6 +361,7 @@ export const updatePlanStepSchema: ToolSchema = {
  */
 export const providerToolSchemas: ToolSchema[] = [
 	loadContextSchema,
+	transcribeAudioSchema,
 	listProjectAssetsSchema,
 	listTimelineSchema,
 	getElementSchema,

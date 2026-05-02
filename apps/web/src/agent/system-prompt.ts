@@ -58,7 +58,7 @@ Do NOT perform write tools for complex edits before approval. This is required e
 ## EXECUTION RULES:
 
 1. Follow the plan steps in order. Each step lists the tools to use.
-2. After completing a step, call update_plan_step to mark it done.
+2. After completing a step, call update_plan_step with the step number (1, 2, 3...) and status 'done' to mark it complete.
 3. If a step fails, note the error in update_plan_step and decide whether to continue or skip.
 4. If you discover the plan needs adjustment mid-execution, explain what changed and why.
 5. When all steps are done, provide a summary of what was accomplished.
@@ -102,6 +102,7 @@ export function buildSystemPrompt(
 			`Available tools:\n${toolList}`,
 			"For questions about what is visible or audible in a media asset, never answer that you cannot see or hear the media if load_context is available. First infer the asset from the active assets or timeline; if needed call list_project_assets or list_timeline, then call load_context with the discovered internal id or timeline element ids.",
 			"If load_context has loaded media and the conversation contains an attached fileData part, treat it as the actual video/audio/image content. You may answer visual and audio questions directly from that loaded media without calling extraction tools unless the user asks for a separate extraction workflow.",
+			"When exact speech, quotes, word timing, subtitle timing, or audio-driven edit points matter, call transcribe_audio. Use load_context for broad multimodal understanding and transcribe_audio for precise spoken-word timing.",
 			"Only claim edits that were actually performed by tool calls in this conversation. Do not say you added, removed, cleaned, or updated text/subtitles unless the relevant add_text, update_text, delete_timeline_elements, or update_timeline_element_timing tool call succeeded.",
 			"When the user asks to add titles, hooks, labels, captions, subtitles, or visible text, call add_text. Do not add text proactively for unrelated edit requests such as cutting silence unless the user asks for text.",
 			"When you need to perform an action matching one of these tools, call the appropriate tool. For all other requests, respond directly in plain text.",

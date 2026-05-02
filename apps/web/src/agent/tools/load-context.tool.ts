@@ -147,23 +147,28 @@ async function loadTimelineElementContext(
 	args: LoadContextArgs,
 	context: AgentContext,
 ): Promise<LoadContextResult | { error: string }> {
-	const trackId = args.trackId;
 	const elementId = args.elementId ?? args.id;
 
-	if (!trackId || !elementId) {
-		return { error: "trackId and elementId are required" };
+	if (!elementId) {
+		return { error: "elementId (or id) is required for timeline_element target" };
 	}
 
-	const element = findTimelineElement(
-		context.timelineTracks,
-		trackId,
-		elementId,
-	);
-	if (!element) {
+	let resolved: ReturnType<typeof findTimelineElement> = null;
+
+	if (args.trackId) {
+		resolved = findTimelineElement(context.timelineTracks, args.trackId, elementId);
+	} else {
+		resolved = findTimelineElementAcrossTracks(context.timelineTracks, elementId);
+	}
+
+	if (!resolved) {
 		return { error: "Timeline element not found" };
 	}
 
-	if (element.element.content !== undefined) {
+	const { track, element } = resolved;
+	const trackId = track.trackId;
+
+	if (element.content !== undefined) {
 		const cacheKey = `${trackId}:${elementId}`;
 		const cached = textContextCache.get(cacheKey);
 		if (cached) {
@@ -181,11 +186,11 @@ async function loadTimelineElementContext(
 			kind: "text",
 			trackId,
 			elementId,
-			type: element.element.type,
-			...(element.element.name ? { name: element.element.name } : {}),
-			content: element.element.content,
-			start: element.element.start,
-			end: element.element.end,
+			type: element.type,
+			...(element.name ? { name: element.name } : {}),
+			content: element.content,
+			start: element.start,
+			end: element.end,
 		};
 
 		textContextCache.set(cacheKey, textContext);
@@ -200,17 +205,17 @@ async function loadTimelineElementContext(
 		};
 	}
 
-	if (element.element.assetId) {
+	if (element.assetId) {
 		return loadAssetContext(
-			{ targetType: "asset", assetId: element.element.assetId },
+			{ targetType: "asset", assetId: element.assetId },
 			context,
 			{
-				assetId: element.element.assetId,
+				assetId: element.assetId,
 				trackId,
 				elementId,
-				type: element.element.type,
-				start: element.element.start,
-				end: element.element.end,
+				type: element.type,
+				start: element.start,
+				end: element.end,
 			},
 		);
 	}
@@ -365,6 +370,23 @@ function findTimelineElement(
 	);
 
 	return track && element ? { track, element } : null;
+}
+
+function findTimelineElementAcrossTracks(
+	tracks: AgentTimelineTrack[] | undefined,
+	elementId: string,
+): {
+	track: AgentTimelineTrack;
+	element: AgentTimelineTrack["elements"][number];
+} | null {
+	if (!tracks) return null;
+	for (const track of tracks) {
+		const element = track.elements.find(
+			(candidate) => candidate.elementId === elementId,
+		);
+		if (element) return { track, element };
+	}
+	return null;
 }
 
 function isSupportedMediaAssetType(type: string): boolean {

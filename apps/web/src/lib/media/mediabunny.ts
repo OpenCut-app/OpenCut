@@ -1,4 +1,4 @@
-import { Input, ALL_FORMATS, BlobSource } from "mediabunny";
+import { Input, ALL_FORMATS, BlobSource, AudioBufferSink } from "mediabunny";
 import { createTimelineAudioBuffer } from "@/lib/media/audio";
 import type { SceneTracks } from "@/lib/timeline";
 import type { MediaAsset } from "@/lib/media/types";
@@ -44,6 +44,50 @@ const SAMPLE_RATE = 44100;
 const NUM_CHANNELS = 2;
 const EMPTY_TIMELINE_SILENT_DURATION_SECONDS = 0.1;
 const MIN_SILENT_DURATION_SECONDS = 0.001;
+
+export async function extractAssetAudio({
+	file,
+	assetType,
+}: {
+	file: File;
+	assetType: string;
+}): Promise<Blob> {
+	if (assetType === "audio") {
+		return file;
+	}
+
+	const input = new Input({
+		source: new BlobSource(file),
+		formats: ALL_FORMATS,
+	});
+
+	try {
+		const audioTrack = await input.getPrimaryAudioTrack();
+		if (!audioTrack) {
+			throw new Error("Asset has no audio track");
+		}
+
+		const sink = new AudioBufferSink(audioTrack);
+		const chunks: AudioBuffer[] = [];
+		let totalSamples = 0;
+
+		for await (const { buffer } of sink.buffers(0)) {
+			chunks.push(buffer);
+			totalSamples += buffer.length;
+		}
+
+		if (chunks.length === 0 || totalSamples === 0) {
+			throw new Error("Could not extract audio from asset");
+		}
+
+		return createWavBlob({
+			samples: interleaveAudioChunks({ chunks, totalSamples }),
+			sampleRate: chunks[0].sampleRate,
+		});
+	} finally {
+		input.dispose();
+	}
+}
 
 export const extractTimelineAudio = async ({
 	tracks,
@@ -113,7 +157,38 @@ function interleaveAudioBuffer({
 	return interleavedSamples;
 }
 
-function createWavBlob({ samples }: { samples: Float32Array }): Blob {
+function interleaveAudioChunks({
+	chunks,
+	totalSamples,
+}: {
+	chunks: AudioBuffer[];
+	totalSamples: number;
+}): Float32Array {
+	const interleavedSamples = new Float32Array(totalSamples * NUM_CHANNELS);
+	let outputSampleIndex = 0;
+
+	for (const chunk of chunks) {
+		const numChannels = Math.min(NUM_CHANNELS, chunk.numberOfChannels);
+		for (let sampleIndex = 0; sampleIndex < chunk.length; sampleIndex++) {
+			for (let channel = 0; channel < NUM_CHANNELS; channel++) {
+				const sourceChannel = Math.min(channel, Math.max(0, numChannels - 1));
+				interleavedSamples[outputSampleIndex * NUM_CHANNELS + channel] =
+					chunk.getChannelData(sourceChannel)[sampleIndex] ?? 0;
+			}
+			outputSampleIndex++;
+		}
+	}
+
+	return interleavedSamples;
+}
+
+function createWavBlob({
+	samples,
+	sampleRate = SAMPLE_RATE,
+}: {
+	samples: Float32Array;
+	sampleRate?: number;
+}): Blob {
 	const numChannels = NUM_CHANNELS;
 	const bitsPerSample = 16;
 	const bytesPerSample = bitsPerSample / 8;
@@ -132,8 +207,8 @@ function createWavBlob({ samples }: { samples: Float32Array }): Blob {
 	view.setUint32(16, 16, true);
 	view.setUint16(20, 1, true);
 	view.setUint16(22, numChannels, true);
-	view.setUint32(24, SAMPLE_RATE, true);
-	view.setUint32(28, SAMPLE_RATE * numChannels * bytesPerSample, true);
+	view.setUint32(24, sampleRate, true);
+	view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
 	view.setUint16(32, numChannels * bytesPerSample, true);
 	view.setUint16(34, bitsPerSample, true);
 
