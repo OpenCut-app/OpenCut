@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useEditor } from "@/editor/use-editor";
 import { formatTimecode } from "opencut-wasm";
 import { invokeAction } from "@/actions";
+import { useKeyboardShortcutsHelp } from "@/actions/use-keyboard-shortcuts-help";
 import { EditableTimecode } from "@/components/editable-timecode";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,11 @@ import { PREVIEW_ZOOM_PRESETS } from "@/preview/zoom";
 import { usePreviewViewport } from "./preview-viewport";
 import { GridPopover } from "./guide-popover";
 import { usePreviewStore } from "@/preview/preview-store";
+import {
+	Tooltip,
+	TooltipTrigger,
+	TooltipContent,
+} from "@/components/ui/tooltip";
 import type { MediaTime } from "@/wasm";
 
 export function PreviewToolbar({
@@ -133,14 +139,24 @@ function ZoomSelect() {
 
 function PlayPauseButton() {
 	const isPlaying = useEditor((e) => e.playback.getIsPlaying());
+	const { shortcuts } = useKeyboardShortcutsHelp();
+	const shortcut = shortcuts.find((s) => s.action === "toggle-play");
+	const tooltipText = shortcut
+		? `Play/Pause (${shortcut.keys.join(" or ")})`
+		: "Play/Pause";
 
 	return (
-		<Button
-			variant="text"
-			size="icon"
-			onClick={() => invokeAction("toggle-play")}
-		>
-			<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
-		</Button>
+		<Tooltip delayDuration={200}>
+			<TooltipTrigger asChild>
+				<Button
+					variant="text"
+					size="icon"
+					onClick={() => invokeAction("toggle-play")}
+				>
+					<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>{tooltipText}</TooltipContent>
+		</Tooltip>
 	);
 }

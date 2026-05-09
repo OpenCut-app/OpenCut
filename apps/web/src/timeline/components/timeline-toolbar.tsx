@@ -19,6 +19,7 @@ import { TIMELINE_ZOOM_MAX } from "@/timeline/scale";
 import { sliderToZoom, zoomToSlider } from "@/timeline/zoom-utils";
 import { ScenesView } from "@/components/editor/scenes-view";
 import { type TActionWithOptionalArgs, invokeAction } from "@/actions";
+import { useKeyboardShortcutsHelp } from "@/actions/use-keyboard-shortcuts-help";
 import {
 	canToggleSourceAudio,
 	getSourceAudioActionLabel,
@@ -143,18 +144,21 @@ function ToolbarLeftSection() {
 		<div className="flex items-center gap-1">
 			<TooltipProvider delayDuration={500}>
 				<ToolbarButton
+					action="split"
 					icon={<HugeiconsIcon icon={ScissorIcon} />}
 					tooltip="Split element"
 					onClick={({ event }) => handleAction({ action: "split", event })}
 				/>
 
 				<ToolbarButton
+					action="split-left"
 					icon={<HugeiconsIcon icon={AlignLeftIcon} />}
 					tooltip="Split left"
 					onClick={({ event }) => handleAction({ action: "split-left", event })}
 				/>
 
 				<ToolbarButton
+					action="split-right"
 					icon={<HugeiconsIcon icon={AlignRightIcon} />}
 					tooltip="Split right"
 					onClick={({ event }) =>
@@ -163,6 +167,7 @@ function ToolbarLeftSection() {
 				/>
 
 				<ToolbarButton
+					action="toggle-source-audio"
 					icon={
 						<HugeiconsIcon
 							icon={isSelectedSourceAudioSeparated ? Unlink02Icon : Link02Icon}
@@ -176,6 +181,7 @@ function ToolbarLeftSection() {
 				/>
 
 				<ToolbarButton
+					action="duplicate-selected"
 					icon={<HugeiconsIcon icon={Copy01Icon} />}
 					tooltip="Duplicate element"
 					onClick={({ event }) =>
@@ -191,6 +197,7 @@ function ToolbarLeftSection() {
 				/>
 
 				<ToolbarButton
+					action="delete-selected"
 					icon={<HugeiconsIcon icon={Delete02Icon} />}
 					tooltip="Delete element"
 					onClick={({ event }) =>
@@ -200,16 +207,15 @@ function ToolbarLeftSection() {
 
 				<div className="bg-border mx-1 h-6 w-px" />
 
-				<Tooltip>
-					<ToolbarButton
-						icon={<HugeiconsIcon icon={Bookmark02Icon} />}
-						isActive={isCurrentlyBookmarked}
-						tooltip={isCurrentlyBookmarked ? "Remove bookmark" : "Add bookmark"}
-						onClick={({ event }) =>
-							handleAction({ action: "toggle-bookmark", event })
-						}
-					/>
-				</Tooltip>
+				<ToolbarButton
+					action="toggle-bookmark"
+					icon={<HugeiconsIcon icon={Bookmark02Icon} />}
+					isActive={isCurrentlyBookmarked}
+					tooltip={isCurrentlyBookmarked ? "Remove bookmark" : "Add bookmark"}
+					onClick={({ event }) =>
+						handleAction({ action: "toggle-bookmark", event })
+					}
+				/>
 
 				<GraphEditorPopover
 					open={graphEditor.open}
@@ -284,6 +290,7 @@ function ToolbarRightSection({
 		<div className="flex items-center gap-1">
 			<TooltipProvider delayDuration={500}>
 				<ToolbarButton
+					action="toggle-snapping"
 					icon={<HugeiconsIcon icon={MagnetIcon} />}
 					isActive={snappingEnabled}
 					tooltip="Auto snapping"
@@ -291,6 +298,7 @@ function ToolbarRightSection({
 				/>
 
 				<ToolbarButton
+					action="toggle-ripple-editing"
 					icon={<OcRippleIcon size={24} className="scale-110" />}
 					isActive={rippleEditingEnabled}
 					tooltip="Ripple editing"
@@ -337,6 +345,7 @@ function ToolbarButton({
 	disabled,
 	isActive,
 	buttonWrapper,
+	action,
 }: {
 	icon: React.ReactNode;
 	tooltip: string;
@@ -344,7 +353,17 @@ function ToolbarButton({
 	disabled?: boolean;
 	isActive?: boolean;
 	buttonWrapper?: (button: React.ReactElement) => React.ReactElement;
+	action?: TActionWithOptionalArgs;
 }) {
+	const { shortcuts } = useKeyboardShortcutsHelp();
+	const shortcut = action
+		? shortcuts.find((s) => s.action === action)
+		: null;
+
+	const tooltipContent = shortcut
+		? `${tooltip} (${shortcut.keys.join(" or ")})`
+		: tooltip;
+
 	const button = (
 		<Button
 			variant={isActive ? "secondary" : "text"}
@@ -370,7 +389,7 @@ function ToolbarButton({
 	return (
 		<Tooltip delayDuration={200}>
 			<TooltipTrigger asChild>{trigger}</TooltipTrigger>
-			<TooltipContent>{tooltip}</TooltipContent>
+			<TooltipContent>{tooltipContent}</TooltipContent>
 		</Tooltip>
 	);
 }
