@@ -5,10 +5,15 @@ import {
 	CanvasSink,
 	type WrappedCanvas,
 } from "mediabunny";
+import {
+	type FrameSink,
+	HTMLVideoElementSink,
+	isWebCodecsAvailable,
+} from "./html-video-element-sink";
 
 interface VideoSinkData {
-	input: Input;
-	sink: CanvasSink;
+	sink: FrameSink;
+	dispose: () => void;
 	iterator: AsyncGenerator<WrappedCanvas, void, unknown> | null;
 	currentFrame: WrappedCanvas | null;
 	nextFrame: WrappedCanvas | null;
@@ -275,7 +280,15 @@ export class VideoCache {
 
 			const canDecode = await videoTrack.canDecode();
 			if (!canDecode) {
-				throw new Error("Video codec not supported for decoding");
+				if (isWebCodecsAvailable()) {
+					throw new Error("Video codec not supported for decoding");
+				}
+				// WebCodecs API absent (e.g. browsers without VideoDecoder support).
+				// Fall back to an HTMLVideoElement-backed sink which uses the
+				// system's native video decoders via the <video> tag.
+				input.dispose();
+				await this.initializeHTMLVideoElementSink({ mediaId, file });
+				return;
 			}
 
 			const sink = new CanvasSink(videoTrack, {
@@ -284,8 +297,8 @@ export class VideoCache {
 			});
 
 			this.sinks.set(mediaId, {
-				input,
 				sink,
+				dispose: () => input.dispose(),
 				iterator: null,
 				currentFrame: null,
 				nextFrame: null,
@@ -300,6 +313,29 @@ export class VideoCache {
 		}
 	}
 
+	private async initializeHTMLVideoElementSink({
+		mediaId,
+		file,
+	}: {
+		mediaId: string;
+		file: File;
+	}): Promise<void> {
+		const fallbackSink = await HTMLVideoElementSink.create({ file });
+		this.sinks.set(mediaId, {
+			sink: fallbackSink,
+			dispose: () => fallbackSink.dispose(),
+			iterator: null,
+			currentFrame: null,
+			nextFrame: null,
+			lastTime: -1,
+			prefetching: false,
+			prefetchPromise: null,
+		});
+		console.warn(
+			"[VideoCache] WebCodecs unavailable; using HTMLVideoElement fallback for video preview.",
+		);
+	}
+
 	clearVideo({ mediaId }: { mediaId: string }): void {
 		const sinkData = this.sinks.get(mediaId);
 		if (sinkData) {
@@ -307,7 +343,7 @@ export class VideoCache {
 				void sinkData.iterator.return();
 			}
 
-			sinkData.input.dispose();
+			sinkData.dispose();
 			this.sinks.delete(mediaId);
 		}
 
