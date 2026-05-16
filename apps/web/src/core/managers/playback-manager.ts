@@ -224,12 +224,26 @@ export class PlaybackManager {
 		const maxTime = this.editor.timeline.getTotalDuration();
 
 		if (newTime >= maxTime) {
+			const shouldLoop =
+				this.editor.project.getActive()?.settings.loop === true &&
+				maxTime > ZERO_MEDIA_TIME;
+
+			if (shouldLoop) {
+				this.playbackStartWallTime = performance.now();
+				this.playbackStartTime = ZERO_MEDIA_TIME;
+				this.currentTime = ZERO_MEDIA_TIME;
+				this.notifySeek(ZERO_MEDIA_TIME);
+				this.dispatchSeekEvent(ZERO_MEDIA_TIME);
+				this.playbackTimer = requestAnimationFrame(this.updateTime);
+				return;
+			}
+
 			this.pause();
 			this.currentTime = maxTime;
 			this.notify();
-		this.notifySeek(maxTime);
-		this.dispatchSeekEvent(maxTime);
-		return;
+			this.notifySeek(maxTime);
+			this.dispatchSeekEvent(maxTime);
+			return;
 		}
 
 		this.currentTime = newTime;

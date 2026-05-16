@@ -33,6 +33,11 @@ export interface TProjectSettings {
 	lastCustomCanvasSize?: TCanvasSize | null;
 	originalCanvasSize?: TCanvasSize | null;
 	background: TBackground;
+	/**
+	 * When true, preview playback wraps back to the start of the timeline
+	 * instead of pausing once the playhead reaches the end. Defaults to false.
+	 */
+	loop?: boolean;
 }
 
 export interface TTimelineViewState {
