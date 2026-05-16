@@ -27,6 +27,11 @@ export type TActionWithNoArgs = Exclude<TAction, TActionWithArgs>;
 
 const ACTION_KEYS_SET: ReadonlySet<string> = new Set(Object.keys(ACTIONS));
 
+const ACTIONS_WITH_REQUIRED_ARGS: ReadonlySet<string> = new Set([
+	"remove-media-asset",
+	"remove-media-assets",
+]);
+
 export function isAction(value: string): value is TAction {
 	return ACTION_KEYS_SET.has(value);
 }
@@ -34,10 +39,6 @@ export function isAction(value: string): value is TAction {
 export function isActionWithOptionalArgs(value: string): value is TActionWithOptionalArgs {
 	if (!isAction(value)) return false;
 	// Actions that require mandatory (non-undefined) args cannot be used as keybindings
-	const ACTIONS_WITH_REQUIRED_ARGS: ReadonlySet<string> = new Set([
-		"remove-media-asset",
-		"remove-media-assets",
-	]);
 	return !ACTIONS_WITH_REQUIRED_ARGS.has(value);
 }
 
