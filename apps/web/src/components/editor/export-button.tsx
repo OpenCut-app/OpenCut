@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TransitionTopIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -34,6 +34,9 @@ import {
 } from "@/components/section";
 import { useEditor } from "@/editor/use-editor";
 import { DEFAULT_EXPORT_OPTIONS } from "@/export/defaults";
+import { isWebCodecsExportSupported } from "@/services/renderer/media-recorder-support";
+import { convertVideoToH264 } from "@/media/ffmpeg-convert";
+import { toast } from "sonner";
 
 function isExportFormat(value: string): value is ExportFormat {
 	return EXPORT_FORMAT_VALUES.some((formatValue) => formatValue === value);
@@ -111,6 +114,20 @@ function ExportPopover({
 		DEFAULT_EXPORT_OPTIONS.includeAudio ?? true,
 	);
 
+	// When the browser lacks WebCodecs encoders, the SceneExporter falls back to
+	// a MediaRecorder-based path that always produces WebM (VP8/VP9 + Opus).
+	// QuickTime and Safari can't play WebM natively, so we offer a one-click
+	// server-side transcode to H.264 MP4 when the user originally asked for MP4.
+	const webCodecsExportSupported = useMemo(
+		() => isWebCodecsExportSupported(),
+		[],
+	);
+	const willFallbackToWebM = !webCodecsExportSupported;
+	const shouldOfferServerTranscode = willFallbackToWebM && format === "mp4";
+	const [transcodeToMp4OnServer, setTranscodeToMp4OnServer] =
+		useState<boolean>(true);
+	const [isTranscoding, setIsTranscoding] = useState(false);
+
 	const handleExport = async () => {
 		if (!activeProject) return;
 
@@ -129,10 +146,39 @@ function ExportPopover({
 		}
 
 		if (result.success && result.buffer) {
+			let outBuffer = result.buffer;
+			let outFormat: ExportFormat = format;
+
+			if (shouldOfferServerTranscode) {
+				if (transcodeToMp4OnServer) {
+					setIsTranscoding(true);
+					try {
+						const webmFile = new File([outBuffer], "export.webm", {
+							type: "video/webm",
+						});
+						const mp4File = await convertVideoToH264({ file: webmFile });
+						outBuffer = await mp4File.arrayBuffer();
+					} catch (error) {
+						const message =
+							error instanceof Error ? error.message : "Unknown error";
+						toast.error("Server transcode failed", {
+							description: `${message}. Saving WebM instead.`,
+						});
+						outFormat = "webm";
+					} finally {
+						setIsTranscoding(false);
+					}
+				} else {
+					// User opted out of server transcode: keep WebM extension/mime so
+					// the file matches its actual container.
+					outFormat = "webm";
+				}
+			}
+
 			downloadBuffer({
-				buffer: result.buffer,
-				filename: `${activeProject.metadata.name}${getExportFileExtension({ format })}`,
-				mimeType: getExportMimeType({ format }),
+				buffer: outBuffer,
+				filename: `${activeProject.metadata.name}${getExportFileExtension({ format: outFormat })}`,
+				mimeType: getExportMimeType({ format: outFormat }),
 			});
 
 			editor.project.clearExportState();
@@ -250,6 +296,39 @@ function ExportPopover({
 											</div>
 										</SectionContent>
 									</Section>
+
+									{shouldOfferServerTranscode && (
+										<Section collapsible defaultOpen>
+											<SectionHeader>
+												<SectionTitle>Browser compatibility</SectionTitle>
+											</SectionHeader>
+											<SectionContent>
+												<p className="mb-2 text-xs text-amber-600 dark:text-amber-400">
+													This browser can&apos;t encode H.264 directly, so the
+													export will produce a WebM file. WebM plays in Chrome,
+													Firefox and VLC, but not natively in QuickTime or
+													Safari.
+												</p>
+												<div className="flex items-start space-x-2">
+													<Checkbox
+														id="transcode-mp4"
+														className="mt-0.5"
+														checked={transcodeToMp4OnServer}
+														onCheckedChange={(checked) =>
+															setTranscodeToMp4OnServer(!!checked)
+														}
+													/>
+													<Label
+														htmlFor="transcode-mp4"
+														className="text-xs leading-snug"
+													>
+														Transcode to H.264 MP4 on the server after export
+														(uploads the WebM and re-encodes via ffmpeg)
+													</Label>
+												</div>
+											</SectionContent>
+										</Section>
+									)}
 								</div>
 
 								<div className="p-3 pt-0">
@@ -280,6 +359,18 @@ function ExportPopover({
 								>
 									Cancel
 								</Button>
+							</div>
+						)}
+
+						{isTranscoding && !isExporting && (
+							<div className="space-y-2 p-3">
+								<p className="text-muted-foreground text-sm">
+									Transcoding to MP4 on server…
+								</p>
+								<p className="text-muted-foreground text-xs">
+									Uploading the WebM file and re-encoding via ffmpeg. This
+									runs once per export and is independent of preview playback.
+								</p>
 							</div>
 						)}
 					</div>
