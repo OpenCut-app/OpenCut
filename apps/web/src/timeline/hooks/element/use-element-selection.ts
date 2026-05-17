@@ -101,6 +101,67 @@ export function useElementSelection() {
 		[selectedElements, editor],
 	);
 
+	const selectElementRange = useCallback(
+		({
+			anchor,
+			target,
+		}: {
+			anchor?: ElementRef | null;
+			target: ElementRef;
+		}) => {
+			const tracks = editor.scenes.getActiveScene().tracks;
+			const track = [...tracks.overlay, tracks.main, ...tracks.audio].find(
+				(candidate) => candidate.id === target.trackId,
+			);
+			const rangeAnchor =
+				anchor?.trackId === target.trackId
+					? anchor
+					: selectedElements
+							.slice()
+							.reverse()
+							.find((element) => element.trackId === target.trackId);
+
+			if (!track || !rangeAnchor) {
+				const elements = [target];
+				editor.selection.setSelectedElements({ elements });
+				return elements;
+			}
+
+			const orderedElements = track.elements
+				.map((element, index) => ({ element, index }))
+				.sort((a, b) => {
+					if (a.element.startTime !== b.element.startTime) {
+						return a.element.startTime - b.element.startTime;
+					}
+					return a.index - b.index;
+				});
+			const anchorIndex = orderedElements.findIndex(
+				({ element }) => element.id === rangeAnchor.elementId,
+			);
+			const targetIndex = orderedElements.findIndex(
+				({ element }) => element.id === target.elementId,
+			);
+
+			if (anchorIndex === -1 || targetIndex === -1) {
+				const elements = [target];
+				editor.selection.setSelectedElements({ elements });
+				return elements;
+			}
+
+			const start = Math.min(anchorIndex, targetIndex);
+			const end = Math.max(anchorIndex, targetIndex);
+			const elements = orderedElements
+				.slice(start, end + 1)
+				.map(({ element }) => ({
+					trackId: target.trackId,
+					elementId: element.id,
+				}));
+
+			editor.selection.setSelectedElements({ elements });
+			return elements;
+		},
+		[selectedElements, editor],
+	);
 
 	/**
 	 * Handles click interaction on an element.
@@ -128,6 +189,7 @@ export function useElementSelection() {
 		selectElement,
 		setElementSelection,
 		mergeElementsIntoSelection,
+		selectElementRange,
 		addElementToSelection,
 		removeElementFromSelection,
 		toggleElementSelection,
