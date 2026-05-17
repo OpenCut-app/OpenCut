@@ -101,6 +101,10 @@ export function useElementSelection() {
 		[selectedElements, editor],
 	);
 
+	/**
+	 * Selects every element between the anchor and target on the same timeline row.
+	 * Falls back to selecting only the target when no same-row anchor exists.
+	 */
 	const selectElementRange = useCallback(
 		({
 			anchor,
