@@ -379,10 +379,18 @@ export class ElementInteractionController {
 
 		let rangeSelection: readonly ElementRef[] | null = null;
 		if (event.shiftKey) {
+			const anchor =
+				this.elementSelectionAnchor?.trackId === ref.trackId
+					? this.elementSelectionAnchor
+					: null;
 			rangeSelection = this.deps.selection.selectRange({
-				anchor: this.elementSelectionAnchor,
+				anchor: anchor ?? ref,
 				target: ref,
 			});
+
+			if (!anchor) {
+				this.elementSelectionAnchor = ref;
+			}
 		} else if (event.metaKey || event.ctrlKey) {
 			this.deps.selection.handleClick({ ...ref, isMultiKey: true });
 		}

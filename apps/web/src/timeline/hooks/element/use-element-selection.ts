@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useEditor } from "@/editor/use-editor";
+import { findTrackInSceneTracks } from "@/timeline/track-element-update";
 import type { ElementRef } from "@/timeline/types";
 
 export function useElementSelection() {
@@ -102,8 +103,8 @@ export function useElementSelection() {
 	);
 
 	/**
-	 * Selects every element between the anchor and target on the same timeline row.
-	 * Falls back to selecting only the target when no same-row anchor exists.
+	 * Handles Shift-click range selection. Selects all clips between the anchor
+	 * and target when both are on the same track; otherwise selects only target.
 	 */
 	const selectElementRange = useCallback(
 		({
@@ -113,58 +114,47 @@ export function useElementSelection() {
 			anchor?: ElementRef | null;
 			target: ElementRef;
 		}) => {
-			const tracks = editor.scenes.getActiveScene().tracks;
-			const track = [...tracks.overlay, tracks.main, ...tracks.audio].find(
-				(candidate) => candidate.id === target.trackId,
-			);
-			const rangeAnchor =
-				anchor?.trackId === target.trackId
-					? anchor
-					: selectedElements
-							.slice()
-							.reverse()
-							.find((element) => element.trackId === target.trackId);
-
-			if (!track || !rangeAnchor) {
-				const elements = [target];
+			const setSelection = (elements: ElementRef[]) => {
 				editor.selection.setSelectedElements({ elements });
 				return elements;
+			};
+
+			const track = findTrackInSceneTracks({
+				tracks: editor.scenes.getActiveScene().tracks,
+				trackId: target.trackId,
+			});
+			if (!track || anchor?.trackId !== target.trackId) {
+				return setSelection([target]);
 			}
 
 			const orderedElements = track.elements
 				.map((element, index) => ({ element, index }))
-				.sort((a, b) => {
-					if (a.element.startTime !== b.element.startTime) {
-						return a.element.startTime - b.element.startTime;
-					}
-					return a.index - b.index;
-				});
+				.sort((a, b) =>
+					a.element.startTime === b.element.startTime
+						? a.index - b.index
+						: a.element.startTime - b.element.startTime,
+				);
 			const anchorIndex = orderedElements.findIndex(
-				({ element }) => element.id === rangeAnchor.elementId,
+				({ element }) => element.id === anchor.elementId,
 			);
 			const targetIndex = orderedElements.findIndex(
 				({ element }) => element.id === target.elementId,
 			);
 
 			if (anchorIndex === -1 || targetIndex === -1) {
-				const elements = [target];
-				editor.selection.setSelectedElements({ elements });
-				return elements;
+				return setSelection([target]);
 			}
 
 			const start = Math.min(anchorIndex, targetIndex);
 			const end = Math.max(anchorIndex, targetIndex);
-			const elements = orderedElements
-				.slice(start, end + 1)
-				.map(({ element }) => ({
+			return setSelection(
+				orderedElements.slice(start, end + 1).map(({ element }) => ({
 					trackId: target.trackId,
 					elementId: element.id,
-				}));
-
-			editor.selection.setSelectedElements({ elements });
-			return elements;
+				})),
+			);
 		},
-		[selectedElements, editor],
+		[editor],
 	);
 
 	/**
