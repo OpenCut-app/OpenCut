@@ -2,6 +2,15 @@ import type { FrameRate } from "opencut-wasm";
 import type { TScene } from "@/timeline/types";
 import type { MediaTime } from "@/wasm";
 
+export const PROJECT_TYPES = ["standard", "shorts"] as const;
+/**
+ * Project intent. "shorts" indicates a vertical 9:16 short-form project
+ * (e.g. YouTube Shorts) — drives preset pickers, export defaults, and
+ * vertical-safe text positioning. "standard" covers landscape, square,
+ * and other non-Shorts aspect ratios.
+ */
+export type TProjectType = (typeof PROJECT_TYPES)[number];
+
 export type TBackground =
 	| {
 			type: "color";
@@ -24,6 +33,13 @@ export interface TProjectMetadata {
 	duration: MediaTime;
 	createdAt: Date;
 	updatedAt: Date;
+	/**
+	 * Discriminator for project intent. Optional for back-compat — undefined on
+	 * projects created before this field existed; consumers MUST treat undefined
+	 * as "standard" (e.g. `projectType ?? "standard"`). New projects always set
+	 * this explicitly via ProjectManager.createNewProject.
+	 */
+	projectType?: TProjectType;
 }
 
 export interface TProjectSettings {

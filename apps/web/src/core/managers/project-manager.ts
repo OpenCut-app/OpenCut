@@ -5,6 +5,7 @@ import type {
 	TProjectSortKey,
 	TProjectSortOption,
 	TProjectSettings,
+	TProjectType,
 	TTimelineViewState,
 } from "@/project/types";
 import type { ExportOptions, ExportResult, ExportState } from "@/export";
@@ -79,7 +80,13 @@ export class ProjectManager {
 		await this.storageMigrationPromise;
 	}
 
-	async createNewProject({ name }: { name: string }): Promise<string> {
+	async createNewProject({
+		name,
+		projectType,
+	}: {
+		name: string;
+		projectType?: TProjectType;
+	}): Promise<string> {
 		const mainScene = buildDefaultScene({ name: "Main scene", isMain: true });
 		const newProject: TProject = {
 			metadata: {
@@ -88,6 +95,7 @@ export class ProjectManager {
 				duration: getProjectDurationFromScenes({ scenes: [mainScene] }),
 				createdAt: new Date(),
 				updatedAt: new Date(),
+				projectType: projectType ?? "standard",
 			},
 			scenes: [mainScene],
 			currentSceneId: mainScene.id,
