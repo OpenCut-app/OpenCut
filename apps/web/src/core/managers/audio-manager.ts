@@ -20,6 +20,10 @@ import {
 	Input,
 	type WrappedAudioBuffer,
 } from "mediabunny";
+import {
+	type AudioBufferSinkLike,
+	FallbackAudioBufferSink,
+} from "@/services/audio-cache/fallback-audio-buffer-sink";
 
 export class AudioManager {
 	private audioContext: AudioContext | null = null;
@@ -30,7 +34,7 @@ export class AudioManager {
 	private lookaheadSeconds = 2;
 	private scheduleIntervalMs = 500;
 	private clips: AudioClipSource[] = [];
-	private sinks = new Map<string, AudioBufferSink>();
+	private sinks = new Map<string, AudioBufferSinkLike>();
 	private inputs = new Map<string, Input>();
 	private activeClipIds = new Set<string>();
 	private clipIterators = new Map<
@@ -267,7 +271,42 @@ export class AudioManager {
 
 		const iterator = sink.buffers(sourceStartTime);
 		this.clipIterators.set(clip.id, iterator);
-		let consecutiveDroppedBufferCount = 0;
+
+		try {
+			await this.consumeClipIterator({
+				clip,
+				clipEnd,
+				iterator,
+				audioContext,
+				sessionId,
+				initialDroppedCount: 0,
+			});
+		} catch (error) {
+			console.warn(
+				`[AudioManager] clip iterator failed for ${clip.id}; aborting playback for this clip.`,
+				error,
+			);
+			this.clipIterators.delete(clip.id);
+			this.activeClipIds.delete(clip.id);
+		}
+	}
+
+	private async consumeClipIterator({
+		clip,
+		clipEnd,
+		iterator,
+		audioContext,
+		sessionId,
+		initialDroppedCount,
+	}: {
+		clip: AudioClipSource;
+		clipEnd: number;
+		iterator: AsyncGenerator<WrappedAudioBuffer, void, unknown>;
+		audioContext: AudioContext;
+		sessionId: number;
+		initialDroppedCount: number;
+	}): Promise<void> {
+		let consecutiveDroppedBufferCount = initialDroppedCount;
 
 		for await (const { buffer, timestamp } of iterator) {
 			if (!this.editor.playback.getIsPlaying()) return;
@@ -605,7 +644,18 @@ export class AudioManager {
 				return null;
 			}
 
-			const sink = new AudioBufferSink(audioTrack);
+			const canDecode = await safeCanDecode({ audioTrack });
+			const sink: AudioBufferSinkLike = canDecode
+				? new AudioBufferSink(audioTrack)
+				: await FallbackAudioBufferSink.create({
+						file: clip.file,
+						audioContext,
+					});
+			if (!canDecode) {
+				console.warn(
+					"[AudioManager] WebCodecs unavailable; decoding clip audio via decodeAudioData.",
+				);
+			}
 			const chunks: AudioBuffer[] = [];
 			let totalSamples = 0;
 
@@ -673,12 +723,13 @@ export class AudioManager {
 		clip,
 	}: {
 		clip: AudioClipSource;
-	}): Promise<AudioBufferSink | null> {
+	}): Promise<AudioBufferSinkLike | null> {
 		const existingSink = this.sinks.get(clip.sourceKey);
 		if (existingSink) return existingSink;
 
+		let input: Input | null = null;
 		try {
-			const input = new Input({
+			input = new Input({
 				source: new BlobSource(clip.file),
 				formats: ALL_FORMATS,
 			});
@@ -688,13 +739,47 @@ export class AudioManager {
 				return null;
 			}
 
+			const canDecode = await safeCanDecode({ audioTrack });
+			if (!canDecode) {
+				input.dispose();
+				input = null;
+				const audioContext = this.ensureAudioContext();
+				if (!audioContext) {
+					return null;
+				}
+				const fallback = await FallbackAudioBufferSink.create({
+					file: clip.file,
+					audioContext,
+				});
+				this.sinks.set(clip.sourceKey, fallback);
+				console.warn(
+					"[AudioManager] WebCodecs unavailable; using decodeAudioData fallback for audio clip.",
+				);
+				return fallback;
+			}
+
 			const sink = new AudioBufferSink(audioTrack);
 			this.inputs.set(clip.sourceKey, input);
 			this.sinks.set(clip.sourceKey, sink);
 			return sink;
 		} catch (error) {
+			if (input) {
+				input.dispose();
+			}
 			console.warn("Failed to initialize audio sink:", error);
 			return null;
 		}
+	}
+}
+
+async function safeCanDecode({
+	audioTrack,
+}: {
+	audioTrack: { canDecode: () => Promise<boolean> };
+}): Promise<boolean> {
+	try {
+		return await audioTrack.canDecode();
+	} catch {
+		return false;
 	}
 }
