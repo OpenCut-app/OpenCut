@@ -33,7 +33,7 @@ import {
 	SectionTitle,
 } from "@/components/section";
 import { useEditor } from "@/editor/use-editor";
-import { DEFAULT_EXPORT_OPTIONS } from "@/export/defaults";
+import { getDefaultExportOptions } from "@/export/defaults";
 
 function isExportFormat(value: string): value is ExportFormat {
 	return EXPORT_FORMAT_VALUES.some((formatValue) => formatValue === value);
@@ -101,14 +101,13 @@ function ExportPopover({
 	const activeProject = useEditor((e) => e.project.getActive());
 	const exportState = useEditor((e) => e.project.getExportState());
 	const { isExporting, progress, result: exportResult } = exportState;
-	const [format, setFormat] = useState<ExportFormat>(
-		DEFAULT_EXPORT_OPTIONS.format,
-	);
-	const [quality, setQuality] = useState<ExportQuality>(
-		DEFAULT_EXPORT_OPTIONS.quality,
-	);
+	const initialOptions = getDefaultExportOptions({
+		projectType: activeProject?.metadata?.projectType,
+	});
+	const [format, setFormat] = useState<ExportFormat>(initialOptions.format);
+	const [quality, setQuality] = useState<ExportQuality>(initialOptions.quality);
 	const [shouldIncludeAudio, setShouldIncludeAudio] = useState<boolean>(
-		DEFAULT_EXPORT_OPTIONS.includeAudio ?? true,
+		initialOptions.includeAudio ?? true,
 	);
 
 	const handleExport = async () => {
