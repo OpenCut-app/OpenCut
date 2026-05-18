@@ -1,5 +1,6 @@
 import type { MutableRefObject } from "react";
 import type { TAction } from "./definitions";
+import { ACTIONS } from "./definitions";
 
 export type { TAction };
 
@@ -23,6 +24,23 @@ export type TActionWithOptionalArgs =
 	| TKeysWithValueUndefined<TActionArgsMap>;
 
 export type TActionWithNoArgs = Exclude<TAction, TActionWithArgs>;
+
+const ACTION_KEYS_SET: ReadonlySet<string> = new Set(Object.keys(ACTIONS));
+
+const ACTIONS_WITH_REQUIRED_ARGS: ReadonlySet<string> = new Set([
+	"remove-media-asset",
+	"remove-media-assets",
+]);
+
+export function isAction(value: string): value is TAction {
+	return ACTION_KEYS_SET.has(value);
+}
+
+export function isActionWithOptionalArgs(value: string): value is TActionWithOptionalArgs {
+	if (!isAction(value)) return false;
+	// Actions that require mandatory (non-undefined) args cannot be used as keybindings
+	return !ACTIONS_WITH_REQUIRED_ARGS.has(value);
+}
 
 export type TArgOfAction<A extends TAction> = A extends TActionWithArgs
 	? TActionArgsMap[A]

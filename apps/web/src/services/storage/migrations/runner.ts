@@ -38,11 +38,11 @@ export async function runStorageMigrations({
 		hasCleanedUpMetaDb = true;
 	}
 
-	const projectsAdapter = new IndexedDBAdapter<ProjectRecord>(
-		"video-editor-projects",
-		"projects",
-		1,
-	);
+	const projectsAdapter = new IndexedDBAdapter<ProjectRecord>({
+		dbName: "video-editor-projects",
+		storeName: "projects",
+		version: 1,
+	});
 
 	const projects = await projectsAdapter.getAll();
 
@@ -95,7 +95,7 @@ export async function runStorageMigrations({
 				break;
 			}
 
-			await projectsAdapter.set(projectId, result.project);
+			await projectsAdapter.set({ key: projectId, value: result.project });
 			migratedCount++;
 			currentVersion = migration.to;
 			projectRecord = result.project;
