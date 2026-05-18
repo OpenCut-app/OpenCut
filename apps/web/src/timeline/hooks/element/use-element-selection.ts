@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useEditor } from "@/editor/use-editor";
+import { findTrackInSceneTracks } from "@/timeline/track-element-update";
 import type { ElementRef } from "@/timeline/types";
 
 export function useElementSelection() {
@@ -101,6 +102,60 @@ export function useElementSelection() {
 		[selectedElements, editor],
 	);
 
+	/**
+	 * Handles Shift-click range selection. Selects all clips between the anchor
+	 * and target when both are on the same track; otherwise selects only target.
+	 */
+	const selectElementRange = useCallback(
+		({
+			anchor,
+			target,
+		}: {
+			anchor?: ElementRef | null;
+			target: ElementRef;
+		}) => {
+			const setSelection = (elements: ElementRef[]) => {
+				editor.selection.setSelectedElements({ elements });
+				return elements;
+			};
+
+			const track = findTrackInSceneTracks({
+				tracks: editor.scenes.getActiveScene().tracks,
+				trackId: target.trackId,
+			});
+			if (!track || anchor?.trackId !== target.trackId) {
+				return setSelection([target]);
+			}
+
+			const orderedElements = track.elements
+				.map((element, index) => ({ element, index }))
+				.sort((a, b) =>
+					a.element.startTime === b.element.startTime
+						? a.index - b.index
+						: a.element.startTime - b.element.startTime,
+				);
+			const anchorIndex = orderedElements.findIndex(
+				({ element }) => element.id === anchor.elementId,
+			);
+			const targetIndex = orderedElements.findIndex(
+				({ element }) => element.id === target.elementId,
+			);
+
+			if (anchorIndex === -1 || targetIndex === -1) {
+				return setSelection([target]);
+			}
+
+			const start = Math.min(anchorIndex, targetIndex);
+			const end = Math.max(anchorIndex, targetIndex);
+			return setSelection(
+				orderedElements.slice(start, end + 1).map(({ element }) => ({
+					trackId: target.trackId,
+					elementId: element.id,
+				})),
+			);
+		},
+		[editor],
+	);
 
 	/**
 	 * Handles click interaction on an element.
@@ -128,6 +183,7 @@ export function useElementSelection() {
 		selectElement,
 		setElementSelection,
 		mergeElementsIntoSelection,
+		selectElementRange,
 		addElementToSelection,
 		removeElementFromSelection,
 		toggleElementSelection,

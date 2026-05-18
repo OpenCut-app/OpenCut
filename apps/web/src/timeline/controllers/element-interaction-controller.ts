@@ -55,6 +55,10 @@ export interface ElementSelectionApi {
 	getSelected: () => readonly ElementRef[];
 	isSelected: (ref: ElementRef) => boolean;
 	select: (ref: ElementRef) => void;
+	selectRange: (args: {
+		anchor?: ElementRef | null;
+		target: ElementRef;
+	}) => readonly ElementRef[];
 	handleClick: (args: ElementRef & { isMultiKey: boolean }) => void;
 	clearKeyframeSelection: () => void;
 }
@@ -295,6 +299,7 @@ export class ElementInteractionController {
 	// has already returned to idle, so the "was this a drag?" answer must
 	// outlive the session. Reset on the next mousedown.
 	private lastGestureWasDrag = false;
+	private elementSelectionAnchor: ElementRef | null = null;
 
 	private readonly subscribers = new Set<() => void>();
 	private readonly depsRef: ElementInteractionDepsRef;
@@ -372,13 +377,29 @@ export class ElementInteractionController {
 
 		const ref = { trackId: track.id, elementId: element.id };
 
-		if (event.metaKey || event.ctrlKey || event.shiftKey) {
+		let rangeSelection: readonly ElementRef[] | null = null;
+		if (event.shiftKey) {
+			const anchor =
+				this.elementSelectionAnchor?.trackId === ref.trackId
+					? this.elementSelectionAnchor
+					: null;
+			rangeSelection = this.deps.selection.selectRange({
+				anchor: anchor ?? ref,
+				target: ref,
+			});
+
+			if (!anchor) {
+				this.elementSelectionAnchor = ref;
+			}
+		} else if (event.metaKey || event.ctrlKey) {
 			this.deps.selection.handleClick({ ...ref, isMultiKey: true });
 		}
 
-		const selectedElements = this.deps.selection.isSelected(ref)
-			? this.deps.selection.getSelected()
-			: [ref];
+		const selectedElements =
+			rangeSelection ??
+			(this.deps.selection.isSelected(ref)
+				? this.deps.selection.getSelected()
+				: [ref]);
 
 		this.session = {
 			kind: "pending",
@@ -423,9 +444,11 @@ export class ElementInteractionController {
 			this.deps.selection.getSelected().length > 1
 		) {
 			this.deps.selection.select(ref);
+			this.elementSelectionAnchor = ref;
 			return;
 		}
 
+		this.elementSelectionAnchor = ref;
 		this.deps.selection.clearKeyframeSelection();
 	};
 
