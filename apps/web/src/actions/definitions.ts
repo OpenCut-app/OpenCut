@@ -208,3 +208,19 @@ export function getDefaultShortcuts(): Map<
 
 	return shortcuts;
 }
+
+const ACTION_SET: ReadonlySet<string> = new Set(Object.keys(ACTIONS));
+// IMPORTANT: This Set must stay in sync with entries in `TActionArgsMap` (./types.ts)
+// whose value type does not include `undefined`. If you add a new required-args action
+// to TActionArgsMap, add its ID here too — otherwise `isActionWithOptionalArgs` will
+// return true at runtime for an action that actually requires arguments.
+const REQUIRED_ARGS_ACTIONS: ReadonlySet<string> = new Set<string>([
+	"remove-media-asset",
+	"remove-media-assets",
+]);
+
+export function isActionWithOptionalArgs(
+	value: string,
+): value is TActionWithOptionalArgs {
+	return ACTION_SET.has(value) && !REQUIRED_ARGS_ACTIONS.has(value);
+}
