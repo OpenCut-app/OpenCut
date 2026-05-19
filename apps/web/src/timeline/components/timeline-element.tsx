@@ -23,7 +23,11 @@ import {
 	timelineTimeToSnappedPixels,
 } from "@/timeline";
 import { getTrackHeight } from "./track-layout";
-import { getTimelineElementClassName, TIMELINE_TRACK_THEME } from "./theme";
+import {
+	getTimelineElementClassName,
+	getTimelineElementClassNameForElement,
+	TIMELINE_TRACK_THEME,
+} from "./theme";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -585,8 +589,9 @@ function ElementInner({
 						<div
 							className={cn(
 								"flex shrink-0 items-center overflow-hidden",
-								getTimelineElementClassName({
-									type: getTrackTypeForElementType({
+								getTimelineElementClassNameForElement({
+									elementType: element.type,
+									trackType: getTrackTypeForElementType({
 										elementType: element.type,
 									}),
 								}),
