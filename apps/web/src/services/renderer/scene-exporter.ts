@@ -19,6 +19,10 @@ import { frameRateToFloat } from "@/fps/utils";
 import type { RootNode } from "./nodes/root-node";
 import type { ExportFormat, ExportQuality } from "@/export";
 import { CanvasRenderer } from "./canvas-renderer";
+import {
+	exportWithMediaRecorder,
+	isWebCodecsExportSupported,
+} from "./media-recorder-exporter";
 
 type ExportParams = {
 	width: number;
@@ -35,6 +39,15 @@ const qualityMap = {
 	medium: QUALITY_MEDIUM,
 	high: QUALITY_HIGH,
 	very_high: QUALITY_VERY_HIGH,
+};
+
+// Numeric bitrate (bits-per-second) used by the MediaRecorder export path,
+// which doesn't accept mediabunny's opaque `Quality` presets.
+const mediaRecorderBitrateMap: Record<ExportQuality, number> = {
+	low: 2_500_000,
+	medium: 5_000_000,
+	high: 10_000_000,
+	very_high: 20_000_000,
 };
 
 export type SceneExporterEvents = {
@@ -84,6 +97,10 @@ export class SceneExporter extends EventEmitter<SceneExporterEvents> {
 	}: {
 		rootNode: RootNode;
 	}): Promise<ArrayBuffer | null> {
+		if (!isWebCodecsExportSupported()) {
+			return this.exportViaMediaRecorder({ rootNode });
+		}
+
 		const fps = this.renderer.fps;
 		const fpsFloat = frameRateToFloat(fps);
 		const ticksPerFrame = Math.round(
@@ -167,5 +184,57 @@ export class SceneExporter extends EventEmitter<SceneExporterEvents> {
 
 		this.emit("complete", buffer);
 		return buffer;
+	}
+
+	private async exportViaMediaRecorder({
+		rootNode,
+	}: {
+		rootNode: RootNode;
+	}): Promise<ArrayBuffer | null> {
+		try {
+			const cancellationSignal = { cancelled: false };
+			const onTickCancel = () => {
+				if (this.isCancelled) {
+					cancellationSignal.cancelled = true;
+				}
+			};
+
+			const buffer = await exportWithMediaRecorder({
+				renderer: this.renderer,
+				rootNode,
+				fps: this.renderer.fps,
+				bitrate: mediaRecorderBitrateMap[this.quality],
+				audioBuffer: this.shouldIncludeAudio ? this.audioBuffer : null,
+				onProgress: (progress) => {
+					onTickCancel();
+					this.emit("progress", progress);
+				},
+				signal: cancellationSignal,
+			});
+
+			if (cancellationSignal.cancelled) {
+				this.emit("cancelled");
+				return null;
+			}
+
+			if (!buffer) {
+				this.emit("error", new Error("Failed to export video"));
+				return null;
+			}
+
+			this.emit("complete", buffer);
+			return buffer;
+		} catch (error) {
+			const err =
+				error instanceof Error
+					? error
+					: new Error(
+							typeof error === "string"
+								? error
+								: "MediaRecorder export failed",
+						);
+			this.emit("error", err);
+			return null;
+		}
 	}
 }

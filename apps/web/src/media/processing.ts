@@ -6,6 +6,7 @@ import type { MediaAsset } from "@/media/types";
 import { readVideoFile } from "./mediabunny";
 import type { VideoFileData } from "./mediabunny";
 import { renderThumbnailDataUrl } from "./thumbnail";
+import { convertVideoToH264 } from "./ffmpeg-convert";
 
 export interface ProcessedMediaAsset extends Omit<MediaAsset, "id"> {}
 
@@ -132,8 +133,49 @@ export async function processMediaAssets({
 				width = result.width;
 				height = result.height;
 			} else if (fileType === "video") {
+				let currentFile = file;
+				let currentUrl = url;
 				try {
-					const videoData = await readVideoFile({ file });
+					let videoData = await readVideoFile({ file: currentFile });
+
+					if (!videoData.canDecode) {
+						toast.info(`Converting ${file.name} to a compatible format…`);
+						const convertedFile = await convertVideoToH264({
+							file: currentFile,
+						});
+
+						const convertedStorageCheck = await storageService.canStoreFile({
+							size: convertedFile.size,
+						});
+						if (!convertedStorageCheck.canStore) {
+							throw new Error(
+								getStorageLimitDescription({
+									fileSize: convertedFile.size,
+									availableBytes: convertedStorageCheck.availableBytes,
+								}),
+							);
+						}
+
+						URL.revokeObjectURL(currentUrl);
+						currentFile = convertedFile;
+						currentUrl = URL.createObjectURL(currentFile);
+						videoData = await readVideoFile({ file: currentFile });
+
+						if (!videoData.canDecode) {
+							// Conversion produced a file the browser still can't decode
+							// via mediabunny/WebCodecs. The HTMLVideoElement fallback in
+							// VideoCache will handle preview rendering, so warn but
+							// continue importing.
+							toast.warning(`${file.name} converted, preview may be limited`, {
+								description: getUnsupportedVideoDescription({
+									codec: videoData.codec,
+								}),
+							});
+						} else {
+							toast.success(`${file.name} converted successfully`);
+						}
+					}
+
 					duration = videoData.duration;
 					width = videoData.width;
 					height = videoData.height;
@@ -143,13 +185,27 @@ export async function processMediaAssets({
 					hasAudio = videoData.hasAudio;
 					thumbnailUrl = videoData.thumbnailUrl ?? undefined;
 
-					if (!videoData.canDecode) {
-						toast.error(`Can't preview ${file.name}`, {
-							description: getUnsupportedVideoDescription({
-								codec: videoData.codec,
-							}),
-						});
+					processedAssets.push({
+						name: currentFile.name,
+						type: fileType,
+						file: currentFile,
+						url: currentUrl,
+						thumbnailUrl,
+						duration,
+						width,
+						height,
+						fps,
+						hasAudio,
+					});
+
+					await new Promise((resolve) => setTimeout(resolve, 0));
+
+					completed += 1;
+					if (onProgress) {
+						const percent = Math.round((completed / total) * 100);
+						onProgress({ progress: percent });
 					}
+					continue;
 				} catch (error) {
 					const message =
 						error instanceof Error
@@ -159,6 +215,8 @@ export async function processMediaAssets({
 					toast.error(`Couldn't process ${file.name}`, {
 						description: message,
 					});
+					URL.revokeObjectURL(currentUrl);
+					continue;
 				}
 			} else if (fileType === "audio") {
 				duration = await getMediaDuration({ file });

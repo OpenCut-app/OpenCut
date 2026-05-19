@@ -20,6 +20,10 @@ import { canTrackHaveAudio } from "@/timeline";
 import { mediaSupportsAudio } from "@/media/media-utils";
 import { getSourceTimeAtClipTime, renderRetimedBuffer } from "@/retime";
 import { Input, ALL_FORMATS, BlobSource, AudioBufferSink } from "mediabunny";
+import {
+	type AudioBufferSinkLike,
+	FallbackAudioBufferSink,
+} from "@/services/audio-cache/fallback-audio-buffer-sink";
 import { TICKS_PER_SECOND } from "@/wasm";
 import {
 	computeRmsBuckets,
@@ -271,7 +275,23 @@ async function resolveAudioBufferForAsset({
 		const audioTrack = await input.getPrimaryAudioTrack();
 		if (!audioTrack) return null;
 
-		const sink = new AudioBufferSink(audioTrack);
+		let audioTrackCanDecode = false;
+		try {
+			audioTrackCanDecode = await audioTrack.canDecode();
+		} catch {
+			audioTrackCanDecode = false;
+		}
+		const sink: AudioBufferSinkLike = audioTrackCanDecode
+			? new AudioBufferSink(audioTrack)
+			: await FallbackAudioBufferSink.create({
+					file: asset.file,
+					audioContext,
+				});
+		if (!audioTrackCanDecode) {
+			console.warn(
+				"[audio] WebCodecs unavailable; decoding asset via decodeAudioData fallback.",
+			);
+		}
 		const targetSampleRate = audioContext.sampleRate;
 
 		const chunks: AudioBuffer[] = [];
