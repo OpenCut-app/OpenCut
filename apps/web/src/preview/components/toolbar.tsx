@@ -11,7 +11,10 @@ import {
 	FullScreenIcon,
 	PauseIcon,
 	PlayIcon,
+	RepeatIcon,
+	RepeatOffIcon,
 } from "@hugeicons/core-free-icons";
+import { UpdateProjectSettingsCommand } from "@/commands/project";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -40,7 +43,10 @@ export function PreviewToolbar({
 	return (
 		<div className="grid grid-cols-[1fr_auto_1fr] items-center pb-3 pt-5 px-5">
 			<TimecodeDisplay />
-			<PlayPauseButton />
+			<div className="justify-self-center flex items-center gap-1">
+				<PlayPauseButton />
+				<LoopToggleButton />
+			</div>
 			<div className="justify-self-end flex items-center gap-2.5">
 				<ZoomSelect />
 				<Separator orientation="vertical" className="h-4" />
@@ -158,5 +164,25 @@ function PlayPauseButton() {
 			</TooltipTrigger>
 			<TooltipContent>{tooltipText}</TooltipContent>
 		</Tooltip>
+	);
+}
+
+function LoopToggleButton() {
+	const loop = useEditor((e) => e.project.getActive()?.settings.loop === true);
+
+	return (
+		<Button
+			type="button"
+			variant={loop ? "secondary" : "text"}
+			size="icon"
+			aria-pressed={loop}
+			aria-label={loop ? "Disable loop playback" : "Enable loop playback"}
+			title={loop ? "Loop is on" : "Loop is off"}
+			onClick={() => {
+				new UpdateProjectSettingsCommand({ loop: !loop }).execute();
+			}}
+		>
+			<HugeiconsIcon icon={loop ? RepeatIcon : RepeatOffIcon} />
+		</Button>
 	);
 }
