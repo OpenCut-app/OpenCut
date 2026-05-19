@@ -121,7 +121,7 @@ export function Header() {
 						<Link href={SOCIAL_LINKS.github}>
 							<Button className="bg-background text-sm" variant="outline">
 								<HugeiconsIcon icon={GithubIcon} className="size-4" />
-								40k+
+								51k+
 							</Button>
 						</Link>
 						<Link href="/projects">
