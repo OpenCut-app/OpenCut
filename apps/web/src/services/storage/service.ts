@@ -566,6 +566,30 @@ class StorageService {
 		return "indexedDB" in window;
 	}
 
+	async exportProjectToJSON({
+		id,
+	}: {
+		id: string;
+	}): Promise<SerializedProject | null> {
+		await this.ensureMigrations();
+		const serializedProject = await this.projectsAdapter.get(id);
+		return serializedProject ?? null;
+	}
+
+	async importProjectFromJSON({
+		serializedProject,
+	}: {
+		serializedProject: SerializedProject;
+	}): Promise<void> {
+		// Migrations must complete before any write — otherwise the import races
+		// with the memoized ensureMigrations() and may end up in a half-migrated store.
+		await this.ensureMigrations();
+		await this.projectsAdapter.set(
+			serializedProject.metadata.id,
+			serializedProject,
+		);
+	}
+
 	isFullySupported(): boolean {
 		return this.isIndexedDBSupported() && this.isOPFSSupported();
 	}

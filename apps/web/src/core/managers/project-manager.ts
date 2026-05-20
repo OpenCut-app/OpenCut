@@ -9,6 +9,7 @@ import type {
 } from "@/project/types";
 import type { ExportOptions, ExportResult, ExportState } from "@/export";
 import { storageService } from "@/services/storage/service";
+import type { SerializedProject } from "@/services/storage/types";
 import { toast } from "sonner";
 import { generateUUID } from "@/utils/id";
 import { UpdateProjectSettingsCommand } from "@/commands/project";
@@ -29,6 +30,8 @@ import { DEFAULTS } from "@/timeline/defaults";
 import { getElementFontFamilies } from "@/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/fps/utils";
 import type { MediaAsset } from "@/media/types";
+
+const SUPPORTED_FORMAT_VERSION = 1;
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -640,6 +643,151 @@ export class ProjectManager {
 	setActiveProject({ project }: { project: TProject }): void {
 		this.active = project;
 		this.notify();
+	}
+
+	async exportProjectToFile({ id }: { id: string }): Promise<void> {
+		try {
+			const serializedProject =
+				await storageService.exportProjectToJSON({ id });
+			if (!serializedProject) {
+				toast.error("Project not found");
+				return;
+			}
+
+			const exportData = {
+				formatVersion: SUPPORTED_FORMAT_VERSION,
+				exportedAt: new Date().toISOString(),
+				project: serializedProject,
+			};
+
+			const json = JSON.stringify(exportData, null, 2);
+			const blob = new Blob([json], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+
+			const safeName = serializedProject.metadata.name
+				.replace(/[^a-zA-Z0-9_-]/g, "_")
+				.substring(0, 100);
+			const filename = `${safeName}.opencut`;
+
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = filename;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+
+			toast.success("Project exported successfully");
+		} catch (error) {
+			console.error("Failed to export project:", error);
+			toast.error("Failed to export project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+		}
+	}
+
+	async importProjectFromFile({
+		file,
+	}: {
+		file: File;
+	}): Promise<string | null> {
+		try {
+			const text = await file.text();
+			let parsed: unknown;
+
+			try {
+				parsed = JSON.parse(text);
+			} catch {
+				toast.error("Invalid file", {
+					description: "The file is not valid JSON",
+				});
+				return null;
+			}
+
+			if (
+				!parsed ||
+				typeof parsed !== "object" ||
+				Array.isArray(parsed)
+			) {
+				toast.error("Invalid file format", {
+					description: "This does not appear to be an OpenCut project file",
+				});
+				return null;
+			}
+
+			const data = parsed as Record<string, unknown>;
+
+			if (data.formatVersion !== SUPPORTED_FORMAT_VERSION) {
+				toast.error("Unsupported file version", {
+					description: `Expected formatVersion ${SUPPORTED_FORMAT_VERSION}, got ${JSON.stringify(data.formatVersion)}`,
+				});
+				return null;
+			}
+
+			if (
+				!data.project ||
+				typeof data.project !== "object" ||
+				Array.isArray(data.project)
+			) {
+				toast.error("Invalid project data", {
+					description: "The project data is incomplete or corrupted",
+				});
+				return null;
+			}
+
+			const serializedProject = data.project as SerializedProject;
+			const meta = serializedProject.metadata as unknown as
+				| Record<string, unknown>
+				| undefined;
+
+			if (
+				!meta ||
+				typeof meta.id !== "string" ||
+				meta.id.trim() === "" ||
+				typeof meta.name !== "string" ||
+				meta.name.trim() === "" ||
+				!Array.isArray(serializedProject.scenes)
+			) {
+				toast.error("Invalid project data", {
+					description: "The project data is incomplete or corrupted",
+				});
+				return null;
+			}
+
+			// Assign a new ID to avoid collisions with existing projects
+			const newId = generateUUID();
+			serializedProject.metadata.id = newId;
+			serializedProject.metadata.updatedAt = new Date().toISOString();
+
+			await storageService.importProjectFromJSON({ serializedProject });
+
+			// Reload projects list
+			const metadata = {
+				id: serializedProject.metadata.id,
+				name: serializedProject.metadata.name,
+				thumbnail: serializedProject.metadata.thumbnail,
+				duration: serializedProject.metadata.duration ?? 0,
+				createdAt: new Date(serializedProject.metadata.createdAt),
+				updatedAt: new Date(serializedProject.metadata.updatedAt),
+			};
+
+			this.savedProjects = [metadata, ...this.savedProjects];
+			this.notify();
+
+			toast.success("Project imported successfully", {
+				description: serializedProject.metadata.name,
+			});
+
+			return newId;
+		} catch (error) {
+			console.error("Failed to import project:", error);
+			toast.error("Failed to import project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+			return null;
+		}
 	}
 
 	subscribe(listener: () => void): () => void {
