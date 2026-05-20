@@ -31,6 +31,8 @@ import { getElementFontFamilies } from "@/lib/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/lib/fps/utils";
 import type { MediaAsset } from "@/lib/media/types";
 
+const SUPPORTED_FORMAT_VERSION = 1;
+
 export interface MigrationState {
 	isMigrating: boolean;
 	fromVersion: number | null;
@@ -651,7 +653,7 @@ export class ProjectManager {
 			}
 
 			const exportData = {
-				formatVersion: 1,
+				formatVersion: SUPPORTED_FORMAT_VERSION,
 				exportedAt: new Date().toISOString(),
 				project: serializedProject,
 			};
@@ -701,13 +703,10 @@ export class ProjectManager {
 				return null;
 			}
 
-			const data = parsed as Record<string, unknown>;
-
 			if (
-				!data ||
-				typeof data !== "object" ||
-				!("formatVersion" in data) ||
-				!("project" in data)
+				!parsed ||
+				typeof parsed !== "object" ||
+				Array.isArray(parsed)
 			) {
 				toast.error("Invalid file format", {
 					description: "This does not appear to be an OpenCut project file",
@@ -715,12 +714,38 @@ export class ProjectManager {
 				return null;
 			}
 
-			const serializedProject = data.project as SerializedProject;
+			const data = parsed as Record<string, unknown>;
+
+			if (data.formatVersion !== SUPPORTED_FORMAT_VERSION) {
+				toast.error("Unsupported file version", {
+					description: `Expected formatVersion ${SUPPORTED_FORMAT_VERSION}, got ${JSON.stringify(data.formatVersion)}`,
+				});
+				return null;
+			}
 
 			if (
-				!serializedProject?.metadata?.id ||
-				!serializedProject?.metadata?.name ||
-				!Array.isArray(serializedProject?.scenes)
+				!data.project ||
+				typeof data.project !== "object" ||
+				Array.isArray(data.project)
+			) {
+				toast.error("Invalid project data", {
+					description: "The project data is incomplete or corrupted",
+				});
+				return null;
+			}
+
+			const serializedProject = data.project as SerializedProject;
+			const meta = serializedProject.metadata as unknown as
+				| Record<string, unknown>
+				| undefined;
+
+			if (
+				!meta ||
+				typeof meta.id !== "string" ||
+				meta.id.trim() === "" ||
+				typeof meta.name !== "string" ||
+				meta.name.trim() === "" ||
+				!Array.isArray(serializedProject.scenes)
 			) {
 				toast.error("Invalid project data", {
 					description: "The project data is incomplete or corrupted",

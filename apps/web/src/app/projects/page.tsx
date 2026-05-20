@@ -559,6 +559,7 @@ function ImportProjectButton() {
 				variant="outline"
 				className="flex px-5 md:px-6"
 				onClick={() => fileInputRef.current?.click()}
+				aria-label="Import project"
 			>
 				<HugeiconsIcon icon={Upload04Icon} className="size-4" />
 				<span className="text-sm font-medium hidden md:block">Import</span>
