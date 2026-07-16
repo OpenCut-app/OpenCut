@@ -30,6 +30,7 @@ import { getElementFontFamilies } from "@/lib/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/lib/fps/utils";
 import type { MediaAsset } from "@/lib/media/types";
 import type { SerializedProject } from "@/services/storage/types";
+import { z } from "zod";
 
 /** Schema version for the JSON export format. Increment when the format changes. */
 const EXPORT_SCHEMA_VERSION = 1;
@@ -52,6 +53,74 @@ export interface ExportedProjectJSON {
 	project: SerializedProject;
 	media: ExportedMediaManifestEntry[];
 }
+
+/**
+ * Runtime validation for imported `.opencut.json` payloads.
+ *
+ * The importer persists the parsed structure directly to storage, so the whole
+ * timeline shape (scenes -> tracks -> elements), settings, and view state are
+ * validated here before {@link importProjectFromJSON} writes anything. Extra
+ * fields are tolerated for forward compatibility; missing or mistyped required
+ * fields are rejected so a malformed file cannot be saved and only fail later
+ * when the project is opened.
+ */
+const importedElementSchema = z.object({
+	id: z.string(),
+	type: z.string(),
+	name: z.string(),
+	duration: z.number(),
+	startTime: z.number(),
+	trimStart: z.number(),
+	trimEnd: z.number(),
+});
+
+const importedTrackSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	type: z.enum(["video", "text", "audio", "graphic", "effect"]),
+	elements: z.array(importedElementSchema),
+});
+
+const importedSceneTracksSchema = z.object({
+	overlay: z.array(importedTrackSchema),
+	main: importedTrackSchema,
+	audio: z.array(importedTrackSchema),
+});
+
+const importedSceneSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	isMain: z.boolean(),
+	tracks: importedSceneTracksSchema,
+	bookmarks: z.array(z.unknown()).optional(),
+});
+
+const importedSettingsSchema = z.object({
+	fps: z.number(),
+	canvasSize: z.object({ width: z.number(), height: z.number() }),
+	background: z.object({ type: z.string() }),
+});
+
+const importedTimelineViewStateSchema = z.object({
+	zoomLevel: z.number(),
+	scrollLeft: z.number(),
+	playheadTime: z.number(),
+});
+
+const importedProjectJsonSchema = z.object({
+	schema_version: z.number(),
+	project: z.object({
+		metadata: z.object({
+			name: z.string(),
+			duration: z.number().optional(),
+		}),
+		scenes: z.array(importedSceneSchema).min(1),
+		currentSceneId: z.string().optional(),
+		settings: importedSettingsSchema,
+		timelineViewState: importedTimelineViewStateSchema.optional(),
+	}),
+	media: z.array(z.unknown()).optional(),
+});
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -861,19 +930,20 @@ export class ProjectManager {
 		json: string;
 	}): Promise<string | null> {
 		try {
-			const parsed = JSON.parse(json) as ExportedProjectJSON;
+			const parsedJson: unknown = JSON.parse(json);
 
-			if (
-				!parsed.project ||
-				!parsed.project.metadata ||
-				!parsed.project.scenes ||
-				parsed.project.scenes.length === 0
-			) {
+			const validation = importedProjectJsonSchema.safeParse(parsedJson);
+			if (!validation.success) {
 				toast.error("Invalid project file", {
 					description: "The file does not contain a valid OpenCut project.",
 				});
 				return null;
 			}
+
+			// Structure validated above, so it is safe to treat the payload as an
+			// exported project. We keep the original parsed object (rather than the
+			// stripped `validation.data`) to preserve every element/track field.
+			const parsed = parsedJson as ExportedProjectJSON;
 
 			if (parsed.schema_version !== EXPORT_SCHEMA_VERSION) {
 				toast.error("Incompatible project file", {
