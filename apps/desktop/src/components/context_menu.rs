@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, Entity, IntoElement, MouseButton, Pixels, Point, Render,
-    SharedString, Window, anchored, deferred, div, px,
+    SharedString, Window, anchored, deferred, div, prelude::*, px,
 };
 
-use crate::components::prelude::*;
+use crate::theme::ActiveTheme;
 
 type SelectHandler = Rc<dyn Fn(&mut Window, &mut App) + 'static>;
 
@@ -152,7 +152,7 @@ impl Render for ContextMenu {
             return div().into_any_element();
         };
 
-        let theme = theme(window);
+        let theme = window.theme();
         let colors = theme.colors;
         let items = self
             .items
@@ -168,6 +168,11 @@ impl Render for ContextMenu {
                         variant,
                         ..
                     } => {
+                        let foreground = if *variant == ContextMenuItemVariant::Destructive {
+                            colors.destructive
+                        } else {
+                            colors.popover_foreground
+                        };
                         let hover = if *variant == ContextMenuItemVariant::Destructive {
                             colors.destructive.opacity(0.1)
                         } else {
@@ -184,14 +189,7 @@ impl Render for ContextMenu {
                             .py(px(4.0))
                             .rounded(px(5.0))
                             .text_xs()
-                            .when(
-                                *variant == ContextMenuItemVariant::Destructive,
-                                |this| this.text_destructive(theme),
-                            )
-                            .when(
-                                *variant != ContextMenuItemVariant::Destructive,
-                                |this| this.text_popover_foreground(theme),
-                            )
+                            .text_color(foreground)
                             .when(*disabled, |this| this.opacity(0.5).cursor_not_allowed())
                             .when(!*disabled, |this| {
                                 this.cursor_default()
@@ -212,7 +210,7 @@ impl Render for ContextMenu {
                                 this.child(
                                     div()
                                         .text_size(px(10.0))
-                                        .text_muted_foreground(theme)
+                                        .text_color(colors.muted_foreground)
                                         .child(shortcut),
                                 )
                             })
@@ -222,14 +220,14 @@ impl Render for ContextMenu {
                         .px(px(8.0))
                         .py(px(6.0))
                         .text_xs()
-                        .text_muted_foreground(theme)
+                        .text_color(colors.muted_foreground)
                         .child(label.clone())
                         .into_any_element(),
                     ContextMenuItem::Separator => div()
                         .h(px(1.0))
                         .mx(px(-4.0))
                         .my(px(4.0))
-                        .bg_border_subtle(theme)
+                        .bg(colors.border.opacity(0.5))
                         .into_any_element(),
                 }
             })
@@ -247,11 +245,11 @@ impl Render for ContextMenu {
                         .max_h(window.viewport_size().height - px(16.0))
                         .overflow_y_scroll()
                         .p(px(4.0))
-                        .rounded_theme(theme)
-                        .bg_popover(theme)
-                        .text_popover_foreground(theme)
+                        .rounded(theme.radius)
+                        .bg(colors.popover)
+                        .text_color(colors.popover_foreground)
                         .border_1()
-                        .border_foreground_muted(theme)
+                        .border_color(colors.foreground.opacity(0.1))
                         .shadow_md()
                         .on_mouse_down_out(cx.listener(|this, _, _, cx| this.close(cx)))
                         .children(items),

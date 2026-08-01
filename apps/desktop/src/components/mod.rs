@@ -2,9 +2,7 @@ mod badge;
 mod button;
 mod context_menu;
 mod label;
-pub(crate) mod prelude;
 mod resizable;
-mod semantic;
 mod separator;
 
 pub(crate) use badge::{Badge, BadgeVariant};

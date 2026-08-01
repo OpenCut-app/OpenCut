@@ -1,9 +1,9 @@
 use gpui::{
     AnyView, AppContext, ClickEvent, Context, DragMoveEvent, Entity, IntoElement, Render, Window,
-    div, px, relative,
+    div, prelude::*, px, relative,
 };
 
-use crate::components::prelude::*;
+use crate::theme::ActiveTheme;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) enum Orientation {
@@ -90,7 +90,7 @@ impl ResizablePanelGroup {
 
 impl Render for ResizablePanelGroup {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = theme(window);
+        let colors = window.theme().colors;
         let orientation = self.orientation;
         let first_fraction = self.fraction;
 
@@ -105,8 +105,8 @@ impl Render for ResizablePanelGroup {
                     div()
                         .w(px(1.0))
                         .h_full()
-                        .bg_border(theme)
-                        .group_hover("resizable", |style| style.bg_ring(theme)),
+                        .bg(colors.border)
+                        .group_hover("resizable", |style| style.bg(colors.ring)),
                 )
             })
             .when(orientation == Orientation::Vertical, |this| {
@@ -114,8 +114,8 @@ impl Render for ResizablePanelGroup {
                     div()
                         .h(px(1.0))
                         .w_full()
-                        .bg_border(theme)
-                        .group_hover("resizable", |style| style.bg_ring(theme)),
+                        .bg(colors.border)
+                        .group_hover("resizable", |style| style.bg(colors.ring)),
                 )
             })
             .group("resizable")

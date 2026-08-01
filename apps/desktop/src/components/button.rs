@@ -1,9 +1,9 @@
 use gpui::{
     App, ClickEvent, ElementId, FontWeight, IntoElement, MouseButton, RenderOnce, SharedString,
-    Window, div, px, transparent_black,
+    Window, div, prelude::*, px, transparent_black,
 };
 
-use crate::components::prelude::*;
+use crate::theme::ActiveTheme;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -115,7 +115,7 @@ impl Button {
 
 impl RenderOnce for Button {
     fn render(self, window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        let theme = theme(window);
+        let theme = window.theme();
         let colors = theme.colors;
         let transparent = transparent_black();
 
@@ -177,7 +177,7 @@ impl RenderOnce for Button {
                 this.px(px(self.size.horizontal_padding()))
             })
             .when(self.full_width, |this| this.w_full())
-            .rounded_theme(theme)
+            .rounded(theme.radius)
             .border_1()
             .border_color(border)
             .bg(background)
@@ -186,7 +186,7 @@ impl RenderOnce for Button {
             .font_weight(FontWeight::MEDIUM)
             .whitespace_nowrap()
             .tab_index(0)
-            .focus(|style| style.border_ring(theme))
+            .focus(|style| style.border_color(colors.ring))
             .child(self.label);
 
         if self.disabled {

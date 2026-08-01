@@ -1,8 +1,9 @@
 use gpui::{
-    App, FontWeight, IntoElement, RenderOnce, SharedString, Window, div, px, transparent_black,
+    App, FontWeight, IntoElement, RenderOnce, SharedString, Window, div, prelude::*, px,
+    transparent_black,
 };
 
-use crate::components::prelude::*;
+use crate::theme::ActiveTheme;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -36,8 +37,7 @@ impl Badge {
 
 impl RenderOnce for Badge {
     fn render(self, window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        let theme = theme(window);
-        let colors = theme.colors;
+        let colors = window.theme().colors;
         let transparent = transparent_black();
         let (background, foreground, border) = match self.variant {
             BadgeVariant::Default => (colors.primary, colors.primary_foreground, transparent),
