@@ -1,6 +1,6 @@
-use gpui::{App, FontWeight, IntoElement, RenderOnce, SharedString, Window, div, prelude::*};
+use gpui::{App, FontWeight, IntoElement, RenderOnce, SharedString, Window, div};
 
-use crate::theme::ActiveTheme;
+use crate::components::prelude::*;
 
 #[derive(IntoElement)]
 pub(crate) struct Label {
@@ -32,16 +32,13 @@ impl Label {
 
 impl RenderOnce for Label {
     fn render(self, window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        let colors = window.theme().colors;
+        let theme = theme(window);
 
         div()
             .text_xs()
             .font_weight(FontWeight::MEDIUM)
-            .text_color(if self.muted {
-                colors.muted_foreground
-            } else {
-                colors.foreground
-            })
+            .when(self.muted, |this| this.text_muted_foreground(theme))
+            .when(!self.muted, |this| this.text_foreground(theme))
             .when(self.disabled, |this| this.opacity(0.5))
             .child(self.text)
     }
