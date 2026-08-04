@@ -1,0 +1,17 @@
+[package]
+name = "decode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+fake = []
+
+[dependencies]
+time = { workspace = true }
+thiserror = { workspace = true }
+bytemuck = { workspace = true }
+
+[dev-dependencies]
+decode = { path = ".", features = ["fake"] }

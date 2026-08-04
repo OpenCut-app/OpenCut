@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
   'apps/desktop',
-  # 'crates/*',
+  'crates/*',
 ]
 
 [workspace.package]
@@ -12,3 +12,9 @@ license = "MIT"
 
 [workspace.dependencies]
 gpui = "0.2.2"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+bytemuck = { version = "1", features = ["derive"] }
+wgpu = "25.0.2"
+time = { path = "crates/time" }
+decode = { path = "crates/decode" }

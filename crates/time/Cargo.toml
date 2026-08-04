@@ -1,0 +1,20 @@
+[package]
+name = "time"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+floats = []
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[test]]
+name = "floats"
+required-features = ["floats"]

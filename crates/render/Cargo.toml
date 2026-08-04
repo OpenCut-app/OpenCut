@@ -1,0 +1,24 @@
+[package]
+name = "render"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+wgpu-tests = []
+
+[dependencies]
+time = { workspace = true }
+decode = { workspace = true }
+wgpu = { workspace = true }
+thiserror = { workspace = true }
+bytemuck = { workspace = true }
+
+[dev-dependencies]
+decode = { workspace = true, features = ["fake"] }
+pollster = "0.4"
+
+[[test]]
+name = "compose"
+required-features = ["wgpu-tests"]
