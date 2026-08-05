@@ -61,6 +61,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "animation"
+version = "0.1.0"
+dependencies = [
+ "keyframe",
+ "property",
+ "time",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -176,6 +185,23 @@ dependencies = [
  "serde_repr",
  "url",
  "zbus",
+]
+
+[[package]]
+name = "asset_registry"
+version = "0.1.0"
+dependencies = [
+ "assets",
+ "storage",
+]
+
+[[package]]
+name = "assets"
+version = "0.1.0"
+dependencies = [
+ "engine",
+ "storage",
+ "time",
 ]
 
 [[package]]
@@ -494,6 +520,14 @@ dependencies = [
  "rustc-hash 2.1.3",
  "shlex 1.3.0",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "bindings"
+version = "0.1.0"
+dependencies = [
+ "ids",
+ "thiserror 2.0.19",
 ]
 
 [[package]]
@@ -840,6 +874,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "clips"
+version = "0.1.0"
+dependencies = [
+ "engine",
+ "geom",
+ "ids",
+ "property",
+ "time",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -911,6 +956,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "color"
+version = "0.1.0"
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -924,6 +973,35 @@ checksum = "1b60b5124979fccd9addd89d8b97a1d6eebb4950694520c75ddd722535ea443f"
 dependencies = [
  "nix 0.31.3",
  "thiserror 2.0.19",
+]
+
+[[package]]
+name = "commands"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assets",
+ "bindings",
+ "event_log",
+ "ids",
+ "parts",
+ "property",
+ "time",
+ "timelines",
+]
+
+[[package]]
+name = "compositor"
+version = "0.1.0"
+dependencies = [
+ "animation",
+ "clips",
+ "color",
+ "engine",
+ "geom",
+ "ids",
+ "time",
+ "timelines",
 ]
 
 [[package]]
@@ -1253,6 +1331,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
+name = "decode"
+version = "0.1.0"
+dependencies = [
+ "engine",
+ "time",
+]
+
+[[package]]
 name = "deflate64"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1269,6 +1355,13 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "desktop"
+version = "0.1.0"
+dependencies = [
+ "gpui",
 ]
 
 [[package]]
@@ -1416,6 +1509,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
+name = "editor_api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "asset_registry",
+ "assets",
+ "commands",
+ "compositor",
+ "engine",
+ "event_log",
+ "history",
+ "ids",
+ "parts",
+ "project",
+ "session",
+ "storage",
+ "time",
+]
+
+[[package]]
 name = "either"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1449,6 +1562,15 @@ name = "endi"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
+
+[[package]]
+name = "engine"
+version = "0.1.0"
+dependencies = [
+ "color",
+ "geom",
+ "time",
+]
 
 [[package]]
 name = "enumflags2"
@@ -1562,6 +1684,17 @@ checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
 dependencies = [
  "event-listener 5.4.1",
  "pin-project-lite",
+]
+
+[[package]]
+name = "event_log"
+version = "0.1.0"
+dependencies = [
+ "bindings",
+ "clips",
+ "ids",
+ "time",
+ "timelines",
 ]
 
 [[package]]
@@ -1918,6 +2051,10 @@ dependencies = [
  "typenum",
  "version_check",
 ]
+
+[[package]]
+name = "geom"
+version = "0.1.0"
 
 [[package]]
 name = "gethostname"
@@ -2410,6 +2547,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "history"
+version = "0.1.0"
+dependencies = [
+ "event_log",
+ "ids",
+]
+
+[[package]]
 name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2645,6 +2790,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ids"
+version = "0.1.0"
+
+[[package]]
 name = "image"
 version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2821,6 +2970,13 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "keyframe"
+version = "0.1.0"
+dependencies = [
+ "time",
 ]
 
 [[package]]
@@ -3568,13 +3724,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencut-desktop"
-version = "0.1.0"
-dependencies = [
- "gpui",
-]
-
-[[package]]
 name = "openssl-probe"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3623,6 +3772,16 @@ dependencies = [
  "redox_syscall 0.5.18",
  "smallvec",
  "windows-link 0.2.1",
+]
+
+[[package]]
+name = "parts"
+version = "0.1.0"
+dependencies = [
+ "assets",
+ "bindings",
+ "event_log",
+ "timelines",
 ]
 
 [[package]]
@@ -3878,6 +4037,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "project"
+version = "0.1.0"
+dependencies = [
+ "assets",
+ "bindings",
+ "event_log",
+ "geom",
+ "ids",
+ "parts",
+ "time",
+ "timelines",
+]
+
+[[package]]
+name = "property"
+version = "0.1.0"
+dependencies = [
+ "color",
+ "geom",
+ "keyframe",
+ "time",
+]
+
+[[package]]
 name = "psm"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4118,6 +4301,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "973443cf09a9c8656b574a866ab68dfa19f0867d0340648c7d2f6a71b8a8ea68"
 
 [[package]]
+name = "raster"
+version = "0.1.0"
+dependencies = [
+ "engine",
+]
+
+[[package]]
 name = "rav1e"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4308,6 +4498,14 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+
+[[package]]
+name = "render"
+version = "0.1.0"
+dependencies = [
+ "engine",
+ "time",
+]
 
 [[package]]
 name = "resvg"
@@ -4777,6 +4975,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "session"
+version = "0.1.0"
+dependencies = [
+ "ids",
+ "time",
+]
+
+[[package]]
 name = "sha1_smol"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4983,6 +5189,10 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "storage"
+version = "0.1.0"
 
 [[package]]
 name = "strict-num"
@@ -5359,6 +5569,23 @@ dependencies = [
  "quick-error",
  "weezl",
  "zune-jpeg",
+]
+
+[[package]]
+name = "time"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "timelines"
+version = "0.1.0"
+dependencies = [
+ "clips",
+ "ids",
+ "thiserror 2.0.19",
+ "time",
 ]
 
 [[package]]

@@ -1,0 +1,15 @@
+[package]
+name = "timelines"
+description = "Editor-core timeline primitive: tracks of clips, with flow/fixed layout"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/timelines.rs"
+
+[dependencies]
+time = { workspace = true }
+ids = { workspace = true }
+clips = { workspace = true }
+thiserror = { workspace = true }

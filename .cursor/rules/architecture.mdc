@@ -1,0 +1,439 @@
+---
+description: OpenCut Foundation, Engine, and Editor-core boundaries, decisions, and open questions
+alwaysApply: false
+---
+
+# Architecture
+
+**How we designed OpenCut's architecture**: what a video editor needs, the decisions we made along the way, and the final design.
+
+```
+<for_llms>
+IMPORTANT Architecture rules:
+
+- Dependencies must be acyclic. If A→B and B→A, you've created a blob — you can't change either without thinking about both.
+- Depend on interfaces, not implementations. The core of your system should only know the shape of its dependencies, not the actual implementations — so implementations are swappable.
+- When two things depend on each other, find the missing shared abstraction. Mutual dependency is a signal that a third concept should exist, not a solution.
+- Dependency direction: the more volatile thing depends on the more stable thing. Reversing this means stable things break when volatile things change.
+
+- Test 1: if you swapped out B, would A need to change? If yes, the dependency is too tight — introduce an abstraction.
+- Test 2: is it absurd for A to know B exists? If yes, the dependency is inverted or missing an abstraction.
+
+Reorientations: when one fires, stop and answer it before continuing.
+
+- What's the actual concept here, not the implementation?
+- If this didn't exist yet, would you build it the same way?
+- Can you state this box's purpose in one sentence without "and"?
+- Describe the whole system in one sentence. If you can't, the boundaries are wrong.
+- Where does this data come from, and where does it actually need to go?
+- Where does this state live? If more than one place could plausibly own it, you haven't found the owner.
+- You're drawing a → b. Why this direction and not the other? What forces it?
+- You added a coordinator. Could the pieces have talked directly?
+- You're reaching for a pattern. Is it from this problem, or from training data?
+- You're about to add "and" to a description. Stop. Reconsider + split.
+- Two boxes look similar. Same concept, or just rhyming today?
+- Which box owns this? If more than one wants it, you've found a missing box.
+- You're naming an implementation ("manager", "service", "handler"). What's the concept?
+- You're optimizing for flexibility. What specific case needs it now?
+- You're adding a layer for one user. Fold it into that user.
+- What breaks if this box doesn't exist?
+- What's the smallest architecture that lets the next concrete thing ship?
+- A connection won't draw cleanly. The boxes are wrong, not the connection.
+- You made a choice. What forced it? If nothing did, you have a default, not a choice.
+- This interface has methods only one consumer needs. That consumer's concept is in the wrong place.
+
+OpenCut has four dependency layers. Each lower layer is usable without the layers above it:
+
+- **Foundation:** shared product-neutral primitives, currently exact time and its serialization. Knows neither media nor editing.
+- **Engine:** decode, compositing graph, GPU, audio, and encode. Knows media, not editing.
+- **Editor core:** the project document, timelines, clips, commands, history, plugin system, and Editor API. The product.
+- **Consumers:** web, desktop, mobile, headless, MCP, and scripting. They consume editor concepts; they do not reach into the engine.
+
+The Editor API and Plugin API are contracts owned and implemented by the editor core, not peer layers. Plugins are outside code that consumes the constrained Plugin API and contributes through its registries and slots. Headless mode is an editor core plus engine consumer without a graphical UI, not the engine on its own.
+</for_llms>
+```
+
+## Architectural decisions made
+
+```
+<for_llms>
+Nothing here is settled. Every decision was made with less info than you have now.
+
+If you find yourself working around something on this list to make a new requirement fit, the thing on the list is wrong, not the requirement. Fix it. Workarounds look like a bridge box that only translates, a coordinator hiding a missed concept, an "and" in a description, a connection going the awkward direction.
+
+"The user only asked for X", "out of scope", "let's keep it simple", "we can revisit later". Those are excuses. Enough of them and you've got rot.
+
+The WHY is the whole point of this section. Someone in 6 months — when the code, the libraries, the constraints all look different — should read a WHY and understand the reasoning that produced the decision. So a WHY must capture what's NOT visible from the decision itself: the problem that forced it, the alternative rejected, the tradeoff accepted. A WHY that restates the decision ("it's a closed enum because it's a closed enum") is worthless — delete it or replace it. "I picked this for no real reason" is genuinely useful (it flags low confidence, cheap to revisit). "I picked drivers because decoding must be swappable per platform" is useful. The test: would this WHY change how a future agent acts when the world has shifted? If not, it's not a WHY yet.
+</for_llms>
+```
+
+```
+TEMPLATE
+
+- [DECISION] - REQUIRED
+  - [WHY] - OPTIONAL, RECOMMENDED
+
+```
+
+**Foundation:**
+
+Foundation owns only product-neutral primitives with multiple real consumers. It currently owns exact rational time and that value's stable serialization. Identity stays with its first owning domain until a shared identity contract is actually required; event-log machinery stays with editor history unless another real consumer forces a lower abstraction. Foundation has no `Project`, `Timeline`, `Clip`, media source, decoder, or renderer. `RationalTime` is a Foundation type; both the engine and editor core use it, while the editor core owns the user-facing time policy.
+
+**Engine:**
+
+The engine is portable, product-neutral media execution: decoding media into frames and samples, composing a render graph, GPU work, audio processing, and encoding output. It accepts media-oriented work from the editor core and has no editing document or product policy.
+
+The engine is physically isolated from the editor core and everything above it through capability-named crates, not a crate named after the layer. It currently has `decode`; `render`, `audio`, and `encode` become separate crates only when those capabilities exist. Engine crates depend only on lower Foundation capabilities and their narrow driver sockets. The test: someone should be able to take any engine capability into a different product without dragging along a project format, timeline, commands, history, plugins, or any other OpenCut editing feature.
+
+The engine does not know that a `Project`, `Timeline`, editor `Track`, editor `Clip`, plugin, selection, command, or undo history exists. A headless editor still needs the editor core to interpret a project and issue media work; removing the graphical UI does not reduce it to the engine alone.
+
+The engine's visual primitives are a compositing model, alpha channels, and a frame-transform pipeline. They are media primitives: compose visual sources, combine alpha, and apply concrete transforms. The editor core turns named editing features such as masks, effects, stickers, and clip transforms into those primitives. Another product can use the same engine while choosing entirely different editing concepts—or none.
+
+These primitives make chroma key, luma key, blend modes, picture-in-picture, transitions, text/vector overlays, opacity, color correction, LUTs, blur, stabilization output, crop, and zoom possible. The engine supplies the execution vocabulary; the editor core owns which user-facing features exist and how they map to it.
+
+**Engine — Decoder driver:**
+
+The decoder driver translates media files into raw frames for the engine renderer. Web uses Mediabunny, desktop/iOS/Android uses FFmpeg. The engine defines the interface; the platform provides the implementation. The engine never knows which decoder it has.
+
+**Engine — GPU:**
+
+GPU has no driver socket. Decode earns a driver interface because its implementation genuinely differs per platform — FFmpeg vs. Mediabunny. GPU doesn't: wgpu is one crate that already is the abstraction, with per-platform backends (Metal, Vulkan, DX12, GLES, browser WebGPU with WebGL fallback). A homemade GPU trait would be an interface with exactly one implementation forever — flexibility nothing needs. Accepted cost: the renderer is written against wgpu types, so leaving wgpu someday means surgery inside the engine rather than swapping a driver. (This also concretizes "WebGPU instead of WebGL": wgpu is how WebGPU works on every platform, with the WebGL fallback for free.)
+
+**Engine — Compositing graph, Render, and Raster capabilities:**
+
+`decode` alone can't produce a viewable frame — it turns one media source into one frame, but a timeline at a point in time is a stack of tracks, each possibly showing a different clip, composited together. `engine` owns the vocabulary for that: a `Node` enum (`Source`, `Raster`, `Transform`, `Opacity`, `ColorAdjust`, `Effect`, `Composite`) — the "compositing graph" this file already named before it existed. Nodes are media/GPU primitives; no editor `Clip`/`Track`/`Timeline` ever appears in one. The `render` capability crate (sibling to `decode`) implements `Render`: walks a graph, resolves `Source`/`Raster` leaves, executes the rest on GPU.
+
+- **`render` is constructed with `Decode`/`Raster` capability handles, not a fresh dependency on the `decode`/`raster` crates.** Resolving a graph's leaves needs those capabilities, but capability crates depending on each other directly would recreate sibling coupling (S11) between crates that should each stay a single, independent media operation. `render` depends only on `engine`, for the trait objects it's handed at construction (dependency injection, same move as `commands` receiving `Parts` rather than reaching for `project`).
+- **Text and vector rendering are a new capability, `raster`, with no driver socket** — unlike decode. Text shaping and SVG rendering can run off the same portable Rust library on every platform; there's no FFmpeg-vs-Mediabunny-shaped difference forcing a per-platform interface. Same reasoning as GPU having no socket: a driver trait with one implementation everywhere is flexibility nothing needs.
+- **`RasterSource` (what `raster` accepts) is product-neutral, not `clips::TextClip`/`VectorClip`.** The engine still never sees an editor clip. `compositor` (below) resolves a `TextClip`'s `font_size`/`color` properties to concrete values at a point in time and hands `raster` a plain `{ content, font_size, color }` — same boundary-crossing rule as everywhere else in this file.
+- **`Effect` is a real `Node` variant with no real behavior yet.** `AdjustmentClip`'s four fields are closed and known, so `ColorAdjust` is a real GPU operation now. `EffectClip.effect_id` is an open string — resolving what an id actually compiles to is the effects-registry gap's job, not decided yet (see "Decisions to be made"). `render` passes an `Effect` node's input through unchanged until that lands. The node exists so nothing about the graph shape has to change later — only what `render` does with it.
+- **Audio mixing is out of scope here.** It's a genuinely different problem — sample-buffer mixing over an interval, not "one frame at one instant" — and `audio` is already listed above as its own future engine capability, not part of `render`.
+
+**Editor core — Compositor:**
+
+Turning a `Timeline` into a `Node` graph is editor-core work — it's the exact place the engine boundary gets crossed (architecture.mdc has said "the engine never sees an editor `Timeline`" throughout; this is where that boundary lives in code, not just in prose) — so it can't live in `engine`, `render`, or `raster`. It also can't live directly in `editor_api::Editor`: walking tracks, resolving Compound recursion, and folding Adjustment/Effect clips into an accumulator is a real algorithm, and putting it inline in the composition root would make `Editor` a god module mixing orchestration with translation logic (S7). It's its own crate, `compositor`, that `Editor` calls.
+
+- **Depends on `clips`, `timelines`, `engine`, `animation`, `ids`, `time`, `geom`, `color` — never on `project` or `editor_api`.** `editor_api` depends on `compositor`, not the reverse; a `Compound` clip's referenced timeline is resolved through an injected `lookup: &dyn Fn(TimelineId) -> Option<&Timeline>` closure rather than a `Project` dependency, the same "inject, don't reach for it" move `parts` uses.
+- **That injected `lookup` is also how history-browse preview slots in for free, once it's wired up.** Pass a closure backed by live `project.timelines()` for the normal case, or one backed by a historical reconstruction for `session.history_cursor().is_some()` — `compositor::compile` doesn't need to know or care which. (The historical-reconstruction side of that isn't built yet — `history::reconstruct` produces primitives, not a materialized `Timeline` — acknowledged gap, not resolved here.)
+- **Adjustment/Effect clips wrap the accumulator; they don't add a sibling layer.** Content clips (Video/Image/Text/Vector/Compound) each become a new top layer in a `Composite`. Adjustment/Effect clips instead wrap whatever's been accumulated *so far* in a `ColorAdjust`/`Effect` node, because product.md says they render on whatever is beneath them, track-wise — modeling them as independent layers would composite them as their own (invisible, contentless) pixels instead of modifying what's below.
+- **Compound recursion is just `compile` calling itself** on the looked-up nested `Timeline`, at a time offset by the compound clip's position — no separate nesting concept, same as the clip model itself (see "Compound clips" above). The cycle guard noted there (a compound can't transitively reference itself) is what makes this recursion provably terminating; not enforced yet, same acknowledged gap.
+- **A new crate discovered while designing this one: `animation`.** `keyframe`'s own doc comment already named it — keyframe data and keyframe *evaluation* (producing a `Property`'s effective value at a point in time) were split on purpose, and evaluation's home was left for "a later `animation` crate." `compositor` is that crate's first real consumer: it needs a clip's `Property` fields (opacity, transform components, color) resolved to concrete numbers before they can become `Node` fields — the engine has no concept of a keyframe. Depends on `property`, `keyframe`, `time` only.
+
+**Editor core:**
+
+The editor core is the product layer. It owns the project document and editing policy: timelines, tracks, clips, assets, commands, transaction waves, history, bindings, named effects and masks, plugin registries, and project persistence. It resolves that editor state into media-oriented work for the engine.
+
+The editor core lives in a separate layer above the engine. Its dependency on the engine boundary is one-way: the editor core can invoke the engine, while the engine cannot import editor-core types or policy.
+
+The editor core is not a UI shell. A web, desktop, mobile, MCP, scripting, or headless consumer can use the same core. Replacing React with Svelte changes a consumer, not the editor core or engine.
+
+- Clip and track types are closed editor enums (`VideoClip`, `AudioClip`, `TextClip`, `ImageClip`, `VectorClip`, `AdjustmentClip`, `EffectClip`, `CompoundClip`; `VideoTrack`, `AudioTrack`, `TextTrack`, `VectorTrack`). They shape the project format and every editing consumer depends on them, so they belong to the editor core—not a plugin. The engine sees media sources and composition inputs, never editor clips or tracks. `CompoundClip` (a black-box reference to another timeline) replaced an earlier, half-baked timeline-level nesting concept — see "Compound clips" below.
+- `Vector` is the editor-core name for the element shown as “Graphics” in the UI. There is truly nothing in it that could not be an SVG.
+- Timelines are track-based. I looked at the available options I knew of at the time (node-based, layer stack) and I don't like nodes personally. They're too complex as a user. Layer-based wasn't given a deep thought. No reason for rejection.
+
+**Editor API:**
+
+The Editor API is the editor core's public contract. It prevents clients, plugins, scripting, MCP, and headless consumers from reaching through the product layer into editor-core internals or the engine. It exposes editor concepts—projects, timelines, clips, commands, history, assets, effects, masks, and events—not raw compositing graphs or GPU types.
+
+A product that wants raw media primitives can take the engine. A product that wants video-editor behavior takes the editor core through the Editor API. The Plugin API is a narrower capability projection of the same layer, not a route to the engine.
+
+`Editor` (the `editor_api` crate) is the composition root: it owns the open `Project`, the `Session` (see "Editor core — Session" below), the `Engine`, and the asset registry, and is the only thing that ever holds a `&mut Project`. That's the actual enforcement mechanism — `Project`'s own mutating methods (`parts()`, `append()`) are `pub` at the Rust-visibility level (they have to be, `editor_api` is a different crate), but nothing outside `Editor` ever has the `&mut Project` needed to call them, so the command/history pipeline can't be bypassed in practice.
+
+`Editor.run_command` needs to hand `commands::run` a mutation surface, and `Editor.undo`/`redo` need to apply `history`'s computed primitives against that same live state — both need the identical "apply a primitive" operation. That operation (`Parts`, the struct; `apply`, the function) lives in its own crate, `parts`, below both `commands` and `editor_api` — not inside either of them. Putting it in `editor_api` (an early plan considered `commands → editor_api` as the collapsed shape) would cycle: `editor_api` has to depend on `commands` to call `run`, so `commands` depending back on `editor_api` for its mutation surface closes a loop. Two independent consumers needing the same capability, with a would-be cycle if either one owns it, is the "extract a shared abstraction" case, not a "pick a direction" case.
+
+**Editor core — Property:**
+
+A lot of editor concepts are properties — scale, rotation, position, blur intensity, mask radius. They share the same shape: a value, a type, and the ability to be keyframed. The editor core's `Property` primitive captures that and exposes it through the Editor API. Register something as a `Property`, mark it keyframable, and the animation system handles the rest without any per-feature wiring. Effects have properties. Masks have properties. They're all the same thing.
+
+Properties are compound. `PropertyValue` includes vector and color types (`Vec2`, `Vec3`, `Color`), not just scalars. Keyframes are per-channel — one Position property has one identity, but x/y/z each get their own curve. "Lock scale x/y," "link color channels," and similar are UI/interaction constraints layered on top, not part of the property primitive.
+- WHY: this is what essentially every professional creative tool does (After Effects, Blender, Maya, Nuke, Fusion, Cinema 4D, Unity, Unreal). It solves keyframe-as-one-event identity, spatial/motion-path interpolation, and value-as-a-unit operations (copy/paste/pick a whole color) — the cases that separate-properties-plus-batched-commands handles clunkily. Per-channel curves keep the animation granularity separate even though the property is one thing.
+
+**Editor core — Storage driver:**
+
+The storage driver handles persistence for `editor.assets` — it is an editor-core concern, exposed through the Editor API, not an engine concern. The engine has no concept of files or projects; it only decodes frames. The storage driver interface:
+
+```
+StorageDriver {
+  import(file): stable opaque key   // driver decides what "import" means per platform
+  read(key): bytes
+  write(key, data): void
+  delete(key): void
+  list(prefix): [keys]
+}
+```
+
+Web uses OPFS, desktop uses native filesystem, mobile uses sandboxed filesystem. `import` is part of the storage concern, not a separate abstraction — the driver knows the platform and owns what import physically means: web copies into OPFS and returns an OPFS path; desktop stores the original path without copying; mobile copies into the app sandbox; a future cloud driver would upload and return a URL. The editor core calls `driver.import(file)`, stores the stable opaque key, and exposes the asset through the Editor API. It never needs to know what the key represents or what happened during import.
+
+The socket (`StorageDriver` trait + opaque key type) lives in its own crate, `storage`, separate from `assets` and from the asset *registry* (`asset_registry`, the `add/remove/list` implementation wrapping a driver) — the same contract-crate / capability-crate split the engine uses for `decode` (line above). A platform implementing `StorageDriver` depends on `storage` alone, never on `asset_registry`. The key type isn't asset-specific either — project file save/load is the same `read`/`write` over the same driver, just a different well-known key — which is the other reason it doesn't live inside `assets`.
+
+**Editor core — Time at the API boundary.** `RationalTime` belongs to Foundation and is used by both the editor core and engine. The Editor API speaks seconds (float), so plugins speak seconds too.
+
+- Time is rational internally: `{n: numerator, d: denominator}`, with integer arithmetic. 29.97fps is exactly `{30000, 1001}` and 23.976 is `{24000, 1001}`. Arbitrary frame rates work without approximation. A fixed-LCM tick representation was considered (90,000 was the candidate), but LCM breaks down with fractional rates like 29.97: either the LCM explodes or the system approximates. Rational time has no such ceiling.
+- The conversion: seconds (float) → rational `{n, d}`, at the Editor API boundary. The engine never sees floats.
+- WHY seconds and not frames: frame numbers are frame-rate-coupled. A plugin passing `frame: 1800` means something different at 24fps vs 60fps. A plugin shouldn't need to know the project frame rate to express a position in time. Seconds are frame-rate-agnostic.
+- WHY seconds and not rational time (`{n: 1800, d: 24}`): rational time is exact and used internally, but exposing it to plugins makes ambiguous values constructable — a plugin can pass `{n: 1, d: 2}` of a frame, an exact midpoint with no correct frame to snap to. Float seconds can't represent that midpoint exactly, so the ambiguous case is practically unreachable. The imprecision is a feature at the API level.
+- WHY conversion owned by the editor core and not by plugins: snapping a float second to a frame boundary is a policy decision — floor, round, or ceil. If plugins own conversion, different plugins snap differently. That's inconsistent behavior across the product that can't be fixed centrally. Precedent: the Web Audio API does exactly this. `AudioContext.currentTime` is seconds at the API level, samples internally, the browser owns the conversion. Developers never think about sample rates.
+- **Snap policy is floor.** Time is a position, not a measurement. If you're at second 3.243, you're inside frame 77, not approaching frame 78. Floor matches "which frame am I in." Round produces surprising behavior — a cut at 3.249 and 3.251 snap to different frames despite being nearly identical positions. Ceil has no justification. Floor is also what most video editors do historically.
+
+The editor core owns the feature registries (`effects`, `masks`, `stickers`, `snap_providers`) and asset registry (`editor.assets.add/remove/list`), which it exposes through the Editor and Plugin APIs. Assets exist as a product concept at this level — not in the engine, which only knows about raw media IO (decoding bytes, reading samples, understanding codecs, no concept of "project" or "library"). The library browser panel in the desktop UI is just a window into `editor.assets`. Mobile uses the same asset API constantly; it just never shows a persistent library UI. The panel and the system were never the same thing.
+
+Registries live here and not in plugins for the same reason: no plugin owns a registry that another plugin imports. Both contribute independently to editor-core-owned surfaces. Disabling the built-in effects plugin means fewer effects; nothing errors. The only dependency any plugin ever has is on the Plugin API, never on another plugin or the engine.
+  - WHY registries at this layer and not owned by plugins: if a plugin owned the masks registry and another plugin contributed to it, disabling the first breaks the second. That's a dependency between plugins, which compounds into NPM-style conflict hell.
+
+**Boot order and dependency injection.** The platform constructs each layer's drivers, then composes the layers explicitly. The engine cannot exist without a decoder driver; the editor core cannot exist without the engine and its storage driver:
+
+```
+// each platform's entry point
+const webEngine = new Engine({ decoder: new MediabunnyDecoderDriver() })
+const webEditor = new Editor({
+  engine: webEngine,
+  storage: new OPFSStorageDriver(),
+})
+
+const nativeEngine = new Engine({ decoder: new FfmpegDecoderDriver() })
+const nativeEditor = new Editor({
+  engine: nativeEngine,
+  storage: new NativeFilesystemDriver(), // sandboxed driver on mobile
+})
+```
+
+The platform then constructs the extension host with the editor core. The extension host injects a scoped Editor API view through the Plugin API into each plugin when it loads; it never exposes the engine. Scripts in the in-editor scripting tab receive the Editor API before any user code runs. Nothing reaches for a global. Nothing relies on execution order. The chain is:
+
+1. Platform constructs engine and editor-core drivers
+2. Platform constructs `Engine` with its decoder driver
+3. Platform constructs `Editor` with `Engine` and its storage driver
+4. Platform constructs `ExtensionHost` with editor
+5. Extension host loads each plugin, calls `plugin.initialize({ editor: pluginApi(editor) })`
+6. Script runtime has the Editor API injected into scope before any user script runs
+
+**Plugin API:**
+
+The Plugin API is the editor core's constrained extension contract. It exposes providers, registries, and UI slots; it is the complete answer to “what can a plugin do?” It is not a back door to editor-core internals or the engine.
+
+**Extension host:**
+
+The extension host is editor-layer infrastructure that manages plugin lifecycle against the Plugin API. It is not an engine concern.
+
+**Sandbox:**
+
+A physically constrained environment so plugins can't just do stuff not permitted by the Plugin API. Stuff like being able to read the file system, crash the process, etc. Plugins can only do what the host explicitly exposes.
+
+**Client:**
+
+The UI shell is a consumer. It is super thin: queries the Editor API and extension host, observes state, and reflects changes.
+
+**Server:**
+
+The Store is external infrastructure, not part of the engine or editor core. If we took an approach like Blender, where you download an extension from somewhere on the internet (GitHub) and loaded it into the editor manually, we wouldn't really need a server. But because we want a Store where plugins will be published, and you'll be able to install plugins directly from here, we need a server to be able to fetch plugins from a central place and download the package. Once a plugin is downloaded by a user, the server isn't in the picture anymore. Everything after runs locally.
+
+**Editor core — Flow/fixed track layouts:**
+
+Ripple isn't a feature — it's what flow tracks do. The word "ripple" is just the name people use for it. Understanding how we got here is useful context:
+
+We first tried implementing ripple per-command (each command handles its own shifting), then a diff-based post-command pass. Both had real problems: per-command spreads ripple logic everywhere, diff-based ran into "what is before/after state?" with four solutions all leading to something broken, especially once plugins entered the picture.
+
+The realization: ripple editing is just flow layout. CSS does it, word processors do it, nobody calls it "ripple" there — it's just what happens when you delete something and everything after it closes up. The fix was to stop storing `start_time` on clips entirely. Clips on a flow track are an ordered list; position is a prefix sum of durations. Drop a clip in the middle, everything after shifts. Delete a clip, everything after closes up. No ripple logic anywhere. It's structural.
+
+- Flow track: no stored positions. Clips are an ordered list, position = prefix sum of durations. This is what people call "ripple editing"
+- Fixed track: clips have stored `start_time`. Nothing moves unless explicitly commanded
+- Main track is flow. Overlay/audio tracks are fixed. Layout is derived from track role — it's not a parameter on track creation and there's no user-facing toggle
+  - WHY derived instead of chosen: enumerate every action that creates a track. The main track is created once, with the timeline — it can never be deleted, so no runtime action ever creates one. Every track created after that is overlay or audio, and those are all fixed. Layout is fully derivable, so a `layout` argument on `create_track` would be an argument with no caller — while making the one useless state (a flow overlay track: no use case, incompatible with linkage) constructable. No parameter means no validation and no invalid state
+  - WHY the editor core owns the assignment, not the platforms: the alternative was create-then-set — platform calls `create_track`, then sets the track fixed. That copies the "which tracks are fixed" policy into every consumer (web, desktop, iOS, Android, MCP, scripting), where it drifts. Same reasoning as the float→rational snap policy: policy owned by callers can't be fixed centrally. It's also two command waves: two undo entries for one gesture, and between the waves the track observably has the wrong layout — plugins can react to a state that was never meant to exist (linkage cares about layout)
+  - The engine cannot own this policy: "main track" and flow layout are editing concepts. The editor core resolves its track layout into media-oriented composition work; the engine never sees an editor `Track` or a layout choice
+  - If a user-facing toggle is ever wanted (magnetic vs. free-form main track), it's a new `set_track_layout` command added then — an explicit data migration, not a setter: flow→fixed materializes prefix sums into stored `start_time`s, fixed→flow converts gaps into spacer clips. Adding it later is additive and cheap; removing a `layout` parameter later is a break
+- Intentional empty space on a flow track: a spacer clip — an explicit clip with no content and a duration. Not a special concept, just a clip
+- Flow tracks and linkage are incompatible. Flow tracks have no stored positions so there's nothing to bind against. This is fine — there's no real use case for a flow overlay track anyway. If you want overlay clips to move with the main track, that's what linkage is for on fixed tracks
+
+**Editor core — Binding system:**
+
+The initial use case was ripple editing — we thought linking `end_time` of one clip to `start_time` of another could make ripple possible. It could, but it was fighting `start_time` instead of eliminating it. Flow layout solved ripple better. But bindings stuck around because they're genuinely useful on their own: you can make any property follow any other property. Linkage is one use case. Sync-lock, l-cuts, subtitle duration tracking, brand colors, audio-reactive effects — all the same mechanism.
+
+- Bindings are property-to-property. `create_binding(source: {clip_id, property}, target: {clip_id, property}, transform?, tags?: Set<String>)`. Source and target are property refs, not clip refs — a clip has many properties and you bind specific ones
+- Other primitives: `remove_binding(target)`, `remove_bindings_by_tag(clip_id, tag)`, `get_binding_source(clip)`
+- Bound properties are write-protected. Directly setting one fails with an error — no silent severing. The caller explicitly calls `remove_binding` first. This keeps every function doing exactly one thing
+- The right mental model: apply mutations to the source, not the bound property. Overlay C is bound to main track clip B — move B, C follows. `move_clip(C)` failing means you're touching the wrong clip. Same as spreadsheet formula cells: change the inputs, not the cell with the formula
+- `detach_clip` is just `remove_binding` with semantic intent: "make this clip independent"
+- Tags are strings stored on the binding itself, not in plugin memory — survives restarts and upgrades. A plugin that creates bindings for multiple purposes tags them differently and queries by tag when cleaning up. Linkage example: auto-created bindings get `["linkage", "auto"]`, manually created ones get `["linkage", "manual"]`. Toggle off calls `remove_bindings_by_tag(clip_id, "auto")` — the manual ones survive
+- No ownership. Any code can create or remove any binding. Ownership sounds safer but creates deadlocks. Instead, removal is auditable: `BindingCreated` and `BindingRemoved` fire with metadata. Original creator subscribes to `BindingRemoved` and reacts if it cares. Accidental removals can't happen because write-protection forces every removal to be explicit
+- Evaluation is topological. Propagating immediately on each edge breaks diamonds (A → B → D, A → C → D): D sees a stale C and gets evaluated twice. Topological sort walks the full graph in dependency order — every node evaluated exactly once after all its dependencies are resolved. Cycles are rejected at bind time since they have no valid topological order
+
+**Editor core — Timeline/Track construction:**
+
+`Timeline` and `Track` had no constructor reachable outside their own crate (private fields, no `new`), which blocked `Project::new` and future history reconstruction. Fixed by following the id-minting convention `BindingGraph` already established: a container that creates child entities mints their ids itself via an internal counter; callers never supply ids for new things. `Timeline` owns `next_track_id` and mints track ids in `create_track`; `Project` owns `next_timeline_id` (for future additional timelines). Clip-level placement (`add_clip`/`remove_clip`, the no-overlap and flow-layout invariants) is a separate, still-open, bigger task — not touched here.
+
+**Linkage (built-in plugin):**
+
+Linkage is a built-in plugin built entirely on the editor core's binding system. It has no special editor-core or engine privileges — it only uses Plugin API capabilities: `create_binding`, `remove_binding`, `remove_bindings_by_tag`, and event subscriptions.
+
+- Registers a UI slot in the track header: a per-track toggle
+- Toggle ON: when a clip is dropped onto this track, linkage auto-creates a binding `start_time(overlay) = start_time(main_clip) + offset`, where offset is computed from their positions at drop time. Tags the binding `["linkage", "auto"]`
+- Toggle OFF: removes all bindings tagged `"auto"` on clips in this track. Bindings tagged `"manual"` survive — those were explicitly created by the user and shouldn't be wiped by a track toggle
+- When a clip is manually dragged over a different main track clip, the binding is updated to follow the new clip (re-created with the new source and a new offset)
+- When the source main track clip is deleted, delete-on-source-delete behavior on the binding removes the overlay clip too
+- To make a specific clip independent without affecting other clips: `detach_clip` (which is `remove_binding` with intent). The clip stays on the track, just no longer follows anything
+- If you want all clips on a track to sit at fixed positions with no linkage (e.g. captions that should never move): turn the toggle off. No per-clip "lock position" needed
+
+**Editor core — Error handling strategy:**
+
+Two tiers, not one. Programmer-contract violations (a precondition the caller was supposed to guarantee) panic — they indicate bugs, not user actions. Domain-level rejections reachable by ordinary user or plugin action (a binding would cycle, a clip resize would overlap another clip) must never crash the process — product.md requires graceful, user-facing rejection, and a sandboxed plugin calling a mutating API with bad input can't be allowed to take down the editor. Every domain-level rejection is a `Result`.
+
+Within that, errors are typed per layer, not funneled into one shared enum:
+
+- **Domain leaves with distinguishable, user-actionable failures** (e.g. `bindings::BindError { WouldCycle, AlreadyBound }`) get their own `thiserror`-derived enum. A caller needs to show a different message for each case.
+- **Aggregating/orchestration layers** (`commands` now; the Editor API later) use `anyhow::Result` with `.context()`, not a hand-maintained wrapper enum re-listing every leaf's variants. A wrapper enum would itself be a change-coupling liability — every time a leaf crate adds a variant, the wrapper must too, forever. `anyhow` propagates any `std::error::Error` for free through `?` (thiserror derives that trait), and a caller that needs the specific cause downcasts (`err.downcast_ref::<bindings::BindError>()`) instead of matching a re-exported variant.
+- **The Editor/Plugin API boundary** (step 12+, not yet built) will need a third tier: a stable, serializable error contract (`{ code, message }`-shaped) for crossing into plugins/scripting, which may not be Rust. Not designed yet — nothing consumes it today — but anticipated so it isn't a surprise later.
+
+WHY not one shared error enum: it would recreate exactly the fan-out problem already avoided elsewhere in this layer (see `commands → parts`, below) — every leaf crate's failure mode becoming a dependency of one central type. WHY not typed enums all the way up: an orchestration layer usually just needs to propagate-with-context to a log or a UI toast, not exhaustively match every child cause; forcing it to costs a wrapper variant per leaf error forever, for a distinction almost nothing above it needs. Verified against Zed (the crate-structure reference this project is modeled on): of 202 crates, 142 use `anyhow` and only 18 use `thiserror` — precisely the crates with a real branch-on-failure-reason need (`gpui`, `git`, `client`, `terminal`, `theme`, `dap`), everything else propagates with context.
+
+**Editor core — Command/event pipeline:**
+
+A command runs, state mutates immediately and synchronously, and then notifications drain. Not the other way around. The reason the naive approach (notify listeners the moment state changes) breaks: a plugin handler triggered by event A calls a command that fires event B, which triggers another handler, which fires event C — all on the same call stack. Listeners hear B before they've finished processing A. Undo gets three separate entries for what was one user action. The UI repaints three times.
+
+The other obvious fix is queuing commands instead of executing them inline. That gets ordering right, but then a plugin that triggers a deletion can't immediately query whether the clip is gone, because the deletion is sitting in a queue.
+
+The approach we took: state mutates synchronously so in-process queries always see the true current state, but listener notifications are deferred to a queue that only drains once the outermost command fully unwinds. A depth counter tracks this — first command goes from 0 to 1, cascaded commands increment further, notifications drain when it returns to 0. Everything in one wave is one undo entry, one repaint, listeners notified in the correct settled order.
+
+- Two levels of event subscription. Individual events (`ClipDeleted`, `ClipCreated`, `BindingRemoved`, etc.) for lightweight observation — logging, analytics, UI panels. Transaction-level subscription for plugins that need the full picture before deciding what to do: receives every event that happened in the wave at once. A chapter marker plugin reacting to `ClipDeleted` at the individual level can't tell if it was a standalone delete or part of a replace — at the transaction level it can
+- Event payloads carry the before info. `ClipDeleted { track_id, clip }` embeds the full clip, not just its position and duration — no separate snapshot diff needed. With event sourcing this is forced anyway: events are the state, so if an event doesn't say what changed, the system doesn't know what changed
+- Post-command hooks aren't a separate concept. A post-command hook is just "subscribe to the wave completing and receive the full event log" — that's transaction-level event subscription. Maybe the plugin API exposes a convenience wrapper with that name, but architecturally it's not a new primitive
+- Mutations inside event handlers are part of the same wave. If a handler runs commands while depth > 0, those mutations join the same transaction and the same undo entry. No special infrastructure needed
+
+**Editor core — History:**
+
+One append-only event stream per project. The organizing rule: **store the general form, render the useful form.** Event sourcing was initially rejected because raw Undo/Redo churn would make the history panel unreadable — that objection conflated storage with presentation. The full stream is strictly more information than storing only "abandoned paths": superseded runs are derivable from the stream, never the reverse. It buys recovery, plugin observability, collaboration readiness, author-specific undo, and debugging traces. The panel folds the churn by default.
+
+- One global history, not one per timeline. Timelines have no private undo stacks; entries are tagged with the timelines they affect, and per-timeline reading is a panel filter
+  - WHY: per-timeline stacks make Undo focus-dependent — edit timeline A, switch to timeline B, Redo silently does nothing. Cross-timeline actions (move clip from A to B) would straddle stacks. So the structure is one stream; "per-timeline history" is a view over it. A filter changes what the panel shows, never what Ctrl+Z means — and keyboard navigation ignores panel filters entirely, otherwise it would traverse different histories depending on an invisible panel setting
+- Every entry has the same shape — `entry { intent, kind, tags, primitives[] }` — with zero or more primitives. There is no separate "group" concept
+  - WHY: optional grouping infects every consumer with branching logic (does this entry have children? can it be reverted directly? do filters match the parent or the children?). Uniform shape instead: a checkpoint is an entry with zero primitives, a simple edit has one or two, a cross-timeline move has several, a plugin macro might have fifty. The panel renders the intent, expansion reveals primitives, revert always targets the whole entry
+  - **Entries are the only unit of Undo/Redo — never primitives.** A single Ctrl+Z always reverts every primitive in the target entry together, as one new entry; there is no such state as "half an entry undone." Primitives exist for display (the panel's expand-to-see-what-it-did) and for plugins that need to inspect exactly what changed — they are not independently selectable or revertable
+- Entries are user intentions; primitives are state changes. "Move clip to Timeline 2" is one entry tagged with both timelines, containing remove-from-1 and insert-into-2. Filtering by either timeline shows the whole entry. This slots into the command/event pipeline: one wave = one entry, the wave's mutations = its primitives
+- History is linear. No history branches, no visible tree, no standing in the past. Restore copies an old state forward as a new present (the Google Docs model); the states in between remain
+  - WHY: the requirement was never "stand in the past" — it was "undoing and then editing must not permanently lose work". Once every action (Undo/Redo included) is retained in the stream and old states are recoverable, history doesn't need to fork. Variations are content, not time: duplicate a timeline (from now or from an old state) and let alternatives coexist in one project; whole-project variation is project duplication. Rejected along the way: an exposed undo tree (more temporal structure than users need), auto-forking abandoned futures (patches the symptom — revert and visit sharing one gesture), a document layer between project and timeline (a permanent noun to make a rare case elegant), recovery "chips" (a second recovery vocabulary beside ordinary history entries), and depth-threshold auto-preview (intent is known before the first keypress; it can't be inferred from press count)
+- Revert and visit are different intentions and get different gestures. Ctrl+Z stays conventional destructive rejection; Ctrl+, / Ctrl+. is read-only state navigation — Enter applies, Esc returns exactly (full interaction context: history position, selection, playhead, scroll, active timeline)
+  - WHY separate gestures instead of a smarter Undo: every sophisticated history design (trees, forks, chips) was an attempt to make one destructive verb safely serve two incompatible intentions. The user already knows which intention they have before the first keypress, so the editor never has to guess
+- Navigation walks distinct document states, not raw entries. Zero-primitive entries (checkpoints, metadata) label states without adding stops; Undo/Redo bookkeeping isn't replayed as positions. Scope: the current line plus the latest superseded run — that's the immediate recovery path after "undo several times, accidentally edit". Older runs are archaeology, reachable through the panel's "show all"
+- Timeline state is reconstructible from the stream: fold the primitives affecting that timeline up to the target entry. References don't break this — timeline A embedding timeline B holds a *reference* in A's state; editing B changes A's rendered output, not A's arrangement (state vs. render — a React component changing doesn't mean its callers' source changed). Reconstruction is per-timeline state; rendering resolves references afterward. "Copy timeline from old state" preserves references to live timelines by default; deep-copy freeze is an explicit option
+- Primitives are self-invertible: `Created`/`Deleted`/`Removed` pairs for the same entity carry symmetric, complete payloads (the entity's full state), not a partial subset like an id or a position
+  - WHY: undo replays the *same* primitive type in the opposite direction, so inversion has to be mechanical — swap the variant, keep the payload. That only works if the payload is complete. It has to be complete anyway for the *other* direction: redoing a creation needs the same full content that undoing its deletion would need. One primitive shape serves both directions, so it must carry what either direction requires. This is why `event_log` depends on `clips` and `bindings` despite being a leaf crate otherwise — the alternative (an opaque serialized blob) would trade typed clarity for a dependency-graph purity that isn't load-bearing
+  - Because inversion is mechanical, it lives on `Primitive` itself (`Primitive::invert`), not in `history`. `history` computes *which* entry to invert, not *how* — it never needs to know what a clip or a binding is
+- Undo and Redo are the same mechanism: append an entry that reverts entry N. They differ only in which N. This falls out of one field, `Entry.reverts: Option<u64>` (the seq this entry reverts), which is enough to derive everything else — no separate undo/redo cursor is persisted
+  - An entry is superseded iff a later, still-active entry reverts it. "The current line" and "the latest superseded run" are just filters over that
+  - Undo always targets the latest active entry with `reverts == None` — a genuine edit, skipping past prior Undo/Redo bookkeeping, so pressing Undo repeatedly walks back through real edits instead of flip-flopping on the last one
+  - Redo is only available when the *last* entry in the whole stream is itself a still-active revert entry — any genuine edit since the last Undo clears it, same as any other editor. Multi-level redo simulates the trailing run of revert entries as a stack (a revert of a genuine edit pushes, a revert of a pending revert cancels it) to find what's next
+  - This keeps `history` a pure function of `&[Event]`: nothing about Undo/Redo requires state beyond the stream itself
+
+**Editor core — Session:**
+
+There's editor state that isn't document content: which timeline you're looking at, where the playhead is, what's selected, scroll position, play/pause, and — see below — where you are while browsing history. None of it is undoable, none of it produces an `event_log::Primitive`, none of it belongs on `Project`. It lives in its own crate, `session`, owned by `Editor` as a sibling to `Project` — not a field on it, and no dependency edge either direction: `session` only ever references a timeline or clip by its opaque `ids` type, never the actual `Timeline`/`Clip` data, so it depends on nothing but `ids` and `time`.
+
+- **The field list is exactly product.md's Ctrl+,/Ctrl+. spec, and that's not a coincidence.** "Esc returns exactly to where you were: history position, selection, playhead, scroll, active timeline" is a list of fields on one struct, snapshotted before entering read-only history-browse preview and restored on Esc. `Session` has exactly those fields (`history_cursor`, `selection`, `playhead`, `scroll`, `active_timeline`) and no others — the product requirement *is* the crate's shape.
+- **The history-browse cursor lives here, not in `history`.** `history` is deliberately a pure function of `&[Event]` with no mutable state — that's load-bearing for keeping undo/redo a pure computation. But something has to remember "which historical entry am I currently previewing" while Ctrl+,/Ctrl+. is active, and that's the same ephemeral, non-document bucket everything else here lives in. `history_cursor: Option<u64>` (`None` = live present, `Some(seq)` = previewing that entry) rides along with no special casing: quit mid-browse, reopen, still browsing.
+- **`Editor::preview_entry`/`exit_preview` do the snapshot/restore, not `Session` or `history`.** Entering preview needs `history` (compute what the old state looks like) and `session` (snapshot itself) together — neither needs to know the other exists, so this orchestration sits in `Editor`, same as `run_command`/`undo`/`redo` already orchestrate `commands`+`parts`+`project`. `Editor` holds one extra field, `pre_visit_session: Option<Session>`, itself ephemeral and never persisted.
+- **Playhead is one value, clamped on switch — not remembered per-timeline.** Switching the active timeline clamps `playhead` into `[0, new_duration]` and unconditionally clears `selection`. A remembered-per-timeline map was considered and rejected: it's speculative complexity for a UX nuance nobody's asked for yet, and it's easy to add later (an additive field) if it turns out to matter — reversing "one value" into "a map" is cheap, the other direction wouldn't be.
+- **It's persisted, but as its own thing — not folded into `Project`.** Reopening a project resumes exactly where you left it, so `Session` needs to survive an app restart. `Editor::save`/`load` write and read it through the same storage driver as the project document, under its own key — the same opaque `read`/`write` mechanism `storage` already defines for assets, not a new abstraction. This preserves the split: `Project` stays "the document, nothing else"; `session` stays dependency-free; persisting two things separately costs nothing extra because `storage` was already key-addressed, not single-blob. A project file from before this existed just means "default session" on load — free under the additive-migration policy (product.md).
+  - Because it's part of the on-disk format now, its fields are additive-only going forward, same discipline as the project format. This is why it doesn't have a playback rate yet — no feature needs one, and adding it later is free, but it isn't free to remove a field once persisted.
+- **No clock lives here.** Playback advancing the playhead over time is not `Session`'s job or `Editor`'s — `Session::transport` only ever flips `Playing`/`Paused`; the consumer's own render loop (already the platform-specific "run code every frame" primitive — `requestAnimationFrame` on web, the event loop on desktop) is what repeatedly calls `set_playhead` while playing. Same reasoning as GPU having no driver socket: inventing a clock abstraction here would be an interface with one implementation shape everywhere, for a need every platform's UI loop already satisfies.
+
+**Editor core — Compound clips:**
+
+Multiple timelines compose (product.md: "similar idea to compositions... import that timeline in any other timeline to render it"), but not through timeline-level nesting. An earlier attempt, `Timeline.nested: Vec<NestedTimelineRef>` (a floating `{timeline_id, offset}` pair), was structurally half-baked: no track, no duration, nothing that made it selectable, movable, or trimmable the way every other piece of placed content is.
+
+The fix: a reused timeline is a black-box clip, the same status as a video file. `ClipKind::Compound(CompoundClip { timeline_id, transform, opacity })` — the same shape as `VideoClip`/`ImageClip` — is placed on a track exactly like any other visual clip, folded into the Video track type rather than getting its own (it renders like one). `Timeline.nested`/`NestedTimelineRef` are deleted; there's no separate nesting concept left to keep in sync with track/clip placement.
+
+- No new dependency: `TimelineId` lives in the zero-dependency `ids` crate, so `clips` can reference "which timeline this compound points to" without depending on `timelines` — which would cycle, since `timelines` depends on `clips` for `Track.clips`.
+- The engine still never sees an editor `Timeline`. Resolving "this clip is a Compound" into "render timeline X, feed the composite in as a source" happens entirely within the editor core's render orchestration (see the rendering gap) — the engine boundary is unaffected.
+- **Open correctness rule, not yet enforced:** a Compound referencing a timeline that directly or transitively contains a Compound pointing back is a cycle — the same S1 smell as a crate dependency cycle, just in the data instead of the module graph. `commands::CreateClip` needs to reject it at creation time; not implemented yet, flagging so it isn't forgotten when `commands` gets real logic.
+
+**Editor core — Preview contracts:**
+
+The editor core owns preview contribution and interaction semantics; each platform consumer owns the actual canvas and native presentation. That boundary is the only settled part — everything else here is speculative and entangled with the unresolved plugin/inspector question (see "Decisions to be made": canvas selection and bounding-box/gizmo ownership).
+
+*Overlays:* guide overlays, bookmark note overlays, and potentially plugins all want to render onto the preview canvas. A shared overlay contract interface was floated so everything (including plugins) operates on one mechanism instead of solving it case by case — not settled, not built, revisit alongside the plugin/inspector question.
+
+*Bounding boxes and gizmos:* floated as distinct concepts — gizmos toggleable and visual-only, bounding boxes always-visible input surfaces you drag to transform clips — but which inspector tab (if any) decides what's selectable/draggable at a given moment is exactly the open plugin-entangled question. Don't build against this distinction as if it were decided.
+
+*Canvas modes:* one idea floated was each `clip_properties` tab registration optionally carrying a `canvas_mode`, activated when that tab is selected — but this is the same "which plugin-registered tab drives the canvas" mechanism that isn't figured out. Not decided; documented here only so the idea isn't lost.
+
+## Decisions to be made
+
+```
+<for_llms>
+These are open. Not settled, not implied-settled, not "obviously X". If the answer were known it would be in "Architectural decisions made".
+
+Do NOT silently pick one and build on it. An unanswered question is not permission to invent the answer.
+
+If your current work forces one of these open, stop and resolve it with the user first. The moment it's decided, it MOVES: delete it from here and write it in "Architectural decisions made". Never leave a decided item parked in this section, and never mark it resolved in place (no strikethrough, no "YES — ..."). A decided thing living under this heading is a bug.
+
+A question leaving this section is the only correct exit. It goes up to the made list or it stays here open. Nowhere else.
+
+If it's cheap to change, or it's an implementation detail, it doesn't belong here. This section is for big-picture, hard-to-reverse decisions only. "Which library", "what the function signature is", "how the list is sorted internally" — those get answered while building, they shift as reality pushes back, and they don't change the shape. Only put a question here if getting it wrong would force a structural rewrite later.
+</for_llms>
+```
+
+- On import, the editor core may need to convert files (for example, from GIF to a renderable source). Does that require an import/conversion concept shared with the engine, or can the engine render every imported format directly? What is the durable boundary?
+- Canvas selection and bounding-box/gizmo ownership are entangled with the plugin/inspector system, not decided. The rough shape floated: each inspector sidebar item (Transform, Masks, Audio, etc.) is itself plugin-registered, and whichever one is active decides what's selectable and draggable on the preview canvas — its bounding box, its gizmo. Unresolved: how canvas selection handshakes with "which inspector tab is active," whether built-in tabs (Transform, Masks) are themselves plugins under this model, what a plugin-contributed tab needs to implement to participate, and where guide overlays and other preview-canvas contributions fit against the same mechanism. BLOCKED ON: plugin system design. Revisit the whole "preview contracts" area then — not just the generic overlay trait, the selection/bounding-box ownership question too.
+- What are the UI contribution surfaces at all? BLOCKED ON: building the concrete mobile UI first. The surfaces have to be derived from real placements, not guessed — and mobile (most constrained, can't lean on desktop chrome) is the right platform to derive them from, so anything that survives there translates up. Don't lock this until the concrete mobile UI exists — it's blank right now, and that blankness is the actual blocker, not a detail to design around. Note: the three-tier model (see decisions above) is settled — core plugins (play, split, etc.) register through the same API as third-party, live in `/plugins/core/`, and are non-disableable. The open question is specifically what surfaces exist and what shape they take, not whether the plugin model applies to core controls (it does).
+
+## Diagrams
+
+The complete picture.
+
+**Layered diagram:** *what depends on what, and can I change this without breaking that?*
+
+```mermaid
+flowchart TB
+  subgraph EDGE["Volatile edge — consumers and platform implementations"]
+    Apps["Apps<br/>web · desktop · iOS · Android"]
+    Automation["Consumers<br/>headless · MCP · scripting"]
+    Plugins["Plugins<br/>built-in · third-party"]
+    DecodeImpls["Decoder implementations<br/>FFmpeg (desktop/mobile) · Mediabunny (web)"]
+    StorageImpls["Storage implementations<br/>native filesystem · sandboxed filesystem · OPFS"]
+  end
+
+  subgraph EDITOR["Editor core — editing document and product policy"]
+    Core["project · timelines · clips · commands<br/>history · assets · plugin registries"]
+  end
+
+  subgraph ENGINE["Engine — portable, product-neutral media execution"]
+    Engine["decode · compositing graph · GPU<br/>audio · encode"]
+  end
+
+  subgraph FOUNDATION["Foundation — no media, no editing"]
+    Foundation["exact time · value serialization"]
+  end
+
+  subgraph CONTRACTS["Stable contracts — additive-only, versioned, and owned by their implementing layer"]
+    EditorAPI["Editor API<br/>editor commands · queries · events"]
+    PluginAPI["Plugin API<br/>registries · UI contribution slots"]
+    StorageSocket["Storage driver interface"]
+    EngineBoundary["Engine boundary<br/>render · decode · encode"]
+    DecoderSocket["Decoder driver interface"]
+  end
+
+  Apps --> EditorAPI
+  Automation --> EditorAPI
+  Plugins --> PluginAPI
+  Core -.-> EditorAPI
+  Core -.-> PluginAPI
+  Core --> StorageSocket
+  Core --> EngineBoundary
+  Engine -.-> EngineBoundary
+  Engine --> DecoderSocket
+  Core --> Foundation
+  Engine --> Foundation
+  StorageImpls -.-> StorageSocket
+  DecodeImpls -.-> DecoderSocket
+
+  style CONTRACTS stroke-width:3px
+```
+
+How to read it:
+
+- An arrow means "depends on". Solid = consumes the contract; dashed = implements it. A change at an arrow's head can break the box at its tail — never the reverse.
+- Foundation is lowest: it knows neither media nor editing. The engine depends on Foundation and its decoder socket; the editor core depends on Foundation, the engine boundary, and its storage socket. Consumers never depend on the engine directly.
+- The editor core implements the Editor and Plugin APIs. It is the only layer that connects editor concepts to the engine boundary. It translates an editing document into media work; the engine never receives a project, timeline, editor track, or editor clip.
+- An engine-internal change cannot affect consumers as long as the engine boundary holds. An Editor or Plugin API change can affect consumers and plugins, while an engine-boundary change can affect the editor core and decoder drivers. The contracts are the only surfaces that must stay additive-only.
+- Decoder and storage drivers are replaceable implementations of narrow sockets. The decoder socket is engine-owned; the storage socket is editor-core-owned. Plugins are different: they consume the constrained Plugin API and contribute editor features. They never implement or call the engine directly. (GPU has no socket — every platform uses wgpu, so the engine commits to its API directly; see decisions.)
+- Apps and plugins never see each other; both meet the editor core through contracts. A plugin cannot break an app by reaching into its UI, and a UI rewrite cannot break a plugin by changing the engine.
+- Headless is an Editor core + Engine composition without a graphical consumer. A bridge is not a layer: it is the transport an Editor API dependency rides over at a language boundary (JS↔WASM on web, C ABI on mobile, none on desktop). The web decode driver crosses the same boundary internally: a Rust shim implementing the decoder interface and forwarding to Mediabunny on the JS side.
