@@ -14,8 +14,11 @@ import {
 import { resolveEffectParamsAtTime } from "@/lib/animation/effect-param-channel";
 import { TIME_EPSILON_SECONDS } from "@/constants/animation-constants";
 import { effectsRegistry, resolveEffectPasses } from "@/lib/effects";
+import { EffectCategory } from "@/lib/effects/categories";
+import type { EffectContext } from "@/lib/effects/types";
 import { masksRegistry } from "@/lib/masks";
 import { getSourceTimeAtClipTime } from "@/lib/retime";
+import { detectFace } from "@/services/face-mesh";
 import { webglEffectRenderer } from "../webgl/webgl-effect-renderer";
 import { applyMaskFeather } from "../mask-feather";
 
@@ -63,7 +66,7 @@ export abstract class VisualNode<
 		);
 	}
 
-	protected renderVisual({
+	protected async renderVisual({
 		renderer,
 		source,
 		sourceWidth,
@@ -75,7 +78,7 @@ export abstract class VisualNode<
 		sourceWidth: number;
 		sourceHeight: number;
 		timelineTime: number;
-	}): void {
+	}): Promise<void> {
 		renderer.context.save();
 
 		const animationLocalTime = this.getAnimationLocalTime({
@@ -134,7 +137,7 @@ export abstract class VisualNode<
 
 		const currentResult =
 			enabledEffects.length > 0
-				? this.applyEffects({
+				? await this.applyEffects({
 						source,
 						effects: enabledEffects,
 						width: absWidth,
@@ -178,7 +181,7 @@ export abstract class VisualNode<
 		renderer.context.restore();
 	}
 
-	private applyEffects({
+	private async applyEffects({
 		source,
 		effects,
 		width,
@@ -190,7 +193,15 @@ export abstract class VisualNode<
 		width: number;
 		height: number;
 		animationLocalTime: number;
-	}): CanvasImageSource {
+	}): Promise<CanvasImageSource> {
+		const needsFaceContext = effects.some(
+			(effect) =>
+				effectsRegistry.get(effect.type).category === EffectCategory.BEAUTY,
+		);
+		const faceContext: EffectContext | undefined = needsFaceContext
+			? await detectFace(source)
+			: undefined;
+
 		let current: CanvasImageSource = source;
 		for (const effect of effects) {
 			const resolvedParams = resolveEffectParamsAtTime({
@@ -204,6 +215,8 @@ export abstract class VisualNode<
 				effectParams: resolvedParams,
 				width,
 				height,
+				time: animationLocalTime,
+				context: definition.category === EffectCategory.BEAUTY ? faceContext : undefined,
 			});
 			current = webglEffectRenderer.applyEffect({
 				source: current,

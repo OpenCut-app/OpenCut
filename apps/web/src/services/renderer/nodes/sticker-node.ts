@@ -65,7 +65,7 @@ export class StickerNode extends VisualNode<StickerNodeParams> {
 		const sourceWidth = this.params.intrinsicWidth ?? loadedWidth;
 		const sourceHeight = this.params.intrinsicHeight ?? loadedHeight;
 
-		this.renderVisual({
+		await this.renderVisual({
 			renderer,
 			source,
 			sourceWidth,

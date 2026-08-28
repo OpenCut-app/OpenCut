@@ -81,7 +81,7 @@ export class GraphicNode extends VisualNode<GraphicNodeParams> {
 			return;
 		}
 
-		this.renderVisual({
+		await this.renderVisual({
 			renderer,
 			source,
 			sourceWidth: DEFAULT_GRAPHIC_SOURCE_SIZE,
