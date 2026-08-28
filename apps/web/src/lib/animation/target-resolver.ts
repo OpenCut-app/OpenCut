@@ -12,11 +12,19 @@ import {
 	isGraphicParamPath,
 	parseGraphicParamPath,
 } from "@/lib/animation/graphic-param-channel";
+import {
+	isTransformParamPath,
+	parseTransformParamPath,
+} from "@/lib/animation/transform-param-channel";
 import type { ParamDefinition } from "@/lib/params";
 import { effectsRegistry, registerDefaultEffects } from "@/lib/effects";
 import { getGraphicDefinition } from "@/lib/graphics";
+import { transformsRegistry } from "@/lib/transforms/registry";
 import type { TimelineElement } from "@/lib/timeline";
-import { isVisualElement } from "@/lib/timeline/element-utils";
+import {
+	isTransformableElement,
+	isVisualElement,
+} from "@/lib/timeline/element-utils";
 import { snapToStep } from "@/utils/math";
 import {
 	coerceAnimationValueForProperty,
@@ -122,7 +130,9 @@ function buildGraphicParamDescriptor({
 	const definition = getGraphicDefinition({
 		definitionId: element.definitionId,
 	});
-	const param = definition.params.find((candidate) => candidate.key === paramKey);
+	const param = definition.params.find(
+		(candidate) => candidate.key === paramKey,
+	);
 	if (!param) {
 		return null;
 	}
@@ -162,14 +172,18 @@ function buildEffectParamDescriptor({
 		return null;
 	}
 
-	const effect = element.effects?.find((candidate) => candidate.id === effectId);
+	const effect = element.effects?.find(
+		(candidate) => candidate.id === effectId,
+	);
 	if (!effect) {
 		return null;
 	}
 
 	registerDefaultEffects();
 	const definition = effectsRegistry.get(effect.type);
-	const param = definition.params.find((candidate) => candidate.key === paramKey);
+	const param = definition.params.find(
+		(candidate) => candidate.key === paramKey,
+	);
 	if (!param) {
 		return null;
 	}
@@ -204,13 +218,72 @@ function buildEffectParamDescriptor({
 	};
 }
 
+function buildTransformParamDescriptor({
+	element,
+	transformId,
+	paramKey,
+}: {
+	element: TimelineElement;
+	transformId: string;
+	paramKey: string;
+}): AnimationPathDescriptor | null {
+	if (!isTransformableElement(element)) {
+		return null;
+	}
+
+	const transform = element.clipTransforms?.find(
+		(candidate) => candidate.id === transformId,
+	);
+	if (!transform) {
+		return null;
+	}
+
+	const definition = transformsRegistry.get(transform.type);
+	const param = definition.params.find(
+		(candidate) => candidate.key === paramKey,
+	);
+	if (!param) {
+		return null;
+	}
+
+	return {
+		valueKind: getParamValueKind({ param }),
+		defaultInterpolation: getParamDefaultInterpolation({ param }),
+		numericRange: getParamNumericRange({ param }),
+		getBaseValue: () => transform.params[param.key] ?? param.default,
+		setBaseValue: (value) => {
+			const coercedValue = coerceParamValue({ param, value });
+			if (coercedValue === null) {
+				return element;
+			}
+
+			return {
+				...element,
+				clipTransforms:
+					element.clipTransforms?.map((candidate) =>
+						candidate.id !== transformId
+							? candidate
+							: {
+									...candidate,
+									params: {
+										...candidate.params,
+										[param.key]: coercedValue,
+									},
+								},
+					) ?? element.clipTransforms,
+			};
+		},
+	};
+}
+
 export function isAnimationPath(
 	propertyPath: string,
 ): propertyPath is AnimationPath {
 	return (
 		isAnimationPropertyPath(propertyPath) ||
 		isGraphicParamPath(propertyPath) ||
-		isEffectParamPath(propertyPath)
+		isEffectParamPath(propertyPath) ||
+		isTransformParamPath(propertyPath)
 	);
 }
 
@@ -270,6 +343,15 @@ export function resolveAnimationTarget({
 			element,
 			effectId: effectParamTarget.effectId,
 			paramKey: effectParamTarget.paramKey,
+		});
+	}
+
+	const transformParamTarget = parseTransformParamPath({ propertyPath: path });
+	if (transformParamTarget) {
+		return buildTransformParamDescriptor({
+			element,
+			transformId: transformParamTarget.transformId,
+			paramKey: transformParamTarget.paramKey,
 		});
 	}
 

@@ -1,6 +1,7 @@
 import type { ElementAnimations } from "@/lib/animation/types";
 import type { Effect } from "@/lib/effects/types";
 import type { Mask } from "@/lib/masks/types";
+import type { ClipTransform } from "@/lib/transforms/types";
 import type { ParamValues } from "@/lib/params";
 import type { BlendMode, Transform } from "@/lib/rendering";
 
@@ -120,6 +121,7 @@ export interface VideoElement extends BaseTimelineElement {
 	blendMode?: BlendMode;
 	effects?: Effect[];
 	masks?: Mask[];
+	clipTransforms?: ClipTransform[];
 }
 
 export interface ImageElement extends BaseTimelineElement {
@@ -131,6 +133,7 @@ export interface ImageElement extends BaseTimelineElement {
 	blendMode?: BlendMode;
 	effects?: Effect[];
 	masks?: Mask[];
+	clipTransforms?: ClipTransform[];
 }
 
 export interface TextBackground {
@@ -174,6 +177,7 @@ export interface StickerElement extends BaseTimelineElement {
 	opacity: number;
 	blendMode?: BlendMode;
 	effects?: Effect[];
+	clipTransforms?: ClipTransform[];
 }
 
 export interface GraphicElement extends BaseTimelineElement {
@@ -186,6 +190,7 @@ export interface GraphicElement extends BaseTimelineElement {
 	blendMode?: BlendMode;
 	effects?: Effect[];
 	masks?: Mask[];
+	clipTransforms?: ClipTransform[];
 }
 
 export interface EffectElement extends BaseTimelineElement {
@@ -219,6 +224,23 @@ export const MASKABLE_ELEMENT_TYPES = elementTypes("video", "image", "graphic");
 export type MaskableElement = Extract<
 	TimelineElement,
 	{ type: (typeof MASKABLE_ELEMENT_TYPES)[number] }
+>;
+
+/**
+ * Element types that support clip transforms (spatial/visual). Excludes
+ * "text" — TextNode renders independently of VisualNode.renderVisual and
+ * does not consume clipTransforms.
+ */
+export const TRANSFORMABLE_ELEMENT_TYPES = elementTypes(
+	"video",
+	"image",
+	"sticker",
+	"graphic",
+);
+
+export type TransformableElement = Extract<
+	TimelineElement,
+	{ type: (typeof TRANSFORMABLE_ELEMENT_TYPES)[number] }
 >;
 
 export const RETIMABLE_ELEMENT_TYPES = elementTypes("video", "audio");

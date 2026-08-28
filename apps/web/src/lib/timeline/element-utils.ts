@@ -2,6 +2,7 @@ import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 import {
 	MASKABLE_ELEMENT_TYPES,
 	RETIMABLE_ELEMENT_TYPES,
+	TRANSFORMABLE_ELEMENT_TYPES,
 	VISUAL_ELEMENT_TYPES,
 	type CreateEffectElement,
 	type CreateGraphicElement,
@@ -20,6 +21,7 @@ import {
 	type ImageElement,
 	type MaskableElement,
 	type RetimableElement,
+	type TransformableElement,
 	type VisualElement,
 	type UploadAudioElement,
 } from "@/lib/timeline";
@@ -52,6 +54,14 @@ export function isRetimableElement(
 	element: TimelineElement,
 ): element is RetimableElement {
 	return (RETIMABLE_ELEMENT_TYPES as readonly string[]).includes(element.type);
+}
+
+export function isTransformableElement(
+	element: TimelineElement,
+): element is TransformableElement {
+	return (TRANSFORMABLE_ELEMENT_TYPES as readonly string[]).includes(
+		element.type,
+	);
 }
 
 export function canElementBeHidden(
