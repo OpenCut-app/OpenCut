@@ -22,6 +22,7 @@
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.6",
     "@huggingface/transformers": "^3.8.1",
+    "@mediapipe/face_mesh": "0.4.1657299874",
     "@opencut/env": "workspace:*",
     "@opencut/ui": "workspace:*",
     "@opennextjs/cloudflare": "^1.18.0",

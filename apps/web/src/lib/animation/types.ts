@@ -17,10 +17,12 @@ export const ANIMATION_PROPERTY_PATHS = [
 export type AnimationPropertyPath = (typeof ANIMATION_PROPERTY_PATHS)[number];
 export type GraphicParamPath = `params.${string}`;
 export type EffectParamPath = `effects.${string}.params.${string}`;
+export type TransformParamPath = `clipTransforms.${string}.params.${string}`;
 export type AnimationPath =
 	| AnimationPropertyPath
 	| GraphicParamPath
-	| EffectParamPath;
+	| EffectParamPath
+	| TransformParamPath;
 
 export const ANIMATION_PROPERTY_GROUPS = {
 	"transform.scale": ["transform.scaleX", "transform.scaleY"],

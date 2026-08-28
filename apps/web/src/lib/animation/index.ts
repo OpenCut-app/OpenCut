@@ -52,6 +52,28 @@ export {
 } from "./graphic-param-channel";
 
 export {
+	EFFECT_PARAM_PATH_PREFIX,
+	EFFECT_PARAM_PATH_SUFFIX,
+	buildEffectParamPath,
+	isEffectParamPath,
+	parseEffectParamPath,
+	removeEffectParamKeyframe,
+	resolveEffectParamsAtTime,
+	upsertEffectParamKeyframe,
+} from "./effect-param-channel";
+
+export {
+	TRANSFORM_PARAM_PATH_PREFIX,
+	TRANSFORM_PARAM_PATH_SUFFIX,
+	buildTransformParamPath,
+	isTransformParamPath,
+	parseTransformParamPath,
+	removeTransformParamKeyframe,
+	resolveTransformParamsAtTime,
+	upsertTransformParamKeyframe,
+} from "./transform-param-channel";
+
+export {
 	isAnimationPath,
 	resolveAnimationTarget,
 	getParamValueKind,

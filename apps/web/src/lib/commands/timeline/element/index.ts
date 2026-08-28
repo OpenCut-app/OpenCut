@@ -13,3 +13,4 @@ export * from "./keyframes";
 export * from "./effects";
 export * from "./masks";
 export * from "./retime";
+export * from "./transforms";

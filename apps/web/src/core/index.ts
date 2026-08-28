@@ -10,6 +10,10 @@ import { AudioManager } from "./managers/audio-manager";
 import { SelectionManager } from "./managers/selection-manager";
 import { registerDefaultEffects } from "@/lib/effects";
 import { registerDefaultMasks } from "@/lib/masks";
+import {
+	registerDefaultPresets,
+	registerDefaultTransforms,
+} from "@/lib/transforms";
 
 export class EditorCore {
 	private static instance: EditorCore | null = null;
@@ -27,6 +31,8 @@ export class EditorCore {
 	private constructor() {
 		registerDefaultEffects();
 		registerDefaultMasks();
+		registerDefaultTransforms();
+		registerDefaultPresets();
 		this.command = new CommandManager();
 		this.timeline = new TimelineManager(this);
 		this.playback = new PlaybackManager(this);

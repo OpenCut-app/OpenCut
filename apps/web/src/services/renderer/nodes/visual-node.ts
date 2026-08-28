@@ -3,6 +3,7 @@ import { createOffscreenCanvas } from "../canvas-utils";
 import { BaseNode } from "./base-node";
 import type { Effect } from "@/lib/effects/types";
 import type { Mask } from "@/lib/masks/types";
+import type { ClipTransform } from "@/lib/transforms/types";
 import type { BlendMode, Transform } from "@/lib/rendering";
 import type { ElementAnimations } from "@/lib/animation/types";
 import type { RetimeConfig } from "@/lib/timeline";
@@ -12,11 +13,17 @@ import {
 	resolveTransformAtTime,
 } from "@/lib/animation";
 import { resolveEffectParamsAtTime } from "@/lib/animation/effect-param-channel";
+import { resolveTransformParamsAtTime } from "@/lib/animation/transform-param-channel";
 import { TIME_EPSILON_SECONDS } from "@/constants/animation-constants";
 import { effectsRegistry, resolveEffectPasses } from "@/lib/effects";
+import { EffectCategory } from "@/lib/effects/categories";
+import type { EffectContext } from "@/lib/effects/types";
 import { masksRegistry } from "@/lib/masks";
 import { getSourceTimeAtClipTime } from "@/lib/retime";
+import { detectFace } from "@/services/face-mesh";
 import { webglEffectRenderer } from "../webgl/webgl-effect-renderer";
+import { webglTransformRenderer } from "../webgl/webgl-transform-renderer";
+import { applySpatialTransforms } from "../apply-spatial-transforms";
 import { applyMaskFeather } from "../mask-feather";
 
 export interface VisualNodeParams {
@@ -31,6 +38,7 @@ export interface VisualNodeParams {
 	blendMode?: BlendMode;
 	effects?: Effect[];
 	masks?: Mask[];
+	clipTransforms?: ClipTransform[];
 }
 
 export abstract class VisualNode<
@@ -58,12 +66,11 @@ export abstract class VisualNode<
 	protected isInRange({ time }: { time: number }): boolean {
 		const localTime = time - this.params.timeOffset;
 		return (
-			localTime >= -TIME_EPSILON_SECONDS &&
-			localTime < this.params.duration
+			localTime >= -TIME_EPSILON_SECONDS && localTime < this.params.duration
 		);
 	}
 
-	protected renderVisual({
+	protected async renderVisual({
 		renderer,
 		source,
 		sourceWidth,
@@ -75,7 +82,7 @@ export abstract class VisualNode<
 		sourceWidth: number;
 		sourceHeight: number;
 		timelineTime: number;
-	}): void {
+	}): Promise<void> {
 		renderer.context.save();
 
 		const animationLocalTime = this.getAnimationLocalTime({
@@ -125,16 +132,24 @@ export abstract class VisualNode<
 		const enabledEffects =
 			this.params.effects?.filter((effect) => effect.enabled) ?? [];
 		const activeMasks = this.params.masks ?? [];
+		const enabledTransforms =
+			this.params.clipTransforms?.filter(
+				(clipTransform) => clipTransform.enabled,
+			) ?? [];
 
-		if (activeMasks.length === 0 && enabledEffects.length === 0) {
+		if (
+			activeMasks.length === 0 &&
+			enabledEffects.length === 0 &&
+			enabledTransforms.length === 0
+		) {
 			renderer.context.drawImage(source, x, y, absWidth, absHeight);
 			renderer.context.restore();
 			return;
 		}
 
-		const currentResult =
+		const afterEffects =
 			enabledEffects.length > 0
-				? this.applyEffects({
+				? await this.applyEffects({
 						source,
 						effects: enabledEffects,
 						width: absWidth,
@@ -143,42 +158,142 @@ export abstract class VisualNode<
 					})
 				: source;
 
-		if (activeMasks.length === 0) {
-			renderer.context.drawImage(currentResult, x, y, absWidth, absHeight);
+		// Render pipeline order: effects -> masks -> transforms.
+		// Transforms reshape/reposition the final composited element, so they
+		// run last. This ordering is a provisional default pending maintainer
+		// confirmation — revisit if product requirements dictate otherwise.
+		const afterMasks =
+			activeMasks.length > 0
+				? this.applyMasks({
+						source: afterEffects,
+						masks: activeMasks,
+						scaledWidth: absWidth,
+						scaledHeight: absHeight,
+					})
+				: afterEffects;
+
+		if (enabledTransforms.length === 0) {
+			renderer.context.drawImage(afterMasks, x, y, absWidth, absHeight);
 			renderer.context.restore();
 			return;
 		}
 
+		const finalResult = this.applyClipTransforms({
+			source: afterMasks,
+			transforms: enabledTransforms,
+			width: absWidth,
+			height: absHeight,
+			animationLocalTime,
+		});
+
+		renderer.context.drawImage(finalResult, x, y, absWidth, absHeight);
+		renderer.context.restore();
+	}
+
+	private applyMasks({
+		source,
+		masks,
+		scaledWidth,
+		scaledHeight,
+	}: {
+		source: CanvasImageSource;
+		masks: Mask[];
+		scaledWidth: number;
+		scaledHeight: number;
+	}): CanvasImageSource {
 		const elementCanvas = createOffscreenCanvas({
-			width: Math.round(absWidth),
-			height: Math.round(absHeight),
+			width: Math.round(scaledWidth),
+			height: Math.round(scaledHeight),
 		});
 		const elementCtx = elementCanvas.getContext("2d") as
 			| CanvasRenderingContext2D
 			| OffscreenCanvasRenderingContext2D
 			| null;
 		if (!elementCtx) {
-			renderer.context.drawImage(currentResult, x, y, absWidth, absHeight);
-			renderer.context.restore();
-			return;
+			return source;
 		}
 
-		elementCtx.drawImage(currentResult, 0, 0, absWidth, absHeight);
+		elementCtx.drawImage(source, 0, 0, scaledWidth, scaledHeight);
 
-		for (const mask of activeMasks) {
+		for (const mask of masks) {
 			this.applyMask({
 				mask,
 				elementCtx,
-				scaledWidth: absWidth,
-				scaledHeight: absHeight,
+				scaledWidth,
+				scaledHeight,
 			});
 		}
 
-		renderer.context.drawImage(elementCanvas, x, y, absWidth, absHeight);
-		renderer.context.restore();
+		return elementCanvas;
 	}
 
-	private applyEffects({
+	private applyClipTransforms({
+		source,
+		transforms,
+		width,
+		height,
+		animationLocalTime,
+	}: {
+		source: CanvasImageSource;
+		transforms: ClipTransform[];
+		width: number;
+		height: number;
+		animationLocalTime: number;
+	}): CanvasImageSource {
+		let current: CanvasImageSource = source;
+
+		// Resolve each transform's params at the current animation time before
+		// handing off to the renderers, mirroring how applyEffects resolves
+		// effect params via resolveEffectParamsAtTime. Renderers only ever see
+		// the resolved (static-at-this-instant) param values, never raw
+		// keyframe arrays.
+		const resolvedTransforms: ClipTransform[] = transforms.map((transform) => ({
+			...transform,
+			params: resolveTransformParamsAtTime({
+				transform,
+				animations: this.params.animations,
+				localTime: animationLocalTime,
+			}),
+		}));
+
+		if (webglTransformRenderer.hasVisualTransforms(resolvedTransforms)) {
+			current = webglTransformRenderer.applyVisualTransforms({
+				source: current,
+				transforms: resolvedTransforms,
+				width: Math.round(width),
+				height: Math.round(height),
+				time: animationLocalTime,
+			});
+		}
+
+		if (webglTransformRenderer.hasSpatialTransforms(resolvedTransforms)) {
+			const spatialCanvas = createOffscreenCanvas({
+				width: Math.round(width),
+				height: Math.round(height),
+			});
+			const spatialCtx = spatialCanvas.getContext("2d") as
+				| CanvasRenderingContext2D
+				| OffscreenCanvasRenderingContext2D
+				| null;
+			if (spatialCtx) {
+				const ctx = spatialCtx as CanvasRenderingContext2D;
+				ctx.save();
+				applySpatialTransforms({
+					ctx,
+					transforms: resolvedTransforms,
+					width,
+					height,
+				});
+				ctx.drawImage(current, 0, 0, width, height);
+				ctx.restore();
+				current = spatialCanvas;
+			}
+		}
+
+		return current;
+	}
+
+	private async applyEffects({
 		source,
 		effects,
 		width,
@@ -190,7 +305,15 @@ export abstract class VisualNode<
 		width: number;
 		height: number;
 		animationLocalTime: number;
-	}): CanvasImageSource {
+	}): Promise<CanvasImageSource> {
+		const needsFaceContext = effects.some(
+			(effect) =>
+				effectsRegistry.get(effect.type).category === EffectCategory.BEAUTY,
+		);
+		const faceContext: EffectContext | undefined = needsFaceContext
+			? await detectFace(source)
+			: undefined;
+
 		let current: CanvasImageSource = source;
 		for (const effect of effects) {
 			const resolvedParams = resolveEffectParamsAtTime({
@@ -204,6 +327,11 @@ export abstract class VisualNode<
 				effectParams: resolvedParams,
 				width,
 				height,
+				time: animationLocalTime,
+				context:
+					definition.category === EffectCategory.BEAUTY
+						? faceContext
+						: undefined,
 			});
 			current = webglEffectRenderer.applyEffect({
 				source: current,

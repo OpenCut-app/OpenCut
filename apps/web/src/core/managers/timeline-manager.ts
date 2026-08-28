@@ -45,6 +45,14 @@ import {
 	ToggleMaskInvertedCommand,
 	UpsertEffectParamKeyframeCommand,
 	RemoveEffectParamKeyframeCommand,
+	AddClipTransformCommand,
+	ApplyTransformPresetCommand,
+	RemoveClipTransformCommand,
+	UpdateClipTransformParamsCommand,
+	ToggleClipTransformCommand,
+	ReorderClipTransformsCommand,
+	UpsertTransformParamKeyframeCommand,
+	RemoveTransformParamKeyframeCommand,
 } from "@/lib/commands/timeline";
 import { BatchCommand } from "@/lib/commands";
 import type { InsertElementParams } from "@/lib/commands/timeline/element/insert-element";
@@ -441,6 +449,122 @@ export class TimelineManager {
 		this.editor.command.execute({ command });
 	}
 
+	addClipTransform({
+		trackId,
+		elementId,
+		transformType,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformType: string;
+	}): string {
+		const command = new AddClipTransformCommand({
+			trackId,
+			elementId,
+			transformType,
+		});
+		this.editor.command.execute({ command });
+		return command.getTransformId() ?? "";
+	}
+
+	applyTransformPreset({
+		trackId,
+		elementId,
+		presetType,
+	}: {
+		trackId: string;
+		elementId: string;
+		presetType: string;
+	}): string[] {
+		const command = new ApplyTransformPresetCommand({
+			trackId,
+			elementId,
+			presetType,
+		});
+		this.editor.command.execute({ command });
+		return command.getTransformIds();
+	}
+
+	removeClipTransform({
+		trackId,
+		elementId,
+		transformId,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformId: string;
+	}): void {
+		const command = new RemoveClipTransformCommand({
+			trackId,
+			elementId,
+			transformId,
+		});
+		this.editor.command.execute({ command });
+	}
+
+	updateClipTransformParams({
+		trackId,
+		elementId,
+		transformId,
+		params,
+		pushHistory = true,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformId: string;
+		params: Partial<ParamValues>;
+		pushHistory?: boolean;
+	}): void {
+		const command = new UpdateClipTransformParamsCommand({
+			trackId,
+			elementId,
+			transformId,
+			params,
+		});
+		if (pushHistory) {
+			this.editor.command.execute({ command });
+		} else {
+			command.execute();
+		}
+	}
+
+	toggleClipTransform({
+		trackId,
+		elementId,
+		transformId,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformId: string;
+	}): void {
+		const command = new ToggleClipTransformCommand({
+			trackId,
+			elementId,
+			transformId,
+		});
+		this.editor.command.execute({ command });
+	}
+
+	reorderClipTransforms({
+		trackId,
+		elementId,
+		fromIndex,
+		toIndex,
+	}: {
+		trackId: string;
+		elementId: string;
+		fromIndex: number;
+		toIndex: number;
+	}): void {
+		const command = new ReorderClipTransformsCommand({
+			trackId,
+			elementId,
+			fromIndex,
+			toIndex,
+		});
+		this.editor.command.execute({ command });
+	}
+
 	upsertKeyframes({
 		keyframes,
 	}: {
@@ -583,6 +707,61 @@ export class TimelineManager {
 			trackId,
 			elementId,
 			effectId,
+			paramKey,
+			keyframeId,
+		});
+		this.editor.command.execute({ command });
+	}
+
+	upsertTransformParamKeyframe({
+		trackId,
+		elementId,
+		transformId,
+		paramKey,
+		time,
+		value,
+		interpolation,
+		keyframeId,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformId: string;
+		paramKey: string;
+		time: number;
+		value: number;
+		interpolation?: "linear" | "hold";
+		keyframeId?: string;
+	}): void {
+		const command = new UpsertTransformParamKeyframeCommand({
+			trackId,
+			elementId,
+			transformId,
+			paramKey,
+			time,
+			value,
+			interpolation,
+			keyframeId,
+		});
+		this.editor.command.execute({ command });
+	}
+
+	removeTransformParamKeyframe({
+		trackId,
+		elementId,
+		transformId,
+		paramKey,
+		keyframeId,
+	}: {
+		trackId: string;
+		elementId: string;
+		transformId: string;
+		paramKey: string;
+		keyframeId: string;
+	}): void {
+		const command = new RemoveTransformParamKeyframeCommand({
+			trackId,
+			elementId,
+			transformId,
 			paramKey,
 			keyframeId,
 		});

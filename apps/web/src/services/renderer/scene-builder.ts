@@ -78,6 +78,7 @@ function buildTrackNodes({
 							blendMode: element.blendMode,
 							effects: element.effects,
 							masks: element.masks,
+							clipTransforms: element.clipTransforms,
 						}),
 					);
 				}
@@ -95,6 +96,7 @@ function buildTrackNodes({
 							blendMode: element.blendMode,
 							effects: element.effects,
 							masks: element.masks,
+							clipTransforms: element.clipTransforms,
 							...(isPreview && {
 								maxSourceSize: PREVIEW_MAX_IMAGE_SIZE,
 							}),
@@ -130,6 +132,7 @@ function buildTrackNodes({
 						opacity: element.opacity,
 						blendMode: element.blendMode,
 						effects: element.effects,
+						clipTransforms: element.clipTransforms,
 					}),
 				);
 			}
@@ -149,6 +152,7 @@ function buildTrackNodes({
 						blendMode: element.blendMode,
 						effects: element.effects,
 						masks: element.masks,
+						clipTransforms: element.clipTransforms,
 					}),
 				);
 			}

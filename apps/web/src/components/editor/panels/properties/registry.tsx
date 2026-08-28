@@ -7,6 +7,7 @@ import type {
 	RetimableElement,
 	StickerElement,
 	TextElement,
+	TransformableElement,
 	VisualElement,
 	VideoElement,
 	AudioElement,
@@ -27,6 +28,7 @@ import { BlendingTab } from "./tabs/blending-tab";
 import { AudioTab } from "./tabs/audio-tab";
 import { TextTab } from "./tabs/text-tab";
 import { ClipEffectsTab, StandaloneEffectTab } from "./tabs/effects-tab";
+import { ClipTransformsTab } from "./tabs/clip-transforms-tab";
 import { MasksTab } from "./tabs/masks-tab";
 import { SpeedTab } from "./tabs/speed-tab";
 import { GraphicTab } from "./tabs/graphic-tab";
@@ -132,6 +134,21 @@ function buildClipEffectsTab({
 	};
 }
 
+function buildClipTransformsTab({
+	element,
+}: {
+	element: TransformableElement;
+}): PropertiesTabDef {
+	return {
+		id: "clip-transforms",
+		label: "Warp",
+		icon: <HugeiconsIcon icon={ArrowExpandIcon} size={16} />,
+		content: ({ trackId }) => (
+			<ClipTransformsTab element={element} trackId={trackId} />
+		),
+	};
+}
+
 function buildTextTab({ element }: { element: TextElement }): PropertiesTabDef {
 	return {
 		id: "text",
@@ -150,7 +167,9 @@ function buildGraphicTab({
 		id: "graphic",
 		label: "Graphic",
 		icon: <OcShapesIcon size={16} />,
-		content: ({ trackId }) => <GraphicTab element={element} trackId={trackId} />,
+		content: ({ trackId }) => (
+			<GraphicTab element={element} trackId={trackId} />
+		),
 	};
 }
 
@@ -201,6 +220,7 @@ function getVideoConfig({
 			buildBlendingTab({ element }),
 			buildMasksTab({ element }),
 			buildClipEffectsTab({ element }),
+			buildClipTransformsTab({ element }),
 		],
 	};
 }
@@ -217,6 +237,7 @@ function getImageConfig({
 			buildBlendingTab({ element }),
 			buildMasksTab({ element }),
 			buildClipEffectsTab({ element }),
+			buildClipTransformsTab({ element }),
 		],
 	};
 }
@@ -232,6 +253,7 @@ function getStickerConfig({
 			buildTransformTab({ element }),
 			buildBlendingTab({ element }),
 			buildClipEffectsTab({ element }),
+			buildClipTransformsTab({ element }),
 		],
 	};
 }
@@ -249,6 +271,7 @@ function getGraphicConfig({
 			buildBlendingTab({ element }),
 			buildMasksTab({ element }),
 			buildClipEffectsTab({ element }),
+			buildClipTransformsTab({ element }),
 		],
 	};
 }

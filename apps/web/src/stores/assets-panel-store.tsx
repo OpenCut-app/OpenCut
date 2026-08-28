@@ -59,7 +59,7 @@ export const tabs = {
 	},
 	transitions: {
 		icon: createHugeiconsIcon({ icon: ArrowRightDoubleIcon }),
-		label: "Transitions",
+		label: "Transforms",
 	},
 	captions: {
 		icon: createHugeiconsIcon({ icon: ClosedCaptionIcon }),
