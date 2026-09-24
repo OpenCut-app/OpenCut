@@ -1,0 +1,115 @@
+name: Media dependencies
+
+# Builds the FFmpeg that `media` decodes with, for every platform, from the
+# pinned source in crates/media/setup/ffmpeg.json, and publishes the builds
+# as a release. Then `bun run crates/media/setup/pin.ts <tag>` points
+# ffmpeg.json at them. Run it by hand when the pinned version changes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: "Build number for this FFmpeg version (bump it to rebuild the same version)"
+        required: true
+        default: "1"
+
+permissions:
+  contents: write
+
+env:
+  LLVM_MINGW: llvm-mingw-20260922-ucrt-ubuntu-22.04-x86_64
+  LLVM_MINGW_URL: https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/llvm-mingw-20260922-ucrt-ubuntu-22.04-x86_64.tar.xz
+  LLVM_MINGW_SHA256: bb7bb7654b33d5aa8712acb837c963b2e0c56352560c76105270a3268c665c21
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux builds on the oldest supported Ubuntu, so the libraries run
+          # on distributions with glibc 2.35 or newer.
+          - { platform: linux-x86_64, runner: ubuntu-22.04 }
+          - { platform: linux-aarch64, runner: ubuntu-22.04-arm }
+          # Windows cross-compiles from Linux with llvm-mingw.
+          - { platform: windows-x86_64, runner: ubuntu-22.04 }
+          - { platform: windows-aarch64, runner: ubuntu-22.04 }
+          # Both Mac architectures build on Apple silicon.
+          - { platform: macos-aarch64, runner: macos-15 }
+          - { platform: macos-x86_64, runner: macos-15 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned versions
+        id: pins
+        shell: bash
+        run: |
+          echo "ffmpeg=$(jq -r .version crates/media/setup/ffmpeg.json)" >> "$GITHUB_OUTPUT"
+          echo "bun=$(sed -n 's/^bun *= *"\(.*\)"/\1/p' .prototools)" >> "$GITHUB_OUTPUT"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ steps.pins.outputs.bun }}
+
+      - name: Install nasm (Linux)
+        if: runner.os == 'Linux' && endsWith(matrix.platform, 'x86_64')
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Install nasm (macOS)
+        if: matrix.platform == 'macos-x86_64'
+        run: brew install nasm
+
+      - name: Install llvm-mingw
+        if: startsWith(matrix.platform, 'windows-')
+        shell: bash
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/llvm-mingw.tar.xz" "$LLVM_MINGW_URL"
+          echo "$LLVM_MINGW_SHA256  $RUNNER_TEMP/llvm-mingw.tar.xz" | sha256sum -c -
+          tar -xf "$RUNNER_TEMP/llvm-mingw.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/$LLVM_MINGW/bin" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: bun run crates/media/setup/setup.ts --from-source --target ${{ matrix.platform }}
+
+      - name: Package
+        shell: bash
+        run: |
+          name="ffmpeg-${{ steps.pins.outputs.ffmpeg }}-${{ matrix.platform }}"
+          tar --exclude=.complete -czf "$name.tar.gz" -C .cache/media "$name"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.platform }}
+          path: ffmpeg-*.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(jq -r .version crates/media/setup/ffmpeg.json)"
+          tag="ffmpeg-$version-${{ inputs.build }}"
+          source="$(jq -r .source.url crates/media/setup/ffmpeg.json)"
+          cd dist
+          sha256sum ffmpeg-*.tar.gz > checksums.sha256
+          # A prerelease, so it never shows as the app's latest release.
+          gh release create "$tag" ffmpeg-*.tar.gz checksums.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "FFmpeg $version (build ${{ inputs.build }})" \
+            --notes "Shared LGPL builds of FFmpeg $version for OpenCut's media crate, built from $source by the Media dependencies workflow. Each archive holds the exact configure flags (BUILD.md) and FFmpeg's licence. Pin them with \`bun run crates/media/setup/pin.ts $tag\`."

@@ -1,0 +1,26 @@
+{
+  "version": "8.1.3",
+  "license": "LGPL-2.1-or-later",
+  "source": {
+    "url": "https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz",
+    "sha256": "7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3"
+  },
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-23-14-55/ffmpeg-n8.1.3-win64-lgpl-shared-8.1.zip",
+      "sha256": "60a055792e88524db437a78c2fcd4471536abf3b30d34fae1249591c00e13432"
+    },
+    "windows-aarch64": {
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-23-14-55/ffmpeg-n8.1.3-winarm64-lgpl-shared-8.1.zip",
+      "sha256": "c6db6e038130559fca5ff838a3bfd7d8bcc364234dc85377c732350b2b201fea"
+    },
+    "linux-x86_64": {
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-23-14-55/ffmpeg-n8.1.3-linux64-lgpl-shared-8.1.tar.xz",
+      "sha256": "703d321cbdd00e8579c708cdd58eda223db266598c8200091bc525abca154cd6"
+    },
+    "linux-aarch64": {
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-23-14-55/ffmpeg-n8.1.3-linuxarm64-lgpl-shared-8.1.tar.xz",
+      "sha256": "71386055106cb180e736ca027752771f32d1ee3cafec336a467d09a3c468be8b"
+    }
+  }
+}
